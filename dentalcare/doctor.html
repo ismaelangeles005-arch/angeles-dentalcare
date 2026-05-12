@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Panel Doctor</title>
+
+<style>
+
+body{
+    font-family:Arial;
+    background:#f3f4f6;
+    padding:30px;
+}
+
+.card{
+    background:white;
+    padding:25px;
+    border-radius:15px;
+    margin-bottom:20px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+button{
+    padding:12px 20px;
+    border:none;
+    background:#2563eb;
+    color:white;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+img{
+    width:100%;
+    border-radius:15px;
+    margin-top:20px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1 id="bienvenida"></h1>
+
+<div class="card">
+
+    <h2>Citas del Día</h2>
+
+    <p>• Juan Pérez - Limpieza Dental - 10:00 AM</p>
+
+    <p>• María López - Ortodoncia - 1:00 PM</p>
+
+</div>
+
+<div class="card">
+
+    <h2>Tratamientos Pendientes</h2>
+
+    <p>3 pacientes pendientes de evaluación</p>
+
+</div>
+
+<div class="card">
+
+    <h2>Mensaje del Sistema</h2>
+
+    <p id="mensajeDinamico"></p>
+
+</div>
+
+<img src="https://images.unsplash.com/photo-1588776814546-bc2f7c1b7fcb?q=80&w=1200&auto=format&fit=crop">
+
+<br><br>
+
+<button onclick="cerrarSesion()">
+    Cerrar Sesión
+</button>
+
+<script>
+
+/* BIENVENIDA */
+
+let doctor = localStorage.getItem("doctorNombre");
+
+document.getElementById("bienvenida").innerText =
+"Bienvenido " + doctor;
+
+/* MENSAJES DINÁMICOS */
+
+let mensajes = [
+
+    "Recuerda revisar los pacientes pendientes.",
+
+    "Tienes 2 citas próximas esta tarde.",
+
+    "El sistema fue actualizado correctamente.",
+
+    "Nueva radiografía cargada."
+
+];
+
+let random =
+Math.floor(Math.random() * mensajes.length);
+
+document.getElementById("mensajeDinamico").innerText =
+mensajes[random];
+
+/* LOGOUT */
+
+function cerrarSesion(){
+
+    localStorage.removeItem("rol");
+
+    window.location.href = "index.html";
+
+}
+
+</script>
+
+</body>
+</html>
