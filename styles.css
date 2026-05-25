@@ -1,0 +1,530 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #f3f4f6;
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.sidebar {
+    width: 270px;
+    min-width: 270px;
+    background: linear-gradient(180deg, #2563eb, #1e3a8a);
+    color: white;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 40px;
+}
+
+.brand-logo {
+    display: block;
+    width: 170px;
+    max-width: 100%;
+    height: 120px;
+    flex-shrink: 0;
+}
+
+.logo-group {
+    animation: fadeInUp 1.2s both;
+}
+
+.icon-group {
+    animation: scaleIn 1s 0.3s both;
+}
+
+.text-main {
+    animation: slideRight 0.9s 0.5s both;
+}
+
+.text-sub {
+    animation: slideRight 0.9s 0.7s both;
+}
+
+.menu button {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 12px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: white;
+    text-align: left;
+    cursor: pointer;
+    font-size: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.menu button i {
+    width: 22px;
+    margin-right: 8px;
+    text-align: center;
+}
+
+.menu button.active {
+    background: rgba(255,255,255,0.22);
+    font-weight: bold;
+    box-shadow: inset 3px 0 0 rgba(255,255,255,0.85);
+}
+
+.menu button:hover {
+    background: rgba(255,255,255,0.15);
+    transform: translateX(4px);
+}
+
+.menu button:active,
+.logout-btn:active,
+.add-btn:active,
+.save-btn:active,
+.generate-btn:active,
+.action-btn:active,
+.confirm-btn:active,
+.complete-btn:active,
+.delete-btn:active,
+.cancel-btn:active,
+.close-btn:active,
+.doctor-actions button:active,
+.actions button:active {
+    transform: translateY(1px) scale(0.99);
+}
+
+button {
+    font: inherit;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease, background 0.2s ease;
+}
+
+button:hover {
+    filter: brightness(1.03);
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+    filter: none;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.28);
+    outline-offset: 2px;
+}
+
+.logout-btn,
+.add-btn,
+.save-btn,
+.generate-btn,
+.action-btn,
+.confirm-btn,
+.complete-btn,
+.delete-btn,
+.cancel-btn,
+.close-btn,
+.doctor-actions button,
+.actions button {
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.logout-btn:hover,
+.add-btn:hover,
+.save-btn:hover,
+.generate-btn:hover,
+.action-btn:hover,
+.confirm-btn:hover,
+.complete-btn:hover,
+.delete-btn:hover,
+.cancel-btn:hover,
+.close-btn:hover,
+.doctor-actions button:hover,
+.actions button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
+    filter: brightness(1.04);
+}
+
+.card,
+.patient-card,
+.cita,
+.report-item,
+.day,
+.activity,
+.doctor-card {
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.card:hover,
+.patient-card:hover,
+.cita:hover,
+.report-item:hover,
+.day:hover,
+.activity:hover,
+.doctor-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+input,
+select {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+input:focus,
+select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    background: #ffffff;
+}
+
+.toast-container {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 1000;
+    display: grid;
+    gap: 12px;
+    width: min(360px, calc(100vw - 32px));
+}
+
+.toast {
+    background: #111827;
+    color: white;
+    padding: 14px 16px;
+    border-radius: 12px;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.24);
+    animation: toastIn 0.24s ease both;
+}
+
+.toast.success {
+    background: #166534;
+}
+
+.toast.warning {
+    background: #92400e;
+}
+
+.toast.error {
+    background: #991b1b;
+}
+
+.toast.hide {
+    animation: toastOut 0.2s ease both;
+}
+
+.empty-state {
+    width: 100%;
+    padding: 22px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #64748b;
+    text-align: center;
+    font-weight: bold;
+}
+
+.status,
+.estado {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0;
+}
+
+.status.pendiente,
+.estado.pendiente {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status.confirmada,
+.estado.confirmada {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.status.completada,
+.estado.completada {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status.cancelada,
+.estado.cancelada {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.filters-bar {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) 180px;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.48);
+}
+
+.detail-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.48);
+}
+
+.confirm-dialog {
+    width: min(420px, 100%);
+    padding: 22px;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+}
+
+.detail-dialog {
+    width: min(520px, 100%);
+    padding: 22px;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+}
+
+.detail-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.detail-top h3 {
+    color: #111827;
+}
+
+.detail-close {
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 10px;
+    background: #e5e7eb;
+    color: #111827;
+    font-size: 24px;
+    line-height: 1;
+}
+
+.detail-list {
+    display: grid;
+    gap: 10px;
+}
+
+.detail-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #f8fafc;
+}
+
+.detail-row span {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.detail-row strong {
+    color: #111827;
+    overflow-wrap: anywhere;
+}
+
+.confirm-dialog h3 {
+    margin-bottom: 10px;
+    color: #111827;
+}
+
+.confirm-dialog p {
+    margin-bottom: 20px;
+    color: #475569;
+    line-height: 1.5;
+}
+
+.confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.confirm-secondary,
+.confirm-danger {
+    border: none;
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-weight: bold;
+}
+
+.confirm-secondary {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.confirm-danger {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+@keyframes toastIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes toastOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.4);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes slideRight {
+    from {
+        opacity: 0;
+        transform: translateX(-16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@media(max-width:900px) {
+    body {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .brand-logo {
+        width: 150px;
+        height: 106px;
+    }
+
+    .filters-bar {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+body.role-doctor .sidebar {
+    background: linear-gradient(180deg, #16a34a, #166534);
+}
+
+body.role-recepcion .sidebar {
+    background: linear-gradient(180deg, #9333ea, #6b21a8);
+}
+
+.role-note {
+    background: #dbeafe;
+    color: #1e3a8a;
+    padding: 14px 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+body.role-doctor .role-note {
+    background: #dcfce7;
+    color: #166534;
+}
+
+body.role-recepcion .role-note {
+    background: #f3e8ff;
+    color: #6b21a8;
+}

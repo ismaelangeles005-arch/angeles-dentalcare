@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Citas - Angeles DentalCare</title>
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        .main {
+            flex: 1;
+            padding: 30px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .logout-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .form-box,
+        .citas-box {
+            background: white;
+            padding: 25px;
+            border-radius: 18px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .form-box h2,
+        .citas-box h2 {
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-grid input,
+        .form-grid select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #d1d5db;
+        }
+
+        .save-btn {
+            padding: 14px 20px;
+            border: none;
+            background: #2563eb;
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .cita {
+            background: #f9fafb;
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 5px solid #2563eb;
+        }
+
+        .estado {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .pendiente {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .completada {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .cancelada {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .action-btn {
+            margin-top: 12px;
+            margin-right: 10px;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .complete-btn {
+            background: #16a34a;
+        }
+
+        .confirm-btn {
+            background: #2563eb;
+        }
+
+        .cancel-btn {
+            background: #dc2626;
+        }
+
+        .delete-btn {
+            background: #6b7280;
+        }
+
+        .view-btn {
+            background: #2563eb;
+        }
+
+        @media(max-width:900px) {
+        }
+
+    
+    </style>
+
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+
+<body>
+
+    <div class="sidebar">
+
+        <div class="logo">
+
+            <svg class="brand-logo"
+                 viewBox="0 0 680 300"
+                 xmlns="http://www.w3.org/2000/svg"
+                 role="img"
+                 aria-label="Angeles DentalCare">
+
+                <g class="logo-group">
+
+                    <g class="icon-group"
+                       transform="translate(340,122)">
+
+                        <path d="M0 -37 Q20 -50 34 -37 Q50 -22 42 6 Q32 32 18 47 Q9 56 0 47 Q-9 56 -18 47 Q-32 32 -42 6 Q-50 -22 -34 -37 Q-20 -50 0 -37 Z"
+                              fill="white" />
+
+                    </g>
+
+                    <g class="text-main">
+
+                        <text x="340"
+                              y="208"
+                              font-family="Georgia"
+                              font-size="42"
+                              fill="white"
+                              text-anchor="middle">
+
+                            ANGELES
+
+                        </text>
+
+                    </g>
+
+                    <g class="text-sub">
+
+                        <text x="340"
+                              y="244"
+                              font-family="Arial"
+                              font-size="16"
+                              fill="white"
+                              text-anchor="middle">
+
+                            DENTALCARE
+
+                        </text>
+
+                    </g>
+
+                </g>
+
+            </svg>
+
+        </div>
+
+        <div class="menu">
+
+            <button data-nav="dashboard" onclick="irDashboard()">
+                <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+                Dashboard
+            </button>
+
+            <button data-nav="pacientes" onclick="irPacientes()">
+                <i class="fa-solid fa-user-group" aria-hidden="true"></i>
+                Pacientes
+            </button>
+
+            <button data-nav="citas" class="active" onclick="irCitas()">
+                <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                Citas
+            </button>
+
+            <button data-nav="reportes" onclick="irReportes()">
+                <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
+                Reportes
+            </button>
+
+        </div>
+
+    </div>
+
+    <div class="main">
+
+        <div class="topbar">
+
+            <h1 id="citasTitle">Gesti&oacute;n de Citas</h1>
+
+            <button class="logout-btn" onclick="cerrarSesion()">
+                Cerrar Sesi&oacute;n
+            </button>
+
+        </div>
+
+        <div class="role-note" id="roleNote"></div>
+
+        <div class="form-box" id="citaForm">
+
+            <h2>Nueva Cita</h2>
+
+            <div class="form-grid">
+
+                <input type="text" id="paciente" placeholder="Nombre del paciente">
+
+                <input type="date" id="fecha">
+
+                <input type="time" id="hora">
+
+                <select id="doctor">
+                    <option value="">Seleccionar doctor</option>
+                    <option>Dra. Mart&iacute;nez</option>
+                    <option>Dr. G&oacute;mez</option>
+                    <option>Dra. Fern&aacute;ndez</option>
+                </select>
+
+            </div>
+
+            <button class="save-btn" onclick="agregarCita()">
+                Guardar Cita
+            </button>
+
+        </div>
+
+        <div class="citas-box">
+
+            <h2>Lista de Citas</h2>
+
+            <div class="filters-bar">
+                <input type="text" id="busquedaCita" placeholder="Buscar paciente o doctor" oninput="renderCitas()">
+                <select id="estadoFiltro" onchange="renderCitas()">
+                    <option value="">Todos los estados</option>
+                    <option value="pendiente">Pendientes</option>
+                    <option value="confirmada">Confirmadas</option>
+                    <option value="completada">Completadas</option>
+                    <option value="cancelada">Canceladas</option>
+                </select>
+            </div>
+
+            <div id="listaCitas"></div>
+
+        </div>
+
+    </div>
+
+    <script src="roles.js"></script>
+
+    <script>
+
+        DentalRoles.protectPage({ active: "citas" });
+
+        let citas = JSON.parse(localStorage.getItem("citas")) || [];
+        let rol = DentalRoles.rol;
+        let doctorActual = DentalRoles.doctor;
+
+        function aplicarRolesCitas() {
+
+            let title = document.getElementById("citasTitle");
+            let form = document.getElementById("citaForm");
+            let note = document.getElementById("roleNote");
+
+            if (rol === "doctor") {
+                title.innerHTML = "Mis Citas";
+                form.style.display = "none";
+                note.innerText = "Vista médica: solo se muestran las citas asignadas a " + doctorActual + ".";
+            }
+            else if (rol === "recepcion") {
+                title.innerHTML = "Citas - Recepci\u00f3n";
+                note.innerText = "Recepci\u00f3n: puede crear, confirmar y administrar citas.";
+            }
+            else {
+                title.innerHTML = "Gestión de Citas";
+                note.innerText = "Administraci\u00f3n: vista completa de citas.";
+            }
+
+        }
+
+        function citasVisibles() {
+            let busqueda = (document.getElementById("busquedaCita")?.value || "").toLowerCase();
+            let estadoFiltro = document.getElementById("estadoFiltro")?.value || "";
+
+            return citas
+                .map((cita, index) => ({
+                    cita: cita,
+                    index: index
+                }))
+                .filter(item => {
+
+                    const coincideRol = rol !== "doctor" || DentalRoles.sameDoctor(
+                        item.cita.doctor,
+                        doctorActual
+                    );
+
+                    const coincideBusqueda =
+                        (item.cita.paciente || "").toLowerCase().includes(busqueda) ||
+                        (item.cita.doctor || "").toLowerCase().includes(busqueda);
+
+                    const coincideEstado =
+                        !estadoFiltro || DentalRoles.normalizeText(item.cita.estado) === estadoFiltro;
+
+                    return coincideRol && coincideBusqueda && coincideEstado;
+
+                });
+
+        }
+
+        function estadoClase(estado) {
+            return DentalRoles.normalizeText(estado).replace(/\s+/g, "-");
+        }
+
+        function renderCitas() {
+
+            let lista = document.getElementById("listaCitas");
+            let visibles = citasVisibles();
+
+            lista.innerHTML = "";
+
+            if (visibles.length === 0) {
+                lista.innerHTML = "<div class='empty-state'>No hay citas para mostrar.</div>";
+                return;
+            }
+
+            visibles.forEach(item => {
+
+                let cita = item.cita;
+                let index = item.index;
+                let estado = estadoClase(cita.estado);
+                let puedeConfirmar = rol !== "doctor" && estado === "pendiente";
+                let puedeCompletar = estado !== "completada" && estado !== "cancelada";
+                let puedeCancelar = estado !== "cancelada" && estado !== "completada";
+                let confirmButton = puedeConfirmar ? `
+                    <button class="action-btn confirm-btn" onclick="confirmarCita(${index})">
+                        Confirmar
+                    </button>
+                ` : "";
+                let completeButton = puedeCompletar ? `
+                    <button class="action-btn complete-btn" onclick="completarCita(${index})">
+                        Completar
+                    </button>
+                ` : "";
+                let cancelButton = puedeCancelar ? `
+                    <button class="action-btn cancel-btn" onclick="cancelarCita(${index})">
+                        Cancelar
+                    </button>
+                ` : "";
+                let deleteButton = rol === "doctor" ? "" : `
+                    <button class="action-btn delete-btn" onclick="eliminarCita(${index})">
+                        Eliminar
+                    </button>
+                `;
+
+                lista.innerHTML += `
+
+            <div class="cita">
+
+                <strong>Paciente:</strong> ${cita.paciente}<br><br>
+
+                <strong>Fecha:</strong> ${cita.fecha}<br><br>
+
+                <strong>Hora:</strong> ${cita.hora}<br><br>
+
+                <strong>Doctor:</strong> ${cita.doctor}<br>
+
+                <span class="estado ${estado}">
+                    ${cita.estado.toUpperCase()}
+                </span>
+
+                <br>
+
+                <button class="action-btn view-btn" onclick="verDetalleCita(${index})">
+                    Ver detalle
+                </button>
+
+                ${confirmButton}
+
+                ${completeButton}
+
+                ${cancelButton}
+
+                ${deleteButton}
+
+            </div>
+
+                `;
+
+            });
+
+        }
+
+        function agregarCita() {
+
+            if (rol === "doctor") {
+                DentalRoles.notify("Los doctores solo pueden revisar sus citas asignadas.", "warning");
+                return;
+            }
+
+            let paciente = document.getElementById("paciente").value.trim();
+            let fecha = document.getElementById("fecha").value;
+            let hora = document.getElementById("hora").value;
+            let doctor = document.getElementById("doctor").value;
+
+            if (paciente === "" || fecha === "" || hora === "" || doctor === "") {
+                DentalRoles.notify("Completa todos los campos.", "warning");
+                return;
+            }
+
+            const hoy = new Date().toISOString().split("T")[0];
+            if (fecha < hoy) {
+                DentalRoles.notify("La fecha no puede ser anterior a hoy.", "warning");
+                return;
+            }
+
+            const citaDuplicada = citas.some(item =>
+                item.fecha === fecha &&
+                item.hora === hora &&
+                DentalRoles.sameDoctor(item.doctor, doctor)
+            );
+
+            if (citaDuplicada) {
+                DentalRoles.notify("Ese doctor ya tiene una cita en esa fecha y hora.", "warning");
+                return;
+            }
+
+            citas.push({
+                paciente: paciente,
+                fecha: fecha,
+                hora: hora,
+                doctor: doctor,
+                estado: "pendiente"
+            });
+
+            localStorage.setItem("citas", JSON.stringify(citas));
+
+            aplicarRolesCitas();
+            renderCitas();
+            limpiarCampos();
+            DentalRoles.notify("Cita guardada correctamente.", "success");
+
+        }
+
+        function limpiarCampos() {
+            document.getElementById("paciente").value = "";
+            document.getElementById("fecha").value = "";
+            document.getElementById("hora").value = "";
+            document.getElementById("doctor").value = "";
+        }
+
+        function confirmarCita(index) {
+            citas[index].estado = "confirmada";
+            localStorage.setItem("citas", JSON.stringify(citas));
+            aplicarRolesCitas();
+            renderCitas();
+            DentalRoles.notify("Cita confirmada.", "success");
+        }
+
+        function completarCita(index) {
+            citas[index].estado = "completada";
+            localStorage.setItem("citas", JSON.stringify(citas));
+            aplicarRolesCitas();
+            renderCitas();
+            DentalRoles.notify("Cita marcada como completada.", "success");
+        }
+
+        function cancelarCita(index) {
+            citas[index].estado = "cancelada";
+            localStorage.setItem("citas", JSON.stringify(citas));
+            aplicarRolesCitas();
+            renderCitas();
+            DentalRoles.notify("Cita cancelada.", "warning");
+        }
+
+        function eliminarCita(index) {
+            if (rol === "doctor") {
+                DentalRoles.notify("Los doctores no pueden eliminar citas.", "warning");
+                return;
+            }
+
+            DentalRoles.confirmAction({
+                title: "Eliminar cita",
+                message: "Esta acción quitará la cita de la agenda.",
+                confirmText: "Eliminar",
+                onConfirm: () => {
+                    citas.splice(index, 1);
+                    localStorage.setItem("citas", JSON.stringify(citas));
+                    aplicarRolesCitas();
+                    renderCitas();
+                    DentalRoles.notify("Cita eliminada.", "success");
+                }
+            });
+        }
+
+        function verDetalleCita(index) {
+            const cita = citas[index];
+            if (!cita) {
+                return;
+            }
+
+            DentalRoles.showDetails("Detalle de cita", [
+                { label: "Paciente", value: cita.paciente },
+                { label: "Doctor", value: cita.doctor },
+                { label: "Fecha", value: cita.fecha },
+                { label: "Hora", value: cita.hora },
+                { label: "Estado", value: cita.estado }
+            ]);
+        }
+
+        function irDashboard() {
+            window.location.href = "dashboard.html";
+        }
+
+        function irPacientes() {
+            window.location.href = "pacientes.html";
+        }
+
+        function irCitas() {
+            window.location.href = "citas.html";
+        }
+
+        function irReportes() {
+            window.location.href = "reportes.html";
+        }
+
+        function cerrarSesion() {
+            DentalRoles.logout();
+        }
+
+        aplicarRolesCitas();
+
+        renderCitas();
+
+    </script>
+
+</body>
+</html>
