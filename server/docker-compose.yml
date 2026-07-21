@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: dentalcare-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dentalcare
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+    - "127.0.0.1:5433:5432"
+    volumes:
+      - dentalcare_postgres:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer:4
+    container_name: dentalcare-adminer
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  dentalcare_postgres:

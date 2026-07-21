@@ -1,0 +1,107 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditoria - Angeles DentalCare</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .main { flex: 1; padding: 30px; min-width: 0; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 30px; }
+        .logout-btn { background: #dc2626; color: white; border: 0; padding: 12px 18px; border-radius: 12px; }
+        .panel { background: white; border-radius: 16px; padding: 22px; box-shadow: 0 8px 24px rgba(15,23,42,0.08); }
+        .log-list { display: grid; gap: 12px; margin-top: 16px; }
+        .log-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
+        .log-item h3 { margin-bottom: 6px; font-size: 16px; }
+        .log-item p { margin: 3px 0; color: #475569; }
+        .log-time { color: #64748b; font-size: 13px; white-space: nowrap; }
+        code { white-space: pre-wrap; word-break: break-word; display: block; margin-top: 8px; color: #334155; }
+        @media(max-width: 760px) {
+            body { display: block; }
+            .sidebar { width: 100%; min-width: 0; }
+            .main { padding: 20px; }
+            .topbar, .log-item { display: grid; grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <svg class="brand-logo" viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Angeles DentalCare">
+                <g class="logo-group">
+                    <g class="icon-group" transform="translate(340,122)">
+                        <path d="M0 -37 Q20 -50 34 -37 Q50 -22 42 6 Q32 32 18 47 Q9 56 0 47 Q-9 56 -18 47 Q-32 32 -42 6 Q-50 -22 -34 -37 Q-20 -50 0 -37 Z" fill="white" />
+                    </g>
+                    <g class="text-main"><text x="340" y="208" font-family="Georgia" font-size="42" fill="white" text-anchor="middle">ANGELES</text></g>
+                    <g class="text-sub"><text x="340" y="244" font-family="Arial" font-size="16" fill="white" text-anchor="middle">DENTALCARE</text></g>
+                </g>
+            </svg>
+        </div>
+        <div class="menu">
+            <button data-nav="dashboard" onclick="location.href='dashboard.html'"><i class="fa-solid fa-chart-line"></i> Dashboard</button>
+            <button data-nav="pacientes" onclick="location.href='pacientes.html'"><i class="fa-solid fa-user-group"></i> Pacientes</button>
+            <button data-nav="citas" onclick="location.href='citas.html'"><i class="fa-solid fa-calendar-days"></i> Citas</button>
+            <button data-nav="reportes" onclick="location.href='reportes.html'"><i class="fa-solid fa-chart-column"></i> Reportes</button>
+        </div>
+    </div>
+
+    <main class="main">
+        <div class="topbar">
+            <h1>Control de Cambios</h1>
+            <button class="logout-btn" onclick="DentalRoles.logout()">Cerrar Sesion</button>
+        </div>
+        <section class="panel">
+            <h2>Actividad del sistema</h2>
+            <div class="log-list" id="logList">
+                <div class="empty-state">Cargando cambios...</div>
+            </div>
+        </section>
+    </main>
+
+    <script src="api.js?v=20260626e"></script>
+    <script src="roles.js?v=20260626e"></script>
+    <script>
+        DentalRoles.protectPage({ active: "auditoria", adminOnly: true });
+
+        const actionLabels = {
+            create: "Creacion",
+            activate: "Activacion",
+            deactivate: "Desactivacion",
+            reset_password: "Cambio de contrasena",
+            update_status: "Cambio de estado",
+            delete: "Eliminacion",
+            upsert: "Actualizacion"
+        };
+
+        async function loadLogs() {
+            const list = document.getElementById("logList");
+            try {
+                const logs = await DentalApi.getAuditLogs();
+                if (!logs.length) {
+                    list.innerHTML = '<div class="empty-state">Todavia no hay cambios registrados.</div>';
+                    return;
+                }
+                list.innerHTML = logs.map(log => `
+                    <article class="log-item">
+                        <div>
+                            <h3>${actionLabels[log.action] || DentalRoles.escapeHtml(log.action)} - ${DentalRoles.escapeHtml(log.entity)}</h3>
+                            <p>Usuario: ${DentalRoles.escapeHtml(log.full_name || log.username || "Sistema")}</p>
+                            <p>Rol: ${DentalRoles.escapeHtml(log.role || "-")}</p>
+                            ${log.payload ? `<code>${DentalRoles.escapeHtml(JSON.stringify(log.payload, null, 2))}</code>` : ""}
+                        </div>
+                        <span class="log-time">${new Date(log.created_at).toLocaleString("es-DO")}</span>
+                    </article>
+                `).join("");
+            }
+            catch (error) {
+                list.innerHTML = '<div class="empty-state">No se pudo cargar la auditoria.</div>';
+                DentalRoles.notify(error.message, "error");
+            }
+        }
+
+        loadLogs();
+    </script>
+</body>
+</html>
+

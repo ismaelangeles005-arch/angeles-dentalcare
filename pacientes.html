@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 
@@ -12,151 +12,528 @@
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <style>
-        /* SIDEBAR */
-
-        /* MAIN */
-
-        .main {
+        <style>
+        .patients-page .main {
             flex: 1;
-            padding: 30px;
+            min-width: 0;
+            padding: 24px clamp(18px, 2.4vw, 30px);
         }
 
-        /* TOPBAR */
+        .patients-page .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
 
-        .topbar {
+        .patients-page .topbar h1 {
+            margin: 0;
+            color: var(--color-primary-dark);
+            font-size: clamp(24px, 2.3vw, 34px);
+            line-height: 1.1;
+        }
+
+        .patients-page .form-box,
+        .patients-page .search-box,
+        .patients-page .patient-card,
+        .patients-page .clinical-dialog,
+        .patients-page .preview-dialog {
+            border: 1px solid var(--color-border);
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .patients-page .form-box {
+            padding: 20px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 16px;
+        }
+
+        .patients-page .form-box h2 {
+            margin: 0;
+            color: var(--color-primary-dark);
+            font-size: 20px;
+        }
+
+        .patients-page .form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .patients-page .form-grid input,
+        .patients-page .form-grid select,
+        .patients-page .form-grid textarea,
+        .patients-page .upload-panel input,
+        .patients-page .upload-panel select {
+            width: 100%;
+            min-height: var(--control-height);
+            padding: 10px 12px;
+            border: 1px solid rgba(148, 163, 184, 0.42);
+            border-radius: var(--radius-md);
+            background: #fff;
+            color: var(--color-text);
+            font: inherit;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .patients-page .form-grid input:focus,
+        .patients-page .form-grid select:focus,
+        .patients-page .form-grid textarea:focus,
+        .patients-page .upload-panel input:focus,
+        .patients-page .upload-panel select:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 166, 0.12);
+        }
+
+        .patients-page .form-grid textarea {
+            min-height: 82px;
+            resize: vertical;
+            grid-column: span 3;
+        }
+
+        .patients-page .add-btn,
+        .patients-page .actions button,
+        .patients-page .file-actions button {
+            min-height: 38px;
+            border: 0;
+            border-radius: var(--radius-md);
+            padding: 9px 12px;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 13px;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+        }
+
+        .patients-page .add-btn {
+            margin-top: 16px;
+            background: var(--color-primary);
+            box-shadow: 0 10px 22px rgba(37, 99, 166, 0.18);
+        }
+
+        .patients-page .actions button:hover,
+        .patients-page .file-actions button:hover,
+        .patients-page .add-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.02);
+        }
+
+        .patients-page .actions button:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+            transform: none;
+            filter: grayscale(0.2);
+        }
+
+        .patients-page .search-box {
+            position: sticky;
+            top: 12px;
+            z-index: 3;
+            padding: 12px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .patients-page .search-box input {
+            width: 100%;
+            min-height: var(--control-height);
+            padding: 11px 14px 11px 40px;
+            border: 1px solid rgba(148, 163, 184, 0.42);
+            border-radius: var(--radius-md);
+            background: #fff;
+            color: var(--color-text);
+            outline: none;
+        }
+
+        .patients-page .search-box::before {
+            content: "\f002";
+            position: absolute;
+            left: 28px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-text-muted);
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 14px;
+        }
+
+        .patients-page .patient-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .patients-page .patient-card {
+            display: grid;
+            gap: 12px;
+            padding: 16px;
+            border-radius: var(--radius-lg);
+            border-left: 4px solid rgba(47, 167, 160, 0.72);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .patients-page .patient-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(37, 99, 166, 0.36);
+            box-shadow: var(--shadow-md);
+        }
+
+        .patients-page .patient-card header {
             display: flex;
             justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .patients-page .patient-card h3 {
+            min-width: 0;
+            margin: 0;
+            color: var(--color-primary-dark);
+            font-size: 18px;
+            line-height: 1.2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .patients-page .patient-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+
+        .patients-page .patient-badge {
+            display: inline-flex;
             align-items: center;
-            margin-bottom: 30px;
+            width: fit-content;
+            min-height: 24px;
+            padding: 4px 9px;
+            border-radius: 999px;
+            background: rgba(37, 99, 166, 0.12);
+            color: var(--color-primary-dark);
+            font-size: 11px;
+            font-weight: 900;
+            white-space: nowrap;
         }
 
-        .logout-btn {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 12px 18px;
-            border-radius: 12px;
-            cursor: pointer;
+        .patients-page .patient-badge.neutral {
+            background: rgba(100, 116, 139, 0.12);
+            color: #475569;
         }
 
-        /* FORM */
-
-        .form-box {
-            background: white;
-            padding: 25px;
-            border-radius: 18px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        .patients-page .patient-badge.mine {
+            background: rgba(46, 139, 114, 0.16);
+            color: #17624e;
         }
 
-        .form-grid {
+        .patients-page .patient-meta {
             display: grid;
-            grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
-            gap: 20px;
-            margin-top: 20px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px 12px;
         }
 
-            .form-grid input,
-            .form-grid select {
-                width: 100%;
-                padding: 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 12px;
-            }
-
-        .add-btn {
-            margin-top: 20px;
-            padding: 14px 20px;
-            border: none;
-            border-radius: 12px;
-            background: #2563eb;
-            color: white;
-            cursor: pointer;
-            font-weight: bold;
+        .patients-page .meta-item {
+            min-width: 0;
+            padding: 9px 10px;
+            border-radius: var(--radius-md);
+            background: rgba(244, 248, 251, 0.92);
         }
 
-        /* SEARCH */
-
-        .search-box {
-            margin-bottom: 25px;
+        .patients-page .meta-label {
+            display: block;
+            color: var(--color-text-muted);
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
         }
 
-            .search-box input {
-                width: 100%;
-                padding: 14px;
-                border-radius: 14px;
-                border: 1px solid #d1d5db;
-            }
+        .patients-page .meta-value {
+            display: block;
+            margin-top: 3px;
+            color: var(--color-text);
+            font-size: 13px;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
 
-        /* PATIENTS */
+        .patients-page .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 2px;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-border);
+        }
 
-        .patient-grid {
+        .patients-page .view-btn,
+        .patients-page .complete-btn { background: var(--color-primary); }
+        .patients-page .assign-btn { background: #475569; }
+        .patients-page .file-btn { background: var(--color-secondary); }
+        .patients-page .delete-btn { background: var(--color-error); }
+        .patients-page .confirm-btn { background: var(--color-success); }
+
+        .patients-page .clinical-backdrop,
+        .patients-page .preview-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 80;
             display: grid;
-            grid-template-columns: repeat(auto-fit,minmax(300px,1fr));
-            gap: 20px;
+            place-items: center;
+            padding: 18px;
+            background: rgba(15, 23, 42, 0.56);
         }
 
-        .patient-card {
-            background: white;
-            padding: 25px;
-            border-radius: 18px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        .patients-page .preview-backdrop { z-index: 100; background: rgba(15, 23, 42, 0.78); }
+        .patients-page .clinical-backdrop[hidden],
+        .patients-page .preview-backdrop[hidden] { display: none; }
+
+        .patients-page .clinical-dialog {
+            width: min(920px, 100%);
+            max-height: min(720px, calc(100vh - 36px));
+            overflow-y: auto;
+            border-radius: var(--radius-lg);
         }
 
-            .patient-card h3 {
-                margin-bottom: 12px;
-            }
-
-        .status {
-            display: inline-block;
-            margin-top: 12px;
-            padding: 8px 14px;
-            border-radius: 20px;
-            background: #16a34a;
-            color: white;
+        .patients-page .clinical-header,
+        .patients-page .preview-header {
+            position: sticky;
+            z-index: 2;
+            top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border);
+            background: rgba(255,255,255,0.98);
         }
 
-        .actions {
-            margin-top: 20px;
+        .patients-page .clinical-header h2,
+        .patients-page .preview-header h3 {
+            margin: 0;
+            color: var(--color-primary-dark);
         }
 
-            .actions button {
-                padding: 10px 14px;
-                border: none;
-                border-radius: 10px;
-                color: white;
-                cursor: pointer;
-                margin-right: 10px;
-            }
-
-        .confirm-btn {
-            background: #16a34a;
+        .patients-page .clinical-header p {
+            margin: 4px 0 0;
+            color: var(--color-text-muted);
+            font-weight: 700;
         }
 
-        .complete-btn {
-            background: #2563eb;
+        .patients-page .clinical-close {
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: #fff;
+            color: var(--color-primary-dark);
+            cursor: pointer;
+            font-size: 22px;
         }
 
-        .delete-btn {
-            background: #dc2626;
+        .patients-page .clinical-body { padding: 18px 20px 20px; }
+
+        .patients-page .clinical-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: 10px;
         }
 
-        .view-btn {
-            background: #2563eb;
+        .patients-page .clinical-tab {
+            border: 1px solid var(--color-border);
+            background: #fff;
+            border-radius: var(--radius-md);
+            color: var(--color-text-muted);
+            cursor: pointer;
+            font-weight: 800;
+            padding: 9px 12px;
         }
 
-        @media(max-width:900px) {
+        .patients-page .clinical-tab.active,
+        .patients-page .clinical-tab:focus-visible {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: #fff;
+            outline: none;
         }
 
-    
+        .patients-page .clinical-panel[hidden] { display: none; }
+
+        .patients-page .clinical-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .patients-page .clinical-info-item {
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 11px;
+            background: rgba(244, 248, 251, 0.72);
+            min-width: 0;
+        }
+
+        .patients-page .clinical-info-item span {
+            display: block;
+            color: var(--color-text-muted);
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .patients-page .clinical-info-item strong {
+            display: block;
+            overflow-wrap: anywhere;
+        }
+
+        .patients-page .clinical-note-form {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .patients-page .clinical-note-form textarea,
+        .patients-page .clinical-note-form input,
+        .patients-page .clinical-note-form select {
+            width: 100%;
+        }
+
+        .patients-page .clinical-note-form textarea { min-height: 82px; }
+        .patients-page .clinical-note-form .span-2 { grid-column: 1 / -1; }
+
+        .patients-page .clinical-timeline {
+            display: grid;
+            gap: 10px;
+        }
+
+        .patients-page .clinical-note-card {
+            border-left: 4px solid var(--color-primary);
+        }
+
+        .patients-page .upload-panel {
+            display: grid;
+            grid-template-columns: 170px 1fr;
+            gap: 10px;
+            padding: 14px;
+            border: 1px solid rgba(47, 167, 160, 0.22);
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, rgba(47, 167, 160, 0.08), rgba(37, 99, 166, 0.05));
+        }
+
+        .patients-page .upload-panel input[type="file"],
+        .patients-page .upload-panel .add-btn { grid-column: 1 / -1; }
+        .patients-page .upload-panel .add-btn { justify-self: start; margin-top: 0; }
+
+        .patients-page .clinical-section {
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .patients-page .clinical-section h3 {
+            margin: 0 0 10px;
+            color: var(--color-primary-dark);
+            font-size: 16px;
+        }
+
+        .patients-page .file-list,
+        .patients-page .clinical-history-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .patients-page .file-row,
+        .patients-page .clinical-note-card {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: #fff;
+        }
+
+        .patients-page .clinical-note-card { grid-template-columns: 1fr; background: rgba(244, 248, 251, 0.86); }
+        .patients-page .clinical-note-card header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; color: var(--color-text-muted); font-size: 13px; font-weight: 800; }
+        .patients-page .clinical-note-card p { margin-top: 7px; color: var(--color-text); line-height: 1.45; }
+
+        .patients-page .file-row strong,
+        .patients-page .file-row span { display: block; overflow-wrap: anywhere; }
+        .patients-page .file-row span { margin-top: 4px; color: var(--color-text-muted); font-size: 13px; }
+        .patients-page .file-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .patients-page .file-download { background: var(--color-primary); }
+        .patients-page .file-view { background: var(--color-secondary); }
+        .patients-page .file-delete { background: var(--color-error); }
+
+        .patients-page .preview-dialog {
+            width: min(1100px, 100%);
+            height: min(780px, calc(100vh - 36px));
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            overflow: hidden;
+            border-radius: var(--radius-lg);
+        }
+
+        .patients-page .preview-header h3 {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .patients-page .preview-content {
+            min-height: 0;
+            display: grid;
+            place-items: center;
+            overflow: auto;
+            background: #e5e7eb;
+        }
+
+        .patients-page .preview-content iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+        .patients-page .preview-content img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        @media (max-width: 1100px) {
+            .patients-page .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .patients-page .form-grid textarea { grid-column: span 2; }
+        }
+
+        @media (max-width: 760px) {
+            .patients-page .main { padding: 18px 14px; }
+            .patients-page .topbar { align-items: flex-start; flex-direction: column; }
+            .patients-page .form-grid,
+            .patients-page .patient-meta,
+            .patients-page .upload-panel,
+            .patients-page .file-row { grid-template-columns: 1fr; }
+            .patients-page .form-grid textarea,
+            .patients-page .upload-panel input[type="file"],
+            .patients-page .upload-panel .add-btn { grid-column: 1; }
+            .patients-page .patient-grid { grid-template-columns: 1fr; }
+            .patients-page .clinical-dialog { max-height: calc(100vh - 24px); }
+            .patients-page .clinical-info-grid,
+            .patients-page .clinical-note-form { grid-template-columns: 1fr; }
+            .patients-page .clinical-note-form .span-2 { grid-column: auto; }
+        }
     </style>
 
     <link rel="stylesheet" href="styles.css">
 
 </head>
 
-<body>
+<body class="patients-page">
 
     <!-- SIDEBAR -->
 
@@ -249,13 +626,13 @@
         <div class="topbar">
 
             <h1 id="pacientesTitle">
-                Gestión de Pacientes
+                GestiÃ³n de Pacientes
             </h1>
 
             <button class="logout-btn"
                     onclick="cerrarSesion()">
 
-                Cerrar Sesión
+                Cerrar SesiÃ³n
 
             </button>
 
@@ -275,45 +652,42 @@
 
                 <input type="text"
                        id="nombre"
-                       placeholder="Nombre">
+                       placeholder="Nombre completo">
 
-                <select id="doctor">
+                <input type="text"
+                       id="cedula"
+                       placeholder="CÃ©dula de identidad">
 
-                    <option>
-                        Dr. Gómez
-                    </option>
+                <input type="text"
+                       id="codigoPaciente"
+                       placeholder="CÃ³digo del paciente (opcional)">
 
-                    <option>
-                        Dra. Martínez
-                    </option>
+                <input type="tel"
+                       id="telefono"
+                       placeholder="TelÃ©fono">
 
+                <input type="email"
+                       id="email"
+                       placeholder="Correo electrÃ³nico">
+
+                <select id="doctorAsignado">
+                    <option value="">Sin doctor asignado por ahora</option>
                 </select>
 
-                <select id="proceso">
+                <textarea id="notas"
+                          placeholder="Notas generales, alergias o informaciÃ³n importante"></textarea>
 
-                    <option>
-                        Limpieza
-                    </option>
+                <textarea id="alergias"
+                          placeholder="Alergias conocidas"></textarea>
 
-                    <option>
-                        Ortodoncia
-                    </option>
+                <textarea id="antecedentesMedicos"
+                          placeholder="Antecedentes mÃ©dicos relevantes"></textarea>
 
-                    <option>
-                        Endodoncia
-                    </option>
+                <textarea id="medicamentosActuales"
+                          placeholder="Medicamentos actuales"></textarea>
 
-                    <option>
-                        Extracción
-                    </option>
-
-                </select>
-
-                <input type="date"
-                       id="fecha">
-
-                <input type="time"
-                       id="hora">
+                <textarea id="motivoConsulta"
+                          placeholder="Motivo de consulta"></textarea>
 
             </div>
 
@@ -332,7 +706,7 @@
 
             <input type="text"
                    id="busqueda"
-                   placeholder="Buscar paciente..."
+                   placeholder="Buscar paciente por nombre, cÃ©dula o cÃ³digo..."
                    onkeyup="renderPacientes()">
 
         </div>
@@ -346,7 +720,114 @@
 
     </div>
 
-    <script src="roles.js"></script>
+    <div class="clinical-backdrop" id="clinicalModal" hidden>
+        <section class="clinical-dialog" role="dialog" aria-modal="true" aria-labelledby="clinicalTitle">
+            <div class="clinical-header">
+                <div>
+                    <h2 id="clinicalTitle">Expediente clÃ­nico</h2>
+                    <p id="clinicalPatientName"></p>
+                </div>
+                <button type="button" class="clinical-close" id="clinicalClose" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="clinical-body">
+                <div class="clinical-tabs" role="tablist" aria-label="Secciones del expediente clinico">
+                    <button type="button" class="clinical-tab active" data-clinical-tab="general" onclick="cambiarPestanaExpediente('general')">Informacion General</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="historia" onclick="cambiarPestanaExpediente('historia')">Historia Clinica</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="evaluacion" onclick="cambiarPestanaExpediente('evaluacion')">Evaluacion Clinica</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="procedimientos" onclick="cambiarPestanaExpediente('procedimientos')">Procedimientos</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="evolucion" onclick="cambiarPestanaExpediente('evolucion')">Evolucion</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="archivos" onclick="cambiarPestanaExpediente('archivos')">Imagenes y Documentos</button>
+                </div>
+
+                <section class="clinical-panel" data-clinical-panel="general">
+                    <div class="clinical-info-grid" id="clinicalGeneralSummary"></div>
+                </section>
+
+                <section class="clinical-panel" data-clinical-panel="historia" hidden>
+                    <div class="clinical-info-grid" id="clinicalHistorySummary"></div>
+                </section>
+
+                <section class="clinical-panel" data-clinical-panel="evaluacion" hidden>
+                    <div class="clinical-info-grid" id="clinicalEvaluationSummary"></div>
+                </section>
+
+                <section class="clinical-panel" data-clinical-panel="procedimientos" hidden>
+                    <div class="clinical-history-list" id="clinicalProcedureList"></div>
+                </section>
+
+                <section class="clinical-panel" data-clinical-panel="evolucion" hidden>
+                    <form class="clinical-note-form" id="clinicalNoteForm">
+                        <select id="clinicalNoteType" aria-label="Tipo de registro clinico">
+                            <option value="consulta_ambulatoria">Consulta ambulatoria</option>
+                            <option value="evolucion">Hoja de evolucion</option>
+                            <option value="procedimiento">Procedimiento realizado</option>
+                        </select>
+                        <select id="consultationStatus" aria-label="Estado de consulta">
+                            <option value="en_espera">En espera</option>
+                            <option value="en_consulta">En consulta</option>
+                            <option value="atendido">Atendido</option>
+                            <option value="finalizado">Finalizado</option>
+                        </select>
+                        <input type="text" id="clinicalProcedureName" placeholder="Procedimiento realizado">
+                        <select id="procedureStatus" aria-label="Estado del procedimiento">
+                            <option value="realizado">Procedimiento realizado</option>
+                            <option value="programado">Procedimiento programado</option>
+                            <option value="pendiente">Procedimiento pendiente</option>
+                            <option value="cancelado">Procedimiento cancelado</option>
+                        </select>
+                        <input type="text" id="clinicalToothNumber" placeholder="Pieza dental (opcional)">
+                        <input type="date" id="nextReviewDate" aria-label="Proxima revision">
+                        <textarea class="span-2" id="chiefComplaint" placeholder="Motivo de consulta"></textarea>
+                        <textarea class="span-2" id="clinicalEvaluation" placeholder="Evaluacion clinica"></textarea>
+                        <textarea class="span-2" id="odontologicalDiagnosis" placeholder="Diagnostico odontologico"></textarea>
+                        <textarea class="span-2" id="performedProcedures" placeholder="Procedimientos realizados"></textarea>
+                        <textarea id="clinicalIndications" placeholder="Indicaciones"></textarea>
+                        <textarea id="clinicalObservations" placeholder="Observaciones"></textarea>
+                        <textarea id="clinicalMedications" placeholder="Medicamentos indicados"></textarea>
+                        <textarea id="materialUsed" placeholder="Material utilizado (opcional)"></textarea>
+                        <textarea class="span-2" id="clinicalEvolutionText" placeholder="Evolucion / hallazgos clinicos"></textarea>
+                        <input type="date" id="nextAppointmentDate" aria-label="Proxima cita">
+                        <input type="time" id="nextAppointmentTime" aria-label="Hora proxima cita">
+                        <button type="submit" class="add-btn span-2">Guardar evolucion clinica</button>
+                    </form>
+                    <div class="clinical-timeline" id="clinicalHistoryList"></div>
+                </section>
+
+                <section class="clinical-panel" data-clinical-panel="archivos" hidden>
+                    <form class="upload-panel" id="clinicalUploadForm">
+                        <select id="fileCategory" name="category" aria-label="Tipo de archivo">
+                            <option value="radiografia">Radiografia / RX</option>
+                            <option value="fotografia">Fotografia clinica</option>
+                            <option value="documento">Documento</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                        <input type="text" id="fileDescription" name="description" maxlength="500"
+                               placeholder="Descripcion breve (opcional)">
+                        <input type="file" id="clinicalFile" name="file"
+                               accept=".pdf,.jpg,.jpeg,.png,.webp,.tif,.tiff,.dcm,application/dicom" required>
+                        <button type="submit" class="add-btn">Subir al expediente</button>
+                    </form>
+                    <section class="clinical-section">
+                        <h3>Imagenes y documentos clinicos</h3>
+                        <div class="file-list" id="clinicalFileList"></div>
+                    </section>
+                </section>
+            </div>
+        </section>
+    </div>
+
+    <div class="preview-backdrop" id="filePreviewModal" hidden>
+        <section class="preview-dialog" role="dialog" aria-modal="true" aria-labelledby="filePreviewTitle">
+            <div class="preview-header">
+                <h3 id="filePreviewTitle">Vista del archivo</h3>
+                <button type="button" class="clinical-close" id="filePreviewClose" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="preview-content" id="filePreviewContent"></div>
+        </section>
+    </div>
+
+    <script src="api.js?v=20260626e"></script>
+    <script src="roles.js?v=20260626e"></script>
 
     <script>
 
@@ -359,8 +840,66 @@
                 localStorage.getItem("pacientes")
             ) || [];
 
+        let apiActiva = !!DentalApi.getToken();
         let rol = DentalRoles.rol;
         let doctorActual = DentalRoles.doctor;
+        let doctores = [];
+        let pacienteExpediente = null;
+        let archivosExpediente = [];
+        let notasClinicas = [];
+        let previewObjectUrl = "";
+
+        async function cargarDoctores() {
+            if (!apiActiva || rol === "doctor") {
+                return;
+            }
+
+            try {
+                doctores = await DentalApi.getDoctors();
+                const select = document.getElementById("doctorAsignado");
+                select.innerHTML = '<option value="">Sin doctor asignado por ahora</option>' +
+                    doctores.map(doctor => `
+                        <option value="${DentalRoles.escapeHtml(doctor.id)}">
+                            ${DentalRoles.escapeHtml(doctor.name)}
+                        </option>
+                    `).join("");
+            }
+            catch (error) {
+                DentalRoles.notify("No se pudo cargar la lista de doctores.", "error");
+            }
+        }
+
+        async function cargarPacientes() {
+            if (!apiActiva) {
+                renderPacientes();
+                return;
+            }
+
+            try {
+                pacientes = await DentalApi.getPatients();
+                localStorage.setItem("pacientes", JSON.stringify(pacientes));
+            }
+            catch (error) {
+                pacientes = [];
+                DentalRoles.notify("No se pudo cargar pacientes desde el servidor.", "error");
+            }
+
+            renderPacientes();
+        }
+
+        function limpiarFormularioPaciente() {
+            document.getElementById("nombre").value = "";
+            document.getElementById("cedula").value = "";
+            document.getElementById("codigoPaciente").value = "";
+            document.getElementById("telefono").value = "";
+            document.getElementById("email").value = "";
+            document.getElementById("notas").value = "";
+            document.getElementById("alergias").value = "";
+            document.getElementById("antecedentesMedicos").value = "";
+            document.getElementById("medicamentosActuales").value = "";
+            document.getElementById("motivoConsulta").value = "";
+            document.getElementById("doctorAsignado").value = "";
+        }
 
         function aplicarRolesPacientes() {
 
@@ -369,9 +908,9 @@
             let note = document.getElementById("roleNote");
 
             if (rol === "doctor") {
-                title.innerText = "Mis Pacientes";
+                title.innerText = "Pacientes de la clÃ­nica";
                 form.style.display = "none";
-                note.innerText = "Vista médica: solo se muestran los pacientes asignados a " + doctorActual + ".";
+                note.innerText = "Vista mÃ©dica: puede consultar todos los pacientes e identificar los asignados a " + doctorActual + ".";
             }
             else if (rol === "recepcion") {
                 title.innerText = "Pacientes - Recepci\u00f3n";
@@ -392,71 +931,88 @@
                     index: index
                 }))
                 .filter(item => {
-
-                    if (rol !== "doctor") {
-                        return true;
-                    }
-
-                    return DentalRoles.sameDoctor(
-                        item.paciente.doctor,
-                        doctorActual
-                    );
-
+                    const filtro = new URLSearchParams(window.location.search).get("filtro");
+                    return filtro !== "sin-notas" || !(item.paciente.notes || "").trim();
                 });
 
         }
 
         /* AGREGAR */
 
-        function agregarPaciente() {
+        async function agregarPaciente() {
 
             if (rol === "doctor") {
-                DentalRoles.notify("Los doctores solo pueden revisar sus pacientes asignados.", "warning");
+                DentalRoles.notify("Los doctores no pueden registrar pacientes desde esta pantalla.", "warning");
                 return;
             }
 
             let nombre = document.getElementById("nombre").value.trim();
-            let doctor = document.getElementById("doctor").value;
-            let proceso = document.getElementById("proceso").value.trim();
-            let fecha = document.getElementById("fecha").value;
-            let hora = document.getElementById("hora").value;
+            let cedula = document.getElementById("cedula").value.trim();
+            let codigoPaciente = document.getElementById("codigoPaciente").value.trim();
+            let telefono = document.getElementById("telefono").value.trim();
+            let email = document.getElementById("email").value.trim();
+            let notas = document.getElementById("notas").value.trim();
+            let alergias = document.getElementById("alergias").value.trim();
+            let antecedentesMedicos = document.getElementById("antecedentesMedicos").value.trim();
+            let medicamentosActuales = document.getElementById("medicamentosActuales").value.trim();
+            let motivoConsulta = document.getElementById("motivoConsulta").value.trim();
+            let doctorId = document.getElementById("doctorAsignado").value;
 
-            if (!nombre || !doctor || !proceso || !fecha || !hora) {
-                DentalRoles.notify("Completa todos los campos del paciente.", "warning");
+            if (!nombre) {
+                DentalRoles.notify("Escribe el nombre del paciente.", "warning");
                 return;
             }
 
-            const hoy = new Date().toISOString().split("T")[0];
-            if (fecha < hoy) {
-                DentalRoles.notify("La fecha no puede ser anterior a hoy.", "warning");
-                return;
-            }
-
-            const citaDuplicada = pacientes.some(item =>
-                item.fecha === fecha &&
-                item.hora === hora &&
-                DentalRoles.sameDoctor(item.doctor, doctor)
+            const pacienteDuplicado = pacientes.some(item =>
+                DentalRoles.normalizeText(item.nombre) === DentalRoles.normalizeText(nombre) &&
+                (!telefono || !item.phone || item.phone === telefono)
             );
 
-            if (citaDuplicada) {
-                DentalRoles.notify("Ese doctor ya tiene una cita en esa fecha y hora.", "warning");
+            if (pacienteDuplicado) {
+                DentalRoles.notify("Ya existe una ficha similar para ese paciente.", "warning");
                 return;
+            }
+
+            if (apiActiva) {
+                try {
+                    await DentalApi.createPatient({
+                        nombre,
+                        nationalId: cedula,
+                        patientCode: codigoPaciente,
+                        phone: telefono,
+                        email,
+                        notes: notas,
+                        allergies: alergias,
+                        medicalHistory: antecedentesMedicos,
+                        currentMedications: medicamentosActuales,
+                        chiefComplaint: motivoConsulta,
+                        doctorId
+                    });
+
+                    await cargarPacientes();
+                    limpiarFormularioPaciente();
+                    DentalRoles.notify("Paciente registrado correctamente.", "success");
+                    return;
+                }
+                catch (error) {
+                    DentalRoles.notify(error.message || "No se pudo registrar el paciente.", "error");
+                    return;
+                }
             }
 
             let paciente = {
 
                 nombre: nombre,
-
-                doctor: doctor,
-
-                proceso: proceso,
-
-                fecha: fecha,
-
-                hora: hora,
-
-                estado:
-                    "Pendiente"
+                national_id: cedula,
+                patient_code: codigoPaciente,
+                phone: telefono,
+                email: email,
+                notes: notas,
+                allergies: alergias,
+                medical_history: antecedentesMedicos,
+                current_medications: medicamentosActuales,
+                diagnosis: motivoConsulta,
+                motivo_consulta: motivoConsulta
 
             };
 
@@ -472,6 +1028,7 @@
             aplicarRolesPacientes();
 
         renderPacientes();
+            limpiarFormularioPaciente();
 
             DentalRoles.notify("Paciente registrado correctamente.", "success");
 
@@ -481,6 +1038,14 @@
 
         function estadoClase(estado) {
             return DentalRoles.normalizeText(estado).replace(/\s+/g, "-");
+        }
+
+        function pacienteEsDelDoctor(paciente) {
+            return !!paciente.is_assigned_to_current_doctor || DentalRoles.sameDoctor(paciente.doctor, doctorActual);
+        }
+
+        function pacienteFueAtendidoPorDoctor(paciente) {
+            return !!paciente.has_attended_current_doctor;
         }
 
         function renderPacientes() {
@@ -498,13 +1063,20 @@
             grid.innerHTML = "";
 
             let visibles = pacientesVisibles()
-                .filter(item =>
-                    (item.paciente.nombre || "").toLowerCase()
-                        .includes(busqueda)
-                );
+                .filter(item => {
+                    const p = item.paciente;
+                    const searchable = [
+                        p.nombre,
+                        p.national_id,
+                        p.patient_code,
+                        p.phone,
+                        p.doctor
+                    ].join(" ").toLowerCase();
+                    return searchable.includes(busqueda);
+                });
 
             if (visibles.length === 0) {
-                grid.innerHTML = "<div class='empty-state'>No hay pacientes para mostrar.</div>";
+                grid.innerHTML = `<div class='empty-state'>${busqueda ? "No hay pacientes que coincidan con la bÃºsqueda actual." : "No hay pacientes para mostrar."}</div>`;
                 return;
             }
 
@@ -512,76 +1084,89 @@
 
                 let p = item.paciente;
                 let index = item.index;
-                let estado = estadoClase(p.estado);
-                let puedeConfirmar = estado === "pendiente";
-                let puedeCompletar = estado !== "completada";
-                let confirmButton = puedeConfirmar ? `
-                    <button class="confirm-btn" onclick="confirmar(${index})">
-                        Confirmar
-                    </button>
-                ` : "";
-                let completeButton = puedeCompletar ? `
-                    <button class="complete-btn" onclick="completar(${index})">
-                        Completar
-                    </button>
-                ` : "";
                 let deleteButton = rol === "doctor" ? "" : `
                     <button class="delete-btn" onclick="eliminar(${index})">
                         Eliminar
                     </button>
                 `;
-
+                let assignButton = rol === "doctor" ? "" : `
+                    <button class="assign-btn" onclick="asignarDoctor(${index})">
+                        ${p.doctor ? "Cambiar doctor" : "Asignar doctor"}
+                    </button>
+                `;
+                let esPacienteDelDoctor = rol === "doctor" && pacienteEsDelDoctor(p);
+                let fueAtendidoPorDoctor = rol === "doctor" && pacienteFueAtendidoPorDoctor(p);
+                let ownershipBadge = rol === "doctor"
+                    ? `<span class="patient-badge ${esPacienteDelDoctor ? "mine" : "neutral"}">${esPacienteDelDoctor ? "Mi paciente" : (fueAtendidoPorDoctor ? "Visita atendida" : "Paciente general")}</span>`
+                    : "";
+                let identityBadge = p.patient_code
+                    ? `<span class="patient-badge neutral">${DentalRoles.escapeHtml(p.patient_code)}</span>`
+                    : "";
+                let takeButton = rol === "doctor" && !esPacienteDelDoctor ? `
+                    <button class="assign-btn" onclick="tomarPaciente(${index})">
+                        Atender visita
+                    </button>
+                ` : "";
+                let followButton = rol === "doctor" && !esPacienteDelDoctor && !p.doctor_id ? `
+                    <button class="complete-btn" onclick="asignarPacienteSeguimiento(${index})">
+                        Asignar a mi seguimiento
+                    </button>
+                ` : "";
+                let clinicalButton = rol === "recepcion" ? "" : `
+                    <button class="file-btn" onclick="abrirExpediente(${index})" ${rol === "doctor" && !esPacienteDelDoctor && !fueAtendidoPorDoctor ? "disabled title=\"Atiende la visita antes de abrir el expediente\"" : ""}>
+                        Expediente (${Number(p.file_count || 0)})
+                    </button>
+                `;
                 grid.innerHTML += `
 
-            <div class="patient-card">
+            <article class="patient-card">
 
-                <h3>
-                    ${p.nombre}
-                </h3>
+                <header>
+                    <div class="patient-title">
+                        <h3 title="${DentalRoles.escapeHtml(p.nombre)}">
+                            ${DentalRoles.escapeHtml(p.nombre)}
+                        </h3>
+                    </div>
+                    <div class="patient-badges">
+                        ${ownershipBadge}
+                        ${identityBadge}
+                    </div>
+                </header>
 
-                <p>
-                    Doctor: ${p.doctor}
-                </p>
-
-                <br>
-
-                <p>
-                    Procedimiento: ${p.proceso}
-                </p>
-
-                <br>
-
-                <p>
-                    Fecha: ${p.fecha}
-                </p>
-
-                <br>
-
-                <p>
-                    Hora: ${p.hora}
-                </p>
-
-                <div class="status ${estadoClase(p.estado)}">
-
-                    ${p.estado}
-
+                <div class="patient-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">CÃ©dula</span>
+                        <span class="meta-value" title="${DentalRoles.escapeHtml(p.national_id || "No registrada")}">${DentalRoles.escapeHtml(p.national_id || "No registrada")}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">TelÃ©fono</span>
+                        <span class="meta-value" title="${DentalRoles.escapeHtml(p.phone || "No registrado")}">${DentalRoles.escapeHtml(p.phone || "No registrado")}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Correo</span>
+                        <span class="meta-value" title="${DentalRoles.escapeHtml(p.email || "No registrado")}">${DentalRoles.escapeHtml(p.email || "No registrado")}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Doctor</span>
+                        <span class="meta-value" title="${DentalRoles.escapeHtml(p.doctor || "Sin asignar")}">${DentalRoles.escapeHtml(p.doctor || "Sin asignar")}</span>
+                    </div>
                 </div>
 
                 <div class="actions">
 
-                    <button class="view-btn" onclick="verDetallePaciente(${index})">
+                    <button class="view-btn" onclick="verDetallePaciente(${index})" title="Ver detalle del paciente">
                         Ver detalle
                     </button>
 
-                    ${confirmButton}
-
-                    ${completeButton}
-
+                    ${clinicalButton}
+                    ${takeButton}
+                    ${followButton}
+                    ${assignButton}
                     ${deleteButton}
 
                 </div>
 
-            </div>
+            </article>
 
             `;
 
@@ -589,9 +1174,422 @@
 
         }
 
+
+        async function tomarPaciente(index) {
+            const paciente = pacientes[index];
+            if (!paciente?.id || rol !== "doctor") {
+                return;
+            }
+
+            try {
+                await DentalApi.claimPatient(paciente.id);
+                await cargarPacientes();
+                DentalRoles.notify("Visita registrada para este doctor.", "success");
+            }
+            catch (error) {
+                DentalRoles.notify(error.message || "No se pudo registrar la visita.", "error");
+            }
+        }
+
+        async function asignarPacienteSeguimiento(index) {
+            const paciente = pacientes[index];
+            if (!paciente?.id || rol !== "doctor") {
+                return;
+            }
+
+            try {
+                await DentalApi.assignPatientToMe(paciente.id);
+                await cargarPacientes();
+                DentalRoles.notify("Paciente asignado a tu seguimiento.", "success");
+            }
+            catch (error) {
+                DentalRoles.notify(error.message || "No se pudo asignar el paciente.", "error");
+            }
+        }
+        async function asignarDoctor(index) {
+            const paciente = pacientes[index];
+            if (!paciente?.id || rol === "doctor") {
+                return;
+            }
+
+            if (!doctores.length) {
+                await cargarDoctores();
+            }
+
+            const current = document.querySelector(".assign-backdrop");
+            if (current) {
+                current.remove();
+            }
+
+            const backdrop = document.createElement("div");
+            backdrop.className = "confirm-backdrop assign-backdrop";
+            backdrop.innerHTML = `
+                <div class="confirm-dialog" role="dialog" aria-modal="true">
+                    <h3>Asignar doctor</h3>
+                    <p>${DentalRoles.escapeHtml(paciente.nombre)}</p>
+                    <select data-doctor-select style="width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px">
+                        <option value="">Selecciona un doctor</option>
+                        ${doctores.map(doctor => `
+                            <option value="${DentalRoles.escapeHtml(doctor.id)}"
+                                ${doctor.id === paciente.doctor_id ? "selected" : ""}>
+                                ${DentalRoles.escapeHtml(doctor.name)}
+                            </option>
+                        `).join("")}
+                    </select>
+                    <div class="confirm-actions">
+                        <button type="button" class="confirm-secondary" data-cancel>Cancelar</button>
+                        <button type="button" class="confirm-danger success" data-assign>Asignar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(backdrop);
+
+            const close = () => backdrop.remove();
+            backdrop.querySelector("[data-cancel]").addEventListener("click", close);
+            backdrop.addEventListener("click", event => {
+                if (event.target === backdrop) close();
+            });
+            backdrop.querySelector("[data-assign]").addEventListener("click", async () => {
+                const doctorId = backdrop.querySelector("[data-doctor-select]").value;
+                if (!doctorId) {
+                    DentalRoles.notify("Selecciona un doctor.", "warning");
+                    return;
+                }
+
+                try {
+                    await DentalApi.assignPatient(paciente.id, doctorId);
+                    close();
+                    await cargarPacientes();
+                    DentalRoles.notify("Doctor asignado y notificado.", "success");
+                }
+                catch (error) {
+                    DentalRoles.notify(error.message, "error");
+                }
+            });
+        }
+
+        function formatFileSize(bytes) {
+            const size = Number(bytes || 0);
+            if (size < 1024) return `${size} B`;
+            if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+            return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+        }
+
+        async function abrirExpediente(index) {
+            const paciente = pacientes[index];
+            if (!paciente?.id || rol === "recepcion") {
+                DentalRoles.notify("No tienes acceso al expediente clÃ­nico.", "warning");
+                return;
+            }
+
+            pacienteExpediente = paciente;
+            document.getElementById("clinicalPatientName").textContent = paciente.nombre;
+            document.getElementById("clinicalModal").hidden = false;
+            cambiarPestanaExpediente("general");
+            await Promise.all([
+                cargarArchivosPaciente(),
+                cargarEvolucionPaciente()
+            ]);
+        }
+
+        function cerrarExpediente() {
+            cerrarVistaArchivo();
+            document.getElementById("clinicalModal").hidden = true;
+            pacienteExpediente = null;
+            archivosExpediente = [];
+            notasClinicas = [];
+            document.getElementById("clinicalFileList").innerHTML = "";
+            document.getElementById("clinicalHistoryList").innerHTML = "";
+            document.getElementById("clinicalUploadForm").reset();
+            document.getElementById("clinicalNoteForm").reset();
+        }
+
+        function cambiarPestanaExpediente(tab) {
+            document.querySelectorAll("[data-clinical-tab]").forEach(button => {
+                const active = button.dataset.clinicalTab === tab;
+                button.classList.toggle("active", active);
+                button.setAttribute("aria-selected", active ? "true" : "false");
+            });
+
+            document.querySelectorAll("[data-clinical-panel]").forEach(panel => {
+                panel.hidden = panel.dataset.clinicalPanel !== tab;
+            });
+        }
+
+        function valorClinico(value, fallback = "No registrado") {
+            return (value || "").toString().trim() || fallback;
+        }
+
+        function renderInfoGrid(elementId, items) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = items.map(item => `
+                <div class="clinical-info-item">
+                    <span>${DentalRoles.escapeHtml(item.label)}</span>
+                    <strong>${DentalRoles.escapeHtml(valorClinico(item.value))}</strong>
+                </div>
+            `).join("");
+        }
+
+        function estadoClinico(value) {
+            const labels = {
+                consulta_ambulatoria: "Consulta ambulatoria",
+                procedimiento: "Procedimiento",
+                evolucion: "Evolucion",
+                en_espera: "En espera",
+                en_consulta: "En consulta",
+                atendido: "Atendido",
+                finalizado: "Finalizado",
+                pendiente: "Pendiente",
+                programado: "Programado",
+                realizado: "Realizado",
+                cancelado: "Cancelado"
+            };
+            return labels[value] || value || "Evolucion";
+        }
+
+        function renderResumenExpediente() {
+            if (!pacienteExpediente) return;
+
+            renderInfoGrid("clinicalGeneralSummary", [
+                { label: "Paciente", value: pacienteExpediente.nombre },
+                { label: "Codigo", value: pacienteExpediente.patient_code },
+                { label: "Cedula", value: pacienteExpediente.national_id },
+                { label: "Telefono", value: pacienteExpediente.phone },
+                { label: "Correo", value: pacienteExpediente.email },
+                { label: "Doctor asignado", value: pacienteExpediente.doctor },
+                { label: "Proxima cita", value: pacienteExpediente.fecha ? `${pacienteExpediente.fecha} ${pacienteExpediente.hora || ""}`.trim() : "Sin cita registrada" },
+                { label: "Estado", value: pacienteExpediente.estado }
+            ]);
+
+            renderInfoGrid("clinicalHistorySummary", [
+                { label: "Motivo de consulta", value: pacienteExpediente.motivo_consulta || pacienteExpediente.diagnosis },
+                { label: "Antecedentes medicos", value: pacienteExpediente.medical_history },
+                { label: "Antecedentes odontologicos", value: pacienteExpediente.notes },
+                { label: "Alergias", value: pacienteExpediente.allergies },
+                { label: "Medicamentos", value: pacienteExpediente.current_medications },
+                { label: "Enfermedades sistemicas", value: "Preparado para registro clinico" },
+                { label: "Habitos", value: "Preparado para registro clinico" },
+                { label: "Observaciones", value: pacienteExpediente.notes }
+            ]);
+
+            const ultimaEvaluacion = notasClinicas.find(note =>
+                note.evaluacion_clinica || note.diagnostico_odontologico || note.hallazgos_clinicos || note.estado_general
+            ) || {};
+
+            renderInfoGrid("clinicalEvaluationSummary", [
+                { label: "Estado general", value: ultimaEvaluacion.estado_general },
+                { label: "Hallazgos clinicos", value: ultimaEvaluacion.hallazgos_clinicos || ultimaEvaluacion.evaluacion_clinica },
+                { label: "Evaluacion clinica", value: ultimaEvaluacion.evaluacion_clinica },
+                { label: "Diagnostico odontologico", value: ultimaEvaluacion.diagnostico_odontologico },
+                { label: "Indicaciones", value: ultimaEvaluacion.indicaciones || ultimaEvaluacion.receta },
+                { label: "Proxima cita", value: ultimaEvaluacion.proxima_cita_fecha ? `${ultimaEvaluacion.proxima_cita_fecha} ${ultimaEvaluacion.proxima_cita_hora || ""}`.trim() : "No programada" }
+            ]);
+        }
+
+        function renderProcedimientosClinicos() {
+            const list = document.getElementById("clinicalProcedureList");
+            const procedimientos = notasClinicas.filter(note =>
+                note.note_type === "procedimiento" || note.procedimiento || note.procedimientos_realizados
+            );
+
+            list.innerHTML = procedimientos.length
+                ? procedimientos.map(note => `
+                    <article class="clinical-note-card">
+                        <header>
+                            <span>${DentalRoles.escapeHtml(note.fecha_registro || "Sin fecha")}</span>
+                            <span>${DentalRoles.escapeHtml(note.doctor || "Doctor no asignado")}</span>
+                        </header>
+                        <p><strong>Estado:</strong> ${DentalRoles.escapeHtml(estadoClinico(note.procedure_status || "realizado"))}</p>
+                        ${note.procedimiento ? `<p><strong>Procedimiento:</strong> ${DentalRoles.escapeHtml(note.procedimiento)}</p>` : ""}
+                        ${note.tooth_number ? `<p><strong>Pieza dental:</strong> ${DentalRoles.escapeHtml(note.tooth_number)}</p>` : ""}
+                        ${note.descripcion_clinica ? `<p><strong>Descripcion clinica:</strong> ${DentalRoles.escapeHtml(note.descripcion_clinica)}</p>` : ""}
+                        ${note.procedimientos_realizados ? `<p><strong>Realizado:</strong> ${DentalRoles.escapeHtml(note.procedimientos_realizados)}</p>` : ""}
+                        ${note.material_utilizado ? `<p><strong>Material:</strong> ${DentalRoles.escapeHtml(note.material_utilizado)}</p>` : ""}
+                        ${note.proxima_revision ? `<p><strong>Proxima revision:</strong> ${DentalRoles.escapeHtml(note.proxima_revision)}</p>` : ""}
+                        ${note.observaciones ? `<p><strong>Observaciones:</strong> ${DentalRoles.escapeHtml(note.observaciones)}</p>` : ""}
+                    </article>
+                `).join("")
+                : '<div class="empty-state">Este paciente todavia no tiene procedimientos clinicos registrados.</div>';
+        }
+
+        function renderLineaTiempoClinica() {
+            const list = document.getElementById("clinicalHistoryList");
+            list.innerHTML = notasClinicas.length
+                ? notasClinicas.map(note => `
+                    <article class="clinical-note-card">
+                        <header>
+                            <span>${DentalRoles.escapeHtml(note.fecha_registro || "Sin fecha")}</span>
+                            <span>${DentalRoles.escapeHtml(note.doctor || "Doctor no asignado")}</span>
+                            <span>${DentalRoles.escapeHtml(estadoClinico(note.note_type))}</span>
+                        </header>
+                        ${note.consultation_status ? `<p><strong>Estado consulta:</strong> ${DentalRoles.escapeHtml(estadoClinico(note.consultation_status))}</p>` : ""}
+                        ${note.motivo_consulta ? `<p><strong>Motivo de consulta:</strong> ${DentalRoles.escapeHtml(note.motivo_consulta)}</p>` : ""}
+                        ${note.estado_general ? `<p><strong>Estado general:</strong> ${DentalRoles.escapeHtml(note.estado_general)}</p>` : ""}
+                        ${note.hallazgos_clinicos ? `<p><strong>Hallazgos clinicos:</strong> ${DentalRoles.escapeHtml(note.hallazgos_clinicos)}</p>` : ""}
+                        ${note.evaluacion_clinica ? `<p><strong>Evaluacion clinica:</strong> ${DentalRoles.escapeHtml(note.evaluacion_clinica)}</p>` : ""}
+                        ${note.diagnostico_odontologico ? `<p><strong>Diagnostico odontologico:</strong> ${DentalRoles.escapeHtml(note.diagnostico_odontologico)}</p>` : ""}
+                        ${note.procedimiento ? `<p><strong>Procedimiento:</strong> ${DentalRoles.escapeHtml(note.procedimiento)}</p>` : ""}
+                        ${note.procedimientos_realizados ? `<p><strong>Procedimientos realizados:</strong> ${DentalRoles.escapeHtml(note.procedimientos_realizados)}</p>` : ""}
+                        ${note.medicamentos_indicados ? `<p><strong>Medicamentos:</strong> ${DentalRoles.escapeHtml(note.medicamentos_indicados)}</p>` : ""}
+                        ${note.indicaciones ? `<p><strong>Indicaciones:</strong> ${DentalRoles.escapeHtml(note.indicaciones)}</p>` : ""}
+                        ${note.observaciones ? `<p><strong>Observaciones:</strong> ${DentalRoles.escapeHtml(note.observaciones)}</p>` : ""}
+                        ${note.proxima_cita_fecha ? `<p><strong>Proxima cita:</strong> ${DentalRoles.escapeHtml(`${note.proxima_cita_fecha} ${note.proxima_cita_hora || ""}`.trim())}</p>` : ""}
+                        <p><strong>Nota clinica:</strong> ${DentalRoles.escapeHtml(note.nota)}</p>
+                    </article>
+                `).join("")
+                : '<div class="empty-state">Este paciente todavia no tiene evolucion clinica registrada.</div>';
+        }
+
+        async function cargarEvolucionPaciente() {
+            const list = document.getElementById("clinicalHistoryList");
+            list.innerHTML = "<p>Cargando evolucion clinica...</p>";
+
+            if (!apiActiva || !pacienteExpediente?.id) {
+                list.innerHTML = '<div class="empty-state">La evolucion clinica requiere conexion con la API.</div>';
+                renderResumenExpediente();
+                renderProcedimientosClinicos();
+                return;
+            }
+
+            try {
+                notasClinicas = await DentalApi.getClinicalNotes({ patientId: pacienteExpediente.id });
+                renderResumenExpediente();
+                renderProcedimientosClinicos();
+                renderLineaTiempoClinica();
+            }
+            catch (error) {
+                list.innerHTML = '<div class="empty-state">No fue posible cargar la evolucion clinica.</div>';
+                DentalRoles.notify(error.message, "error");
+            }
+        }
+        async function cargarArchivosPaciente() {
+            const list = document.getElementById("clinicalFileList");
+            list.innerHTML = "<p>Cargando expediente...</p>";
+
+            try {
+                archivosExpediente = await DentalApi.getPatientFiles(pacienteExpediente.id);
+                list.innerHTML = archivosExpediente.length
+                    ? archivosExpediente.map(file => `
+                        <article class="file-row">
+                            <div>
+                                <strong>${DentalRoles.escapeHtml(file.name)}</strong>
+                                <span>
+                                    ${DentalRoles.escapeHtml(file.category)} Â· ${formatFileSize(file.size_bytes)}
+                                    Â· ${new Date(file.created_at).toLocaleDateString("es-DO")}
+                                </span>
+                                ${file.description ? `<span>${DentalRoles.escapeHtml(file.description)}</span>` : ""}
+                            </div>
+                            <div class="file-actions">
+                                <button type="button" class="file-view"
+                                    onclick="verArchivo('${file.id}')">
+                                    Ver
+                                </button>
+                                <button type="button" class="file-download"
+                                    onclick="descargarArchivo('${file.id}')">
+                                    Descargar
+                                </button>
+                                <button type="button" class="file-delete"
+                                    onclick="eliminarArchivo('${file.id}')">
+                                    Eliminar
+                                </button>
+                            </div>
+                        </article>
+                    `).join("")
+                    : '<div class="empty-state">Este paciente todavÃ­a no tiene archivos clÃ­nicos.</div>';
+            }
+            catch (error) {
+                list.innerHTML = '<div class="empty-state">No fue posible cargar el expediente.</div>';
+                DentalRoles.notify(error.message, "error");
+            }
+        }
+
+        async function descargarArchivo(fileId) {
+            const file = archivosExpediente.find(item => item.id === fileId);
+            try {
+                await DentalApi.downloadPatientFile(
+                    pacienteExpediente.id,
+                    fileId,
+                    file?.name || "archivo"
+                );
+            }
+            catch (error) {
+                DentalRoles.notify(error.message, "error");
+            }
+        }
+
+        async function verArchivo(fileId) {
+            const file = archivosExpediente.find(item => item.id === fileId);
+            if (!file || !pacienteExpediente) {
+                return;
+            }
+
+            try {
+                const preview = await DentalApi.viewPatientFile(pacienteExpediente.id, fileId);
+                cerrarVistaArchivo();
+                previewObjectUrl = URL.createObjectURL(preview.blob);
+
+                const content = document.getElementById("filePreviewContent");
+                document.getElementById("filePreviewTitle").textContent = file.name;
+
+                if (preview.type.startsWith("image/")) {
+                    const image = document.createElement("img");
+                    image.src = previewObjectUrl;
+                    image.alt = file.description || file.name;
+                    content.replaceChildren(image);
+                }
+                else {
+                    const frame = document.createElement("iframe");
+                    frame.src = previewObjectUrl;
+                    frame.title = file.name;
+                    content.replaceChildren(frame);
+                }
+
+                document.getElementById("filePreviewModal").hidden = false;
+            }
+            catch (error) {
+                DentalRoles.notify(error.message, "warning");
+            }
+        }
+
+        function cerrarVistaArchivo() {
+            document.getElementById("filePreviewModal").hidden = true;
+            document.getElementById("filePreviewContent").replaceChildren();
+
+            if (previewObjectUrl) {
+                URL.revokeObjectURL(previewObjectUrl);
+                previewObjectUrl = "";
+            }
+        }
+
+        function eliminarArchivo(fileId) {
+            DentalRoles.confirmAction({
+                title: "Eliminar archivo",
+                message: "El documento dejarÃ¡ de estar disponible en el expediente.",
+                confirmText: "Eliminar",
+                onConfirm: async () => {
+                    try {
+                        await DentalApi.deletePatientFile(pacienteExpediente.id, fileId);
+                        await cargarArchivosPaciente();
+                        await cargarPacientes();
+                        DentalRoles.notify("Archivo eliminado.", "success");
+                    }
+                    catch (error) {
+                        DentalRoles.notify(error.message, "error");
+                    }
+                }
+            });
+        }
+
         /* ACCIONES */
 
-        function confirmar(index) {
+        async function confirmar(index) {
+
+            if (apiActiva && pacientes[index]?.id) {
+                await DentalApi.updatePatientStatus(pacientes[index].id, "Confirmada");
+                await cargarPacientes();
+                DentalRoles.notify("Paciente confirmado.", "success");
+                return;
+            }
 
             pacientes[index].estado =
                 "Confirmada";
@@ -606,7 +1604,14 @@
 
         }
 
-        function completar(index) {
+        async function completar(index) {
+
+            if (apiActiva && pacientes[index]?.id) {
+                await DentalApi.updatePatientStatus(pacientes[index].id, "Completada");
+                await cargarPacientes();
+                DentalRoles.notify("Paciente marcado como completado.", "success");
+                return;
+            }
 
             pacientes[index].estado =
                 "Completada";
@@ -632,9 +1637,16 @@
 
             DentalRoles.confirmAction({
                 title: "Eliminar paciente",
-                message: "Esta acción quitará el registro de la lista de pacientes.",
+                message: "Esta acciÃ³n quitarÃ¡ el registro de la lista de pacientes.",
                 confirmText: "Eliminar",
-                onConfirm: () => {
+                onConfirm: async () => {
+                    if (apiActiva && pacientes[index]?.id) {
+                        await DentalApi.deletePatient(pacientes[index].id);
+                        await cargarPacientes();
+                        DentalRoles.notify("Paciente eliminado.", "success");
+                        return;
+                    }
+
                     pacientes.splice(index, 1);
 
                     localStorage.setItem(
@@ -659,11 +1671,19 @@
 
             DentalRoles.showDetails("Detalle de paciente", [
                 { label: "Paciente", value: paciente.nombre },
-                { label: "Doctor", value: paciente.doctor },
+                { label: "CÃ©dula", value: paciente.national_id },
+                { label: "CÃ³digo", value: paciente.patient_code },
+                { label: "TelÃ©fono", value: paciente.phone },
+                { label: "Correo", value: paciente.email },
+                { label: "Doctor asignado", value: paciente.doctor },
+                { label: "PrÃ³xima cita", value: paciente.fecha ? `${paciente.fecha} ${paciente.hora || ""}`.trim() : "Sin cita registrada" },
                 { label: "Procedimiento", value: paciente.proceso },
-                { label: "Fecha", value: paciente.fecha },
-                { label: "Hora", value: paciente.hora },
-                { label: "Estado", value: paciente.estado }
+                { label: "Estado", value: paciente.estado },
+                { label: "Notas", value: paciente.notes },
+                { label: "Alergias", value: paciente.allergies },
+                { label: "Antecedentes mÃ©dicos", value: paciente.medical_history },
+                { label: "Medicamentos actuales", value: paciente.current_medications },
+                { label: "Motivo de consulta", value: paciente.motivo_consulta || paciente.diagnosis },
             ]);
         }
 
@@ -709,9 +1729,154 @@
 
         aplicarRolesPacientes();
 
-        renderPacientes();
+        if (new URLSearchParams(window.location.search).get("filtro") === "sin-notas") {
+            document.getElementById("roleNote").textContent += " Mostrando pacientes sin notas registradas.";
+        }
+
+        document.getElementById("clinicalClose").addEventListener("click", cerrarExpediente);
+        document.getElementById("filePreviewClose").addEventListener("click", cerrarVistaArchivo);
+        document.getElementById("filePreviewModal").addEventListener("click", event => {
+            if (event.target.id === "filePreviewModal") {
+                cerrarVistaArchivo();
+            }
+        });
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape") {
+                if (!document.getElementById("filePreviewModal").hidden) {
+                    cerrarVistaArchivo();
+                }
+                else if (!document.getElementById("clinicalModal").hidden) {
+                    cerrarExpediente();
+                }
+            }
+        });
+        document.getElementById("clinicalModal").addEventListener("click", event => {
+            if (event.target.id === "clinicalModal") {
+                cerrarExpediente();
+            }
+        });
+        document.getElementById("clinicalNoteForm").addEventListener("submit", async event => {
+            event.preventDefault();
+
+            if (!pacienteExpediente?.id) {
+                DentalRoles.notify("Selecciona un paciente.", "warning");
+                return;
+            }
+
+            const payload = {
+                patientId: pacienteExpediente.id,
+                noteType: document.getElementById("clinicalNoteType").value,
+                consultationStatus: document.getElementById("consultationStatus").value,
+                procedureName: document.getElementById("clinicalProcedureName").value,
+                procedureStatus: document.getElementById("procedureStatus").value,
+                toothNumber: document.getElementById("clinicalToothNumber").value,
+                chiefComplaint: document.getElementById("chiefComplaint").value,
+                clinicalEvaluation: document.getElementById("clinicalEvaluation").value,
+                odontologicalDiagnosis: document.getElementById("odontologicalDiagnosis").value,
+                performedProcedures: document.getElementById("performedProcedures").value,
+                indications: document.getElementById("clinicalIndications").value,
+                observations: document.getElementById("clinicalObservations").value,
+                medications: document.getElementById("clinicalMedications").value,
+                materialUsed: document.getElementById("materialUsed").value,
+                clinicalDescription: document.getElementById("clinicalEvolutionText").value,
+                clinicalFindings: document.getElementById("clinicalEvolutionText").value,
+                evolution: document.getElementById("clinicalEvolutionText").value,
+                nextReviewDate: document.getElementById("nextReviewDate").value,
+                nextAppointmentDate: document.getElementById("nextAppointmentDate").value,
+                nextAppointmentTime: document.getElementById("nextAppointmentTime").value
+            };
+
+            const hasClinicalText = [
+                payload.chiefComplaint,
+                payload.clinicalEvaluation,
+                payload.odontologicalDiagnosis,
+                payload.performedProcedures,
+                payload.indications,
+                payload.observations,
+                payload.medications,
+                payload.materialUsed,
+                payload.evolution,
+                payload.procedureName
+            ].some(value => (value || "").trim());
+
+            if (!hasClinicalText) {
+                DentalRoles.notify("Registra al menos un dato clinico.", "warning");
+                return;
+            }
+
+            try {
+                await DentalApi.createClinicalNote(payload);
+                event.target.reset();
+                await cargarEvolucionPaciente();
+                DentalRoles.notify("Evolucion clinica guardada.", "success");
+            }
+            catch (error) {
+                DentalRoles.notify(error.message, "error");
+            }
+        });
+        document.getElementById("clinicalUploadForm").addEventListener("submit", async event => {
+            event.preventDefault();
+            const fileInput = document.getElementById("clinicalFile");
+
+            if (!fileInput.files[0] || !pacienteExpediente) {
+                DentalRoles.notify("Selecciona un archivo.", "warning");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            formData.append("category", document.getElementById("fileCategory").value);
+            formData.append("description", document.getElementById("fileDescription").value);
+
+            try {
+                await DentalApi.uploadPatientFile(pacienteExpediente.id, formData);
+                event.target.reset();
+                await cargarArchivosPaciente();
+                await cargarPacientes();
+                DentalRoles.notify("Archivo guardado en el expediente.", "success");
+            }
+            catch (error) {
+                DentalRoles.notify(error.message, "error");
+            }
+        });
+
+        Promise.all([cargarDoctores(), cargarPacientes()]).then(() => {
+            const patientId = new URLSearchParams(window.location.search).get("paciente");
+            const index = pacientes.findIndex(item => item.id === patientId);
+            const previewMode = new URLSearchParams(window.location.search).get("preview") === "1";
+            if (index >= 0 && previewMode) {
+                verDetallePaciente(index);
+            }
+            else if (index >= 0 && rol !== "recepcion") {
+                abrirExpediente(index);
+            }
+        });
 
     </script>
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

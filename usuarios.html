@@ -1,0 +1,387 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuarios - Angeles DentalCare</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .main { flex: 1; padding: 30px; min-width: 0; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 30px; }
+        .logout-btn { background: #dc2626; color: white; border: 0; padding: 12px 18px; border-radius: 12px; }
+        .management-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; margin-bottom: 24px; }
+        .panel { background: white; border-radius: 16px; padding: 22px; box-shadow: 0 8px 24px rgba(15,23,42,0.08); min-width: 0; }
+        .panel h2, .panel h3 { margin-bottom: 16px; }
+        .form-stack { display: grid; gap: 12px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+        .form-stack input, .form-stack select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; }
+        .form-section { display: grid; gap: 12px; padding: 14px; border: 1px solid #dbe3ef; border-radius: 12px; background: #f8fafc; }
+        .form-section[hidden] { display: none; }
+        .form-section-title { display: flex; align-items: center; gap: 10px; color: #1e3a8a; font-weight: 800; }
+        .form-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .primary-btn { background: #2563eb; color: white; border: 0; border-radius: 10px; padding: 12px 14px; font-weight: bold; cursor: pointer; }
+        .user-list { display: grid; gap: 12px; }
+        .user-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
+        .user-card h3 { margin: 0 0 6px; }
+        .user-card p { margin: 3px 0; color: #475569; }
+        .badge { display: inline-flex; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; background: #dbeafe; color: #1e40af; }
+        .badge.off { background: #fee2e2; color: #991b1b; }
+        .user-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+        .user-actions button { border: 0; border-radius: 8px; padding: 9px 11px; color: white; background: #2563eb; cursor: pointer; }
+        .user-actions .danger { background: #dc2626; }
+        .user-actions .neutral { background: #64748b; }
+        .user-actions .warning { background: #b45309; }
+        .inline-modal { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; padding: 20px; background: rgba(15,23,42,0.45); }
+        .inline-dialog { width: min(420px, 100%); background: white; border-radius: 14px; padding: 22px; box-shadow: 0 24px 60px rgba(15,23,42,0.28); }
+        .inline-dialog-top { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 14px; }
+        .icon-close { width: 36px; height: 36px; border: 0; border-radius: 50%; background: #e2e8f0; color: #0f172a; font-size: 22px; }
+        @media(max-width: 760px) {
+            body { display: block; }
+            .sidebar { width: 100%; min-width: 0; }
+            .main { padding: 20px; }
+            .topbar, .user-card { grid-template-columns: 1fr; display: grid; align-items: stretch; }
+            .form-actions, .user-actions { justify-content: stretch; }
+            .form-actions button, .user-actions button { flex: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <svg class="brand-logo" viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Angeles DentalCare">
+                <g class="logo-group">
+                    <g class="icon-group" transform="translate(340,122)">
+                        <path d="M0 -37 Q20 -50 34 -37 Q50 -22 42 6 Q32 32 18 47 Q9 56 0 47 Q-9 56 -18 47 Q-32 32 -42 6 Q-50 -22 -34 -37 Q-20 -50 0 -37 Z" fill="white" />
+                    </g>
+                    <g class="text-main"><text x="340" y="208" font-family="Georgia" font-size="42" fill="white" text-anchor="middle">ANGELES</text></g>
+                    <g class="text-sub"><text x="340" y="244" font-family="Arial" font-size="16" fill="white" text-anchor="middle">DENTALCARE</text></g>
+                </g>
+            </svg>
+        </div>
+        <div class="menu">
+            <button data-nav="dashboard" onclick="location.href='dashboard.html'"><i class="fa-solid fa-chart-line"></i> Dashboard</button>
+            <button data-nav="pacientes" onclick="location.href='pacientes.html'"><i class="fa-solid fa-user-group"></i> Pacientes</button>
+            <button data-nav="citas" onclick="location.href='citas.html'"><i class="fa-solid fa-calendar-days"></i> Citas</button>
+            <button data-nav="reportes" onclick="location.href='reportes.html'"><i class="fa-solid fa-chart-column"></i> Reportes</button>
+        </div>
+    </div>
+
+    <main class="main">
+        <div class="topbar">
+            <h1>Gesti&oacute;n de Usuarios</h1>
+            <button class="logout-btn" onclick="DentalRoles.logout()">Cerrar Sesi&oacute;n</button>
+        </div>
+
+        <section class="management-grid">
+            <form class="panel form-stack" id="userForm">
+                <h2>Crear usuario</h2>
+                <div class="form-grid">
+                    <input type="text" id="userFullName" maxlength="160" placeholder="Nombre completo" required>
+                    <input type="text" id="username" maxlength="40" placeholder="Nombre de usuario" required>
+                    <input type="password" id="userPassword" minlength="6" placeholder="Temporal: minimo 6, letra y numero" required>
+                    <select id="userRole" required>
+                        <option value="">Seleccionar rol</option>
+                        <option value="admin" data-head-only>Administrador de cl&iacute;nica</option>
+                        <option value="doctor">Doctor</option>
+                        <option value="recepcion">Recepci&oacute;n</option>
+                    </select>
+                </div>
+
+                <div class="form-section" id="doctorFields" hidden>
+                    <div class="form-section-title">
+                        <i class="fa-solid fa-user-doctor"></i>
+                        Perfil m&eacute;dico del doctor
+                    </div>
+                    <div class="form-grid">
+                        <select id="doctorSpecialty">
+                            <option value="">Especialidad</option>
+                            <option>Odontolog&iacute;a general</option>
+                            <option>Ortodoncia</option>
+                            <option>Endodoncia</option>
+                            <option>Periodoncia</option>
+                            <option>Cirug&iacute;a oral</option>
+                            <option>Odontopediatr&iacute;a</option>
+                            <option>Rehabilitaci&oacute;n oral</option>
+                            <option>Implantolog&iacute;a</option>
+                            <option>Est&eacute;tica dental</option>
+                        </select>
+                        <input type="email" id="doctorEmail" maxlength="160" placeholder="Correo profesional">
+                        <input type="tel" id="doctorPhone" maxlength="40" placeholder="Tel&eacute;fono profesional">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="primary-btn" type="submit">Crear usuario</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="panel">
+            <h2>Usuarios registrados</h2>
+            <div class="user-list" id="usersList">
+                <div class="empty-state">Cargando usuarios...</div>
+            </div>
+        </section>
+    </main>
+
+    <script src="api.js?v=20260626e"></script>
+    <script src="roles.js?v=20260626e"></script>
+    <script>
+        DentalRoles.protectPage({ active: "usuarios", adminOnly: true });
+
+        const roleLabels = {
+            head_admin: "Administrador principal",
+            admin: "Administrador de clinica",
+            doctor: "Doctor",
+            recepcion: "Recepcion"
+        };
+        let users = [];
+
+        async function loadManagement() {
+            try {
+                users = await DentalApi.getUsers();
+                renderUsers();
+            }
+            catch (error) {
+                document.getElementById("usersList").innerHTML = '<div class="empty-state">No se pudo cargar la gestion.</div>';
+                DentalRoles.notify(error.message, "error");
+            }
+        }
+
+        function renderUsers() {
+            const list = document.getElementById("usersList");
+            const currentUsername = localStorage.getItem("usuario");
+            if (!users.length) {
+                list.innerHTML = '<div class="empty-state">No hay usuarios registrados.</div>';
+                return;
+            }
+
+            list.innerHTML = users.map(user => {
+                const self = user.username === currentUsername;
+                const protectedAccount = user.role === "head_admin" && !self;
+                const canToggle = !self && !protectedAccount;
+                const canDelete = canToggle && !user.active;
+                const safeUsername = DentalRoles.escapeHtml(user.username);
+                return `
+                    <article class="user-card">
+                        <div>
+                            <h3>${DentalRoles.escapeHtml(user.full_name)}</h3>
+                            <p>Usuario: ${safeUsername}</p>
+                            <p>Rol: ${roleLabels[user.role] || user.role}</p>
+                            ${user.doctor_name ? `<p>Perfil medico: ${DentalRoles.escapeHtml(user.doctor_name)}${user.specialty ? ` · ${DentalRoles.escapeHtml(user.specialty)}` : ""}</p>` : ""}
+                            <span class="badge ${user.active ? "" : "off"}">${user.active ? "Activo" : "Inactivo"}</span>
+                            <span class="badge ${user.pin_enabled ? "" : "off"}">${user.pin_configured ? (user.pin_enabled ? "PIN activo" : "PIN desactivado") : "Sin PIN"}</span>
+                        </div>
+                        <div class="user-actions">
+                            <button type="button" class="neutral" onclick="openPasswordReset('${user.id}', '${safeUsername}')">Contrasena</button>
+                            <button type="button" class="neutral" onclick="openPinReset('${user.id}', '${safeUsername}')">PIN</button>
+                            ${user.pin_configured ? `<button type="button" class="neutral" onclick="togglePinStatus('${user.id}', ${!user.pin_enabled})">${user.pin_enabled ? "Desactivar PIN" : "Activar PIN"}</button>` : ""}
+                            ${canToggle ? `
+                                <button type="button" class="${user.active ? "danger" : ""}" onclick="toggleUser('${user.id}', ${!user.active})">
+                                    ${user.active ? "Desactivar" : "Activar"}
+                                </button>
+                            ` : ""}
+                            ${canDelete ? `
+                                <button type="button" class="warning" onclick="deleteUser('${user.id}', '${safeUsername}')">
+                                    Eliminar
+                                </button>
+                            ` : ""}
+                        </div>
+                    </article>
+                `;
+            }).join("");
+        }
+
+        async function toggleUser(id, active) {
+            try {
+                await DentalApi.updateUserStatus(id, active);
+                await loadManagement();
+                DentalRoles.notify(active ? "Usuario activado." : "Usuario desactivado.", "success");
+            }
+            catch (error) {
+                DentalRoles.notify(error.message, "error");
+            }
+        }
+
+        function deleteUser(id, username) {
+            DentalRoles.confirmAction({
+                title: "Eliminar usuario",
+                message: `El usuario ${username} sera archivado y ya no aparecera en la gestion. Esta accion requiere que este inactivo.`,
+                confirmText: "Eliminar",
+                type: "warning",
+                onConfirm: async () => {
+                    try {
+                        await DentalApi.deleteUser(id);
+                        await loadManagement();
+                        DentalRoles.notify("Usuario eliminado de la gestion.", "success");
+                    }
+                    catch (error) {
+                        DentalRoles.notify(error.message, "error");
+                    }
+                }
+            });
+        }
+
+
+        function openPinReset(id, username) {
+            const current = document.querySelector(".inline-modal");
+            if (current) {
+                current.remove();
+            }
+
+            const modal = document.createElement("div");
+            modal.className = "inline-modal";
+            modal.innerHTML = `
+                <div class="inline-dialog" role="dialog" aria-modal="true">
+                    <div class="inline-dialog-top">
+                        <h2>Configurar PIN</h2>
+                        <button type="button" class="icon-close" data-close>&times;</button>
+                    </div>
+                    <form class="form-stack" id="pinForm">
+                        <p>Usuario: ${username}</p>
+                        <input type="password" id="newPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="Nuevo PIN de 4 digitos" required>
+                        <input type="password" id="confirmPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="Confirmar PIN" required>
+                        <label class="checkbox-line">
+                            <input type="checkbox" id="pinEnabled" checked>
+                            Activar acceso por PIN
+                        </label>
+                        <button class="primary-btn" type="submit">Guardar PIN</button>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.querySelector("[data-close]").addEventListener("click", () => modal.remove());
+            modal.addEventListener("click", event => {
+                if (event.target === modal) modal.remove();
+            });
+            modal.querySelectorAll("#newPin, #confirmPin").forEach(input => {
+                input.addEventListener("input", () => {
+                    input.value = input.value.replace(/\D/g, "").slice(0, 4);
+                });
+            });
+            modal.querySelector("#pinForm").addEventListener("submit", event => savePin(event, id));
+        }
+
+        async function savePin(event, id) {
+            event.preventDefault();
+            const pin = document.getElementById("newPin").value;
+            const confirmPin = document.getElementById("confirmPin").value;
+            const enabled = document.getElementById("pinEnabled").checked;
+
+            try {
+                await DentalApi.setUserPin(id, pin, confirmPin, enabled);
+                document.querySelector(".inline-modal").remove();
+                await loadManagement();
+                DentalRoles.notify("PIN actualizado correctamente.", "success");
+            }
+            catch (error) {
+                DentalRoles.notify(error.message, "error");
+            }
+        }
+
+        async function togglePinStatus(id, enabled) {
+            try {
+                await DentalApi.updateUserPinStatus(id, enabled);
+                await loadManagement();
+                DentalRoles.notify(enabled ? "PIN activado." : "PIN desactivado.", "success");
+            }
+            catch (error) {
+                DentalRoles.notify(error.message, "error");
+            }
+        }
+        function openPasswordReset(id, username) {
+            const current = document.querySelector(".inline-modal");
+            if (current) {
+                current.remove();
+            }
+
+            const modal = document.createElement("div");
+            modal.className = "inline-modal";
+            modal.innerHTML = `
+                <div class="inline-dialog" role="dialog" aria-modal="true">
+                    <div class="inline-dialog-top">
+                        <h2>Cambiar contrasena</h2>
+                        <button type="button" class="icon-close" data-close>&times;</button>
+                    </div>
+                    <form class="form-stack" id="passwordForm">
+                        <p>Usuario: ${username}</p>
+                        <input type="password" id="newPassword" minlength="6" placeholder="Nueva contrasena segura" required>
+                        <button class="primary-btn" type="submit">Guardar contrasena</button>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.querySelector("[data-close]").addEventListener("click", () => modal.remove());
+            modal.addEventListener("click", event => {
+                if (event.target === modal) {
+                    modal.remove();
+                }
+            });
+            modal.querySelector("#passwordForm").addEventListener("submit", event => resetPassword(event, id));
+        }
+
+        async function resetPassword(event, id) {
+            event.preventDefault();
+            try {
+                await DentalApi.resetUserPassword(id, document.getElementById("newPassword").value);
+                document.querySelector(".inline-modal").remove();
+                DentalRoles.notify("Contrasena temporal actualizada. El usuario debera cambiarla al iniciar sesion.", "success");
+            }
+            catch (error) {
+                DentalRoles.notify(error.message, "error");
+            }
+        }
+
+        function toggleDoctorFields() {
+            const isDoctor = document.getElementById("userRole").value === "doctor";
+            const doctorFields = document.getElementById("doctorFields");
+            const specialty = document.getElementById("doctorSpecialty");
+            doctorFields.hidden = !isDoctor;
+            specialty.required = isDoctor;
+            if (!isDoctor) {
+                specialty.value = "";
+                document.getElementById("doctorEmail").value = "";
+                document.getElementById("doctorPhone").value = "";
+            }
+        }
+
+        document.getElementById("userRole").addEventListener("change", toggleDoctorFields);
+
+        document.getElementById("userForm").addEventListener("submit", async event => {
+            event.preventDefault();
+            const role = document.getElementById("userRole").value;
+
+            try {
+                await DentalApi.createUser({
+                    fullName: document.getElementById("userFullName").value.trim(),
+                    username: document.getElementById("username").value.trim(),
+                    password: document.getElementById("userPassword").value,
+                    role,
+                    doctorSpecialty: role === "doctor" ? document.getElementById("doctorSpecialty").value : "",
+                    doctorEmail: role === "doctor" ? document.getElementById("doctorEmail").value.trim() : "",
+                    doctorPhone: role === "doctor" ? document.getElementById("doctorPhone").value.trim() : ""
+                });
+                event.target.reset();
+                toggleDoctorFields();
+                await loadManagement();
+                DentalRoles.notify("Usuario creado. Debera cambiar la contrasena en su primer inicio de sesion.", "success");
+            }
+            catch (error) {
+                DentalRoles.notify(error.message, "error");
+            }
+        });
+
+        if (localStorage.getItem("rol") !== "head_admin") {
+            document.querySelectorAll("[data-head-only]").forEach(option => option.remove());
+        }
+
+        toggleDoctorFields();
+        loadManagement();
+    </script>
+</body>
+</html>
+
+
+
+

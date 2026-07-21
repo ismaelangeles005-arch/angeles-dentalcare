@@ -1,807 +1,173 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>
-        Reportes - Angeles DentalCare
-    </title>
-
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <style>
-        /* SIDEBAR */
-
-        /* LOGO */
-
-        /* MENU */
-
-        /* MAIN */
-
-        .main {
-            flex: 1;
-            padding: 30px;
-        }
-
-        /* TOPBAR */
-
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .logout-btn {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 12px 18px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-            .logout-btn:hover {
-                transform: translateY(-2px);
-            }
-
-        /* FILTERS */
-
-        .filters {
-            background: white;
-            padding: 25px;
-            border-radius: 18px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .filter-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .filter-item label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-
-        .filter-item input,
-        .filter-item select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 12px;
-        }
-
-        .generate-btn {
-            margin-top: 20px;
-            padding: 14px 20px;
-            border: none;
-            border-radius: 12px;
-            background: #2563eb;
-            color: white;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-
-            .generate-btn:hover {
-                transform: translateY(-2px);
-            }
-
-        /* CARDS */
-
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 18px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-            .card h3 {
-                margin-bottom: 10px;
-            }
-
-            .card p {
-                font-size: 32px;
-                font-weight: bold;
-                color: #2563eb;
-            }
-
-        /* REPORTES */
-
-        .report-box {
-            background: white;
-            padding: 25px;
-            border-radius: 18px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .report-summary {
-            margin-top: 15px;
-            padding: 14px 16px;
-            border-radius: 12px;
-            background: #dbeafe;
-            color: #1e3a8a;
-            font-weight: bold;
-        }
-
-        .report-item {
-            background: #f9fafb;
-            padding: 18px;
-            border-radius: 12px;
-            margin-top: 15px;
-            border-left: 5px solid #2563eb;
-            transition: 0.3s;
-        }
-
-            .report-item:hover {
-                transform: translateY(-3px);
-            }
-
-        /* RESPONSIVE */
-
-        @media(max-width:900px) {
-        }
-    
-    </style>
-
+    <title>Reportes - Angeles DentalCare</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
-
+    <style>
+        .main{flex:1;padding:30px;min-width:0}.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;gap:16px}.logout-btn{background:#dc2626;color:white;border:none;padding:12px 18px;border-radius:12px;cursor:pointer}.filters,.report-box,.panel{background:white;padding:25px;border-radius:18px;margin-bottom:24px;box-shadow:0 2px 10px rgba(0,0,0,.1)}.filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-top:20px}.filter-item label{display:block;margin-bottom:8px;font-weight:bold}.filter-item input,.filter-item select{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:12px}.report-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}.generate-btn,.secondary-btn{padding:14px 20px;border-radius:12px;cursor:pointer;font-size:16px;font-weight:bold}.generate-btn{border:none;background:#2563eb;color:white}.secondary-btn{border:1px solid #cbd5e1;background:white;color:#0f172a}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-bottom:24px}.card{background:white;padding:22px;border-radius:18px;box-shadow:0 2px 10px rgba(0,0,0,.1)}.card h3{margin:0 0 10px;color:#475569}.card p{font-size:30px;font-weight:800;color:#2563eb;margin:0}.card small{display:block;margin-top:8px;color:#64748b}.report-summary{margin-top:15px;padding:14px 16px;border-radius:12px;background:#dbeafe;color:#1e3a8a;font-weight:bold}.report-item{background:#f9fafb;padding:18px;border-radius:12px;margin-top:15px;border-left:5px solid #2563eb}.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:16px 0}.metric{border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:14px}.metric span{display:block;color:#64748b;font-size:13px}.metric strong{display:block;margin-top:6px;font-size:22px;color:#0f172a}.table-wrap{overflow-x:auto}.report-table{width:100%;border-collapse:collapse;min-width:760px}.report-table th,.report-table td{padding:12px;border-bottom:1px solid #e5e7eb;text-align:left}.report-table th{font-size:12px;text-transform:uppercase;color:#475569;background:#f8fafc}.status-pill{display:inline-flex;padding:5px 9px;border-radius:999px;background:#dbeafe;color:#1e40af;font-size:12px;font-weight:800}.status-pill.pagado{background:#dcfce7;color:#166534}.status-pill.en_deuda{background:#fee2e2;color:#991b1b}.status-pill.pendiente{background:#fef3c7;color:#92400e}.section-title{display:flex;align-items:center;gap:10px;margin:0 0 14px}.section-title i{color:#2563eb}@media(max-width:900px){body{display:block}.sidebar{width:100%;min-width:0}.main{padding:20px}.topbar{display:grid;align-items:stretch}}@media print{body{display:block;background:white}.sidebar,.topbar,.filters,.cards{display:none!important}.main{padding:0}.report-box,.panel{box-shadow:none;border:1px solid #d1d5db;break-inside:avoid}.report-item{break-inside:avoid}}
+    </style>
 </head>
-
 <body>
-
-    <!-- SIDEBAR -->
-
     <div class="sidebar">
-
-        <div class="logo">
-
-            <svg class="brand-logo"
-                 viewBox="0 0 680 300"
-                 xmlns="http://www.w3.org/2000/svg"
-                 role="img"
-                 aria-label="Angeles DentalCare">
-
-                <g class="logo-group">
-
-                    <g class="icon-group"
-                       transform="translate(340,122)">
-
-                        <path d="M0 -37 Q20 -50 34 -37 Q50 -22 42 6 Q32 32 18 47 Q9 56 0 47 Q-9 56 -18 47 Q-32 32 -42 6 Q-50 -22 -34 -37 Q-20 -50 0 -37 Z"
-                              fill="white" />
-
-                    </g>
-
-                    <g class="text-main">
-
-                        <text x="340"
-                              y="208"
-                              font-family="Georgia"
-                              font-size="42"
-                              fill="white"
-                              text-anchor="middle">
-
-                            ANGELES
-
-                        </text>
-
-                    </g>
-
-                    <g class="text-sub">
-
-                        <text x="340"
-                              y="244"
-                              font-family="Arial"
-                              font-size="16"
-                              fill="white"
-                              text-anchor="middle">
-
-                            DENTALCARE
-
-                        </text>
-
-                    </g>
-
-                </g>
-
-            </svg>
-
-        </div>
-
+        <div class="logo"><svg class="brand-logo" viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Angeles DentalCare"><g class="logo-group"><g class="icon-group" transform="translate(340,122)"><path d="M0 -37 Q20 -50 34 -37 Q50 -22 42 6 Q32 32 18 47 Q9 56 0 47 Q-9 56 -18 47 Q-32 32 -42 6 Q-50 -22 -34 -37 Q-20 -50 0 -37 Z" fill="white" /></g><g class="text-main"><text x="340" y="208" font-family="Georgia" font-size="42" fill="white" text-anchor="middle">ANGELES</text></g><g class="text-sub"><text x="340" y="244" font-family="Arial" font-size="16" fill="white" text-anchor="middle">DENTALCARE</text></g></g></svg></div>
         <div class="menu">
-
-            <button data-nav="dashboard" onclick="irDashboard()">
-                <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
-                Dashboard
-            </button>
-
-            <button data-nav="pacientes" onclick="irPacientes()">
-                <i class="fa-solid fa-user-group" aria-hidden="true"></i>
-                Pacientes
-            </button>
-
-            <button data-nav="citas" onclick="irCitas()">
-                <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
-                Citas
-            </button>
-
-            <button data-nav="reportes" class="active" onclick="irReportes()">
-                <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
-                Reportes
-            </button>
-
+            <button data-nav="dashboard" onclick="location.href='dashboard.html'"><i class="fa-solid fa-chart-line"></i> Dashboard</button>
+            <button data-nav="pacientes" onclick="location.href='pacientes.html'"><i class="fa-solid fa-user-group"></i> Pacientes</button>
+            <button data-nav="citas" onclick="location.href='citas.html'"><i class="fa-solid fa-calendar-days"></i> Citas</button>
+            <button data-nav="reportes" class="active" onclick="location.href='reportes.html'"><i class="fa-solid fa-chart-column"></i> Reportes</button>
         </div>
-
     </div>
 
-    <!-- MAIN -->
+    <main class="main">
+        <div class="topbar"><h1>Reportes de clínica</h1><button class="logout-btn" onclick="DentalRoles.logout()">Cerrar Sesión</button></div>
 
-    <div class="main">
-
-        <div class="topbar">
-
-            <h1>
-                Reportes Clínicos
-            </h1>
-
-            <button class="logout-btn"
-                    onclick="cerrarSesion()">
-
-                Cerrar Sesión
-
-            </button>
-
-        </div>
-
-        <!-- FILTROS -->
-
-        <div class="filters">
-
-            <h2>
-                Generar Reportes
-            </h2>
-
+        <section class="filters">
+            <h2>Generar reportes</h2>
             <div class="filter-grid">
-
-                <div class="filter-item">
-
-                    <label>
-                        Tipo de Reporte
-                    </label>
-
-                    <select id="tipoReporte">
-
-                        <option>
-                            Diario
-                        </option>
-
-                        <option>
-                            Semanal
-                        </option>
-
-                        <option>
-                            Mensual
-                        </option>
-
-                        <option>
-                            Personalizado
-                        </option>
-
-                    </select>
-
-                </div>
-
-                <div class="filter-item">
-
-                    <label>
-                        Doctor
-                    </label>
-
-                    <select id="doctorReporte">
-
-                        <option value="todos">
-                            Todos los doctores
-                        </option>
-
-                    </select>
-
-                </div>
-
-                <div class="filter-item">
-
-                    <label>
-                        Desde
-                    </label>
-
-                    <input type="date"
-                           id="fechaInicio">
-
-                </div>
-
-                <div class="filter-item">
-
-                    <label>
-                        Hasta
-                    </label>
-
-                    <input type="date"
-                           id="fechaFin">
-
-                </div>
-
+                <div class="filter-item"><label>Tipo de reporte</label><select id="tipoReporte"><option value="general">General</option><option value="actividad">Actividad médica</option><option value="financiero">Financiero</option><option value="doctores">Por doctores</option></select></div>
+                <div class="filter-item"><label>Doctor</label><select id="doctorReporte"><option value="todos">Todos los doctores</option></select></div>
+                <div class="filter-item"><label>Desde</label><input type="date" id="fechaInicio"></div>
+                <div class="filter-item"><label>Hasta</label><input type="date" id="fechaFin"></div>
             </div>
+            <div class="report-actions"><button class="generate-btn" onclick="generarReporte()">Visualizar reporte</button><button class="secondary-btn" onclick="imprimirReporte()">Imprimir / guardar PDF</button></div>
+        </section>
 
-            <button class="generate-btn"
-                    onclick="generarReporte()">
+        <section class="cards">
+            <div class="card"><h3>Pacientes</h3><p id="totalPacientes">0</p><small>Registrados</small></div>
+            <div class="card"><h3>Citas</h3><p id="totalCitas">0</p><small>En el sistema</small></div>
+            <div class="card"><h3>Cobrado</h3><p id="totalCobrado">RD$0.00</p><small>Pagos recibidos</small></div>
+            <div class="card"><h3>Pendiente</h3><p id="totalPendiente">RD$0.00</p><small>Balance por cobrar</small></div>
+        </section>
 
-                Generar Reporte
+        <section class="report-box">
+            <h2 class="section-title"><i class="fa-solid fa-chart-pie"></i> Resumen</h2>
+            <div id="reportResults"></div>
+        </section>
 
-            </button>
+        <section class="panel">
+            <h2 class="section-title"><i class="fa-solid fa-user-doctor"></i> Actividad por doctor</h2>
+            <div class="table-wrap"><table class="report-table"><thead><tr><th>Doctor</th><th>Pacientes asignados</th><th>Citas</th><th>Completadas</th><th>Pendientes</th><th>Canceladas / no asistió</th></tr></thead><tbody id="doctorActivityRows"><tr><td colspan="6">Cargando...</td></tr></tbody></table></div>
+        </section>
 
-        </div>
+        <section class="panel">
+            <h2 class="section-title"><i class="fa-solid fa-file-invoice-dollar"></i> Producción financiera</h2>
+            <div class="table-wrap"><table class="report-table"><thead><tr><th>Procedimientos</th><th>Fecha</th><th>Estado</th><th>Total</th><th>Pagado</th><th>Pendiente</th></tr></thead><tbody id="billingRows"><tr><td colspan="6">Cargando...</td></tr></tbody></table></div>
+        </section>
+    </main>
 
-        <!-- CARDS -->
-
-        <div class="cards">
-
-            <div class="card">
-
-                <h3>
-                    Pacientes
-                </h3>
-
-                <p id="totalPacientes">
-                    0
-                </p>
-
-            </div>
-
-            <div class="card">
-
-                <h3>
-                    Citas
-                </h3>
-
-                <p id="totalCitas">
-                    0
-                </p>
-
-            </div>
-
-            <div class="card">
-
-                <h3>
-                    Completadas
-                </h3>
-
-                <p id="completadas">
-                    0
-                </p>
-
-            </div>
-
-            <div class="card">
-
-                <h3>
-                    Doctores
-                </h3>
-
-                <p id="totalDoctores">
-                    0
-                </p>
-
-            </div>
-
-        </div>
-
-        <!-- RESULTADOS -->
-
-        <div class="report-box">
-
-            <h2>
-                Resultados
-            </h2>
-
-            <div id="reportResults">
-
-            </div>
-
-        </div>
-
-    </div>
-
-    <script src="roles.js"></script>
-
+    <script src="api.js?v=20260628c"></script>
+    <script src="roles.js?v=20260628b"></script>
     <script>
-
         DentalRoles.protectPage({ active: "reportes", adminOnly: true });
-
-        /* STORAGE */
-
-        let pacientes =
-            JSON.parse(
-                localStorage.getItem("pacientes")
-            ) || [];
-
-        let citas =
-            JSON.parse(
-                localStorage.getItem("citas")
-            ) || [];
-
-        const doctoresBase = [
-            {
-                id: "gomez",
-                nombre: "Dr. G\u00f3mez"
-            },
-            {
-                id: "martinez",
-                nombre: "Dra. Mart\u00ednez"
-            },
-            {
-                id: "fernandez",
-                nombre: "Dra. Fern\u00e1ndez"
+        let pacientes = [];
+        let citas = [];
+        let facturas = [];
+        let doctores = [];
+        const money = value => new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(Number(value || 0));
+        const clean = value => (value || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        function getDateValue(item) { return item.fecha || (item.created_at ? String(item.created_at).slice(0, 10) : ""); }
+        function inRange(item) { const date = getDateValue(item); const from = document.getElementById("fechaInicio").value; const to = document.getElementById("fechaFin").value; return (!from || date >= from) && (!to || date <= to); }
+        function statusText(status) { return ({ pagado: "Pagado", en_deuda: "En deuda", pendiente: "Pendiente", cancelado: "Cancelado", completada: "Completada", cancelada: "Cancelada", no_asistio: "No asistió" })[status] || status || "Pendiente"; }
+        function doctorIdFromName(name) { const found = doctores.find(d => clean(d.name || d.nombre) === clean(name)); return found ? found.id : clean(name).replace(/\s+/g, "-"); }
+        function selectedDoctorId() { return document.getElementById("doctorReporte").value; }
+        function filterByDoctor(items) { const id = selectedDoctorId(); if (id === "todos") return items; return items.filter(item => (item.doctor_id || doctorIdFromName(item.doctor)) === id); }
+        async function cargarDatosReportes() {
+            try {
+                const results = await Promise.all([DentalApi.getPatients(), DentalApi.getAppointments(), DentalApi.getBillingEstimates(), DentalApi.getDoctors()]);
+                pacientes = results[0] || [];
+                citas = results[1] || [];
+                facturas = results[2] || [];
+                facturas = await enriquecerProcedimientosFacturas(facturas);
+                doctores = results[3] || [];
+            } catch (error) {
+                DentalRoles.notify("No se pudieron cargar todos los datos de reportes.", "error");
             }
-        ];
-
-        function normalizarEstado(estado) {
-
-            return (estado || "Pendiente").toString();
-
+            cargarDoctores();
+            cargarCards();
+            renderDoctorActivity();
+            renderBillingRows();
+            generarReporte();
         }
-
-        function limpiarTexto(valor) {
-
-            return (valor || "")
-                .toString()
-                .replace(/&oacute;/g, "\u00f3")
-                .replace(/&iacute;/g, "\u00ed")
-                .replace(/&aacute;/g, "\u00e1")
-                .replace(/\?/g, "")
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "")
-                .toLowerCase();
-
+        async function enriquecerProcedimientosFacturas(lista) {
+            return Promise.all((lista || []).map(async factura => {
+                if (factura.procedures_summary && factura.procedures_summary !== "Sin procedimientos") {
+                    return factura;
+                }
+                try {
+                    const detalle = await DentalApi.getBillingEstimate(factura.id);
+                    const resumen = (detalle.items || [])
+                        .map(item => `${item.description}${Number(item.quantity || 1) > 1 ? " x" + item.quantity : ""}`)
+                        .filter(Boolean)
+                        .join(", ");
+                    return { ...factura, procedures_summary: resumen || "Sin procedimientos" };
+                }
+                catch (error) {
+                    return factura;
+                }
+            }));
         }
-
-        function obtenerDoctorInfo(doctor) {
-
-            let limpio = limpiarTexto(doctor);
-
-            if (limpio.includes("gmez") || limpio.includes("gomez")) {
-                return doctoresBase[0];
-            }
-
-            if (limpio.includes("martnez") || limpio.includes("martinez")) {
-                return doctoresBase[1];
-            }
-
-            if (limpio.includes("fernndez") || limpio.includes("fernandez")) {
-                return doctoresBase[2];
-            }
-
-            let nombre = (doctor || "Sin doctor").toString();
-
-            return {
-                id: limpiarTexto(nombre).replace(/\s+/g, "-"),
-                nombre: nombre
-            };
-
-        }
-
-        function estaCompletada(estado) {
-
-            return normalizarEstado(estado).toLowerCase() === "completada";
-
-        }
-
-        function obtenerRegistros() {
-
-            let registrosPacientes = pacientes.map(p => {
-
-                let doctor = obtenerDoctorInfo(p.doctor);
-
-                return {
-                    tipo: "Paciente",
-                    nombre: p.nombre || "Sin nombre",
-                    doctorId: doctor.id,
-                    doctor: doctor.nombre,
-                    proceso: p.proceso || "Consulta",
-                    fecha: p.fecha || "",
-                    hora: p.hora || "",
-                    estado: normalizarEstado(p.estado)
-                };
-
-            });
-
-            let registrosCitas = citas.map(c => {
-
-                let doctor = obtenerDoctorInfo(c.doctor);
-
-                return {
-                    tipo: "Cita",
-                    nombre: c.paciente || c.nombre || "Sin nombre",
-                    doctorId: doctor.id,
-                    doctor: doctor.nombre,
-                    proceso: c.proceso || "Cita agendada",
-                    fecha: c.fecha || "",
-                    hora: c.hora || "",
-                    estado: normalizarEstado(c.estado)
-                };
-
-            });
-
-            return registrosPacientes.concat(registrosCitas);
-
-        }
-
-        function obtenerDoctores() {
-
-            let mapa = new Map();
-
-            doctoresBase.forEach(doctor => {
-                mapa.set(doctor.id, doctor.nombre);
-            });
-
-            obtenerRegistros()
-                .filter(r => r.doctor && r.doctor !== "Sin doctor")
-                .forEach(r => {
-                    mapa.set(r.doctorId, r.doctor);
-                });
-
-            return Array.from(mapa.entries())
-                .map(([id, nombre]) => ({
-                    id: id,
-                    nombre: nombre
-                }))
-                .sort((a, b) => a.nombre.localeCompare(b.nombre));
-
-        }
-
         function cargarDoctores() {
-
-            let select =
-                document.getElementById(
-                    "doctorReporte"
-                );
-
-            if (!select) {
-                return;
-            }
-
-            select.innerHTML = `
-                <option value="todos">
-                    Todos los doctores
-                </option>
-            `;
-
-            obtenerDoctores().forEach(doctor => {
-
-                select.innerHTML += `
-                    <option value="${doctor.id}">
-                        ${doctor.nombre}
-                    </option>
-                `;
-
-            });
-
+            const select = document.getElementById("doctorReporte");
+            const map = new Map();
+            doctores.forEach(d => map.set(d.id, d.name || d.nombre));
+            citas.forEach(c => { if (c.doctor) map.set(c.doctor_id || doctorIdFromName(c.doctor), c.doctor); });
+            pacientes.forEach(p => { if (p.doctor) map.set(p.doctor_id || doctorIdFromName(p.doctor), p.doctor); });
+            select.innerHTML = '<option value="todos">Todos los doctores</option>' + Array.from(map.entries()).sort((a,b)=>a[1].localeCompare(b[1])).map(([id,name]) => `<option value="${id}">${DentalRoles.escapeHtml(name)}</option>`).join("");
         }
-
+        function filteredAppointments() { return filterByDoctor(citas.filter(inRange)); }
+        function filteredPatients() { return filterByDoctor(pacientes.filter(inRange)); }
+        function filteredBills() { return facturas.filter(inRange); }
         function cargarCards() {
-
-            let registros = obtenerRegistros();
-            let doctores = obtenerDoctores();
-
-            document.getElementById(
-                "totalPacientes"
-            ).innerText =
-                pacientes.length;
-
-            document.getElementById(
-                "totalCitas"
-            ).innerText =
-                registros.length;
-
-            document.getElementById(
-                "completadas"
-            ).innerText =
-                registros.filter(
-                    r => estaCompletada(r.estado)
-                ).length;
-
-            document.getElementById(
-                "totalDoctores"
-            ).innerText =
-                doctores.length;
-
+            const bills = filteredBills();
+            document.getElementById("totalPacientes").textContent = pacientes.length;
+            document.getElementById("totalCitas").textContent = citas.length;
+            document.getElementById("totalCobrado").textContent = money(bills.reduce((sum, b) => sum + Number(b.paid || 0), 0));
+            document.getElementById("totalPendiente").textContent = money(bills.reduce((sum, b) => sum + Number(b.balance || 0), 0));
         }
-
-        function filtrarRegistros() {
-
-            let inicio =
-                document.getElementById(
-                    "fechaInicio"
-                ).value;
-
-            let fin =
-                document.getElementById(
-                    "fechaFin"
-                ).value;
-
-            let doctor =
-                document.getElementById(
-                    "doctorReporte"
-                ).value;
-
-            return obtenerRegistros().filter(r => {
-
-                let cumpleInicio =
-                    !inicio || r.fecha >= inicio;
-
-                let cumpleFin =
-                    !fin || r.fecha <= fin;
-
-                let cumpleDoctor =
-                    doctor === "todos" || r.doctorId === doctor;
-
-                return cumpleInicio && cumpleFin && cumpleDoctor;
-
-            });
-
+        function doctorActivity() {
+            const map = new Map();
+            const ensure = (id, name) => { if (!map.has(id)) map.set(id, { id, name, patients: 0, appointments: 0, completed: 0, pending: 0, closed: 0 }); return map.get(id); };
+            doctores.forEach(d => ensure(d.id, d.name || d.nombre));
+            pacientes.forEach(p => { if (!inRange(p)) return; const id = p.doctor_id || doctorIdFromName(p.doctor); if (!id) return; ensure(id, p.doctor || "Sin doctor").patients += 1; });
+            citas.forEach(c => { if (!inRange(c)) return; const id = c.doctor_id || doctorIdFromName(c.doctor); if (!id) return; const row = ensure(id, c.doctor || "Sin doctor"); const state = clean(c.estado); row.appointments += 1; if (state === "completada") row.completed += 1; else if (["cancelada", "no_asistio"].includes(state)) row.closed += 1; else row.pending += 1; });
+            const id = selectedDoctorId();
+            return Array.from(map.values()).filter(row => id === "todos" || row.id === id).sort((a,b)=>b.appointments-a.appointments || a.name.localeCompare(b.name));
         }
-
-        function obtenerNombreDoctorSeleccionado() {
-
-            let select =
-                document.getElementById(
-                    "doctorReporte"
-                );
-
-            return select.options[select.selectedIndex].text.trim();
-
+        function renderDoctorActivity() {
+            const rows = doctorActivity();
+            document.getElementById("doctorActivityRows").innerHTML = rows.length ? rows.map(row => `<tr><td>${DentalRoles.escapeHtml(row.name)}</td><td>${row.patients}</td><td>${row.appointments}</td><td>${row.completed}</td><td>${row.pending}</td><td>${row.closed}</td></tr>`).join("") : '<tr><td colspan="6">No hay actividad para los filtros seleccionados.</td></tr>';
         }
-
-        /* GENERAR REPORTE */
-
+        function renderBillingRows() {
+            const bills = filteredBills();
+            document.getElementById("billingRows").innerHTML = bills.length ? bills.map(b => `<tr><td>${DentalRoles.escapeHtml(b.procedures_summary || "Sin procedimientos")}</td><td>${DentalRoles.escapeHtml(String(b.created_at || "").slice(0,10))}</td><td><span class="status-pill ${DentalRoles.escapeHtml(b.status)}">${DentalRoles.escapeHtml(statusText(b.status))}</span></td><td>${money(b.total)}</td><td>${money(b.paid)}</td><td>${money(b.balance)}</td></tr>`).join("") : '<tr><td colspan="6">No hay facturación para los filtros seleccionados.</td></tr>';
+        }
         function generarReporte() {
-
-            let resultados =
-                document.getElementById(
-                    "reportResults"
-                );
-
-            let doctor =
-                document.getElementById(
-                    "doctorReporte"
-                ).value;
-
-            let filtrados = filtrarRegistros();
-            let doctorNombre = obtenerNombreDoctorSeleccionado();
-
-            resultados.innerHTML = `
-                <div class="report-summary">
-                    ${doctor === "todos" ? "Reporte general" : "Reporte de " + doctorNombre}
-                    &middot; ${filtrados.length} registro(s)
-                </div>
-            `;
-
-            if (filtrados.length === 0) {
-
-                resultados.innerHTML +=
-                    "<p>No hay registros para los filtros seleccionados.</p>";
-
-                return;
-
-            }
-
-            filtrados.forEach(r => {
-
-                resultados.innerHTML += `
-
-            <div class="report-item">
-
-                <strong>
-                    ${r.nombre}
-                </strong>
-
-                <br><br>
-
-                <span>
-                    Tipo: ${r.tipo}
-                </span>
-
-                <br><br>
-
-                Doctor:
-                ${r.doctor}
-
-                <br><br>
-
-                Procedimiento:
-                ${r.proceso}
-
-                <br><br>
-
-                Fecha:
-                ${r.fecha || "Sin fecha"}
-
-                <br><br>
-
-                Hora:
-                ${r.hora || "Sin hora"}
-
-                <br><br>
-
-                Estado:
-                ${r.estado}
-
-            </div>
-
-            `;
-
-            });
-
+            cargarCards(); renderDoctorActivity(); renderBillingRows();
+            const appointments = filteredAppointments();
+            const patients = filteredPatients();
+            const bills = filteredBills();
+            const total = bills.reduce((sum, b) => sum + Number(b.total || 0), 0);
+            const paid = bills.reduce((sum, b) => sum + Number(b.paid || 0), 0);
+            const balance = bills.reduce((sum, b) => sum + Number(b.balance || 0), 0);
+            const completed = appointments.filter(c => clean(c.estado) === "completada").length;
+            const doctorName = document.getElementById("doctorReporte").selectedOptions[0].textContent.trim();
+            document.getElementById("reportResults").innerHTML = `<div class="report-summary">${selectedDoctorId() === "todos" ? "Reporte general" : "Reporte de " + DentalRoles.escapeHtml(doctorName)}</div><div class="metrics-grid"><div class="metric"><span>Pacientes del periodo</span><strong>${patients.length}</strong></div><div class="metric"><span>Citas del periodo</span><strong>${appointments.length}</strong></div><div class="metric"><span>Citas completadas</span><strong>${completed}</strong></div><div class="metric"><span>Facturado</span><strong>${money(total)}</strong></div><div class="metric"><span>Cobrado</span><strong>${money(paid)}</strong></div><div class="metric"><span>Pendiente</span><strong>${money(balance)}</strong></div></div>`;
         }
-
-        cargarDoctores();
-        cargarCards();
-
-        /* NAVIGATION */
-
-        function irDashboard() {
-
-            window.location.href =
-                "dashboard.html";
-
+        function imprimirReporte() {
+            generarReporte();
+            const title = document.getElementById("doctorReporte").value === "todos" ? "Reporte general de clínica" : "Reporte de " + document.getElementById("doctorReporte").selectedOptions[0].textContent.trim();
+            const printable = `<html><head><meta charset="UTF-8"><title>${DentalRoles.escapeHtml(title)}</title><style>body{font-family:Arial,sans-serif;color:#111827;padding:28px}h1{margin:0 0 8px}.brand{color:#2563eb;font-weight:800}.block{border:1px solid #dbe2ea;border-radius:12px;padding:16px;margin:18px 0}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}th{background:#2563eb;color:#fff;text-align:left;padding:9px}td{border-bottom:1px solid #e5e7eb;padding:9px}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.metric{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px}.metric span{display:block;color:#64748b;font-size:11px}.metric strong{font-size:18px}@page{size:letter;margin:14mm}</style></head><body><div class="brand">Angeles DentalCare</div><h1>${DentalRoles.escapeHtml(title)}</h1><p>Generado el ${new Date().toLocaleString("es-DO")}</p><div class="block">${document.getElementById("reportResults").innerHTML}</div><div class="block"><h2>Actividad por doctor</h2><table>${document.querySelector("#doctorActivityRows").closest("table").innerHTML}</table></div><div class="block"><h2>Producción financiera</h2><table>${document.querySelector("#billingRows").closest("table").innerHTML}</table></div></body></html>`;
+            const win = window.open("", "_blank", "width=1000,height=800");
+            if (!win) { DentalRoles.notify("Permite ventanas emergentes para imprimir el reporte.", "warning"); return; }
+            win.document.open(); win.document.write(printable); win.document.close(); win.focus(); setTimeout(() => win.print(), 250);
         }
-
-        function irPacientes() {
-
-            window.location.href =
-                "pacientes.html";
-
-        }
-
-        function irCitas() {
-
-            window.location.href =
-                "citas.html";
-
-        }
-
-        function irReportes() {
-
-            window.location.href =
-                "reportes.html";
-
-        }
-
-        /* LOGOUT */
-
-        function cerrarSesion() {
-
-            DentalRoles.logout();
-
-        }
-
+        ["tipoReporte", "doctorReporte", "fechaInicio", "fechaFin"].forEach(id => document.getElementById(id).addEventListener("change", generarReporte));
+        cargarDatosReportes();
     </script>
-
 </body>
 </html>
+
+

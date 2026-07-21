@@ -1,3 +1,9 @@
 .vs/
 bin/
 obj/
+node_modules/
+server/node_modules/
+server/.env
+server/storage/
+server/backups/
+dist-usb/
