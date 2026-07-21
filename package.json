@@ -1,0 +1,30 @@
+{
+  "name": "angeles-dentalcare-product",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Angeles DentalCare desktop product workspace",
+  "type": "commonjs",
+  "main": "apps/desktop/src/main.js",
+  "scripts": {
+    "backend": "npm --prefix server start",
+    "backend:dev": "npm --prefix server run dev",
+    "frontend": "npm --prefix server run frontend",
+    "desktop": "electron apps/desktop",
+    "desktop:start": "electron apps/desktop",
+    "desktop:dev": "set DENTALCARE_DESKTOP_MODE=development&& electron apps/desktop",
+    "desktop:build": "electron-builder --projectDir apps/desktop --config electron-builder.json",
+    "installer": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/installer.ps1",
+    "installer:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/installer.ps1",
+    "installer:test": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/installer-test.ps1",
+    "production:verify": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/production-verify.ps1",
+    "database:migrate": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/database-migrate.ps1",
+    "package:clean": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-clean.ps1",
+    "backup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup.ps1",
+    "restore": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/restore.ps1",
+    "status": "powershell -NoProfile -ExecutionPolicy Bypass -File server/scripts/status.ps1 -NoPause"
+  },
+  "devDependencies": {
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3"
+  }
+}

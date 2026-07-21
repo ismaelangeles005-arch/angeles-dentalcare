@@ -6,4 +6,11 @@ server/node_modules/
 server/.env
 server/storage/
 server/backups/
+backups/
 dist-usb/
+installer/windows/dist/
+apps/desktop/dist/
+*.log
+logs/
+*.local.json
+*.local.env

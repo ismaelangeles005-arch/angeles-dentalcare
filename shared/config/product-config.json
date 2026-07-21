@@ -1,0 +1,58 @@
+{
+  "product": {
+    "name": "Angeles DentalCare",
+    "version": "1.0.0",
+    "language": "es",
+    "timezone": "America/Santo_Domingo"
+  },
+  "clinic": {
+    "name": "Angeles DentalCare",
+    "type": "CLINIC"
+  },
+  "runtime": {
+    "mode": "development",
+    "dockerForDevelopmentOnly": true,
+    "productionDatabaseMode": "local-postgresql-service"
+  },
+  "backend": {
+    "host": "127.0.0.1",
+    "port": 3001,
+    "healthUrl": "http://127.0.0.1:3001/api/health"
+  },
+  "frontend": {
+    "host": "127.0.0.1",
+    "port": 5500,
+    "url": "http://127.0.0.1:5500/index.html",
+    "productionUrl": "http://127.0.0.1:3001/index.html",
+    "mode": "development-server"
+  },
+  "database": {
+    "engine": "postgresql",
+    "host": "127.0.0.1",
+    "developmentPort": 5433,
+    "productionPort": 5432,
+    "port": 5433,
+    "databaseName": "dentalcare"
+  },
+  "paths": {
+    "dataRoot": "C:\\ProgramData\\AngelesDentalCare",
+    "userConfig": "%AppData%\\AngelesDentalCare",
+    "logs": "C:\\ProgramData\\AngelesDentalCare\\logs",
+    "backups": "C:\\ProgramData\\AngelesDentalCare\\backups",
+    "documents": "C:\\ProgramData\\AngelesDentalCare\\documents",
+    "media": "C:\\ProgramData\\AngelesDentalCare\\media",
+    "temp": "%LocalAppData%\\AngelesDentalCare\\temp",
+    "developmentBackups": "server/backups",
+    "developmentDocuments": "server/storage/patient-files",
+    "developmentImages": "images"
+  },
+  "security": {
+    "pinMaxAttempts": 5,
+    "pinLockSeconds": 30,
+    "autoLockMinutes": 15
+  },
+  "updates": {
+    "enabled": false,
+    "channel": "local"
+  }
+}

@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const { rateLimit } = require("express-rate-limit");
+const path = require("path");
 const db = require("./db");
 
 const authRoutes = require("./routes/auth");
@@ -22,6 +23,7 @@ const billingRoutes = require("./routes/billing");
 
 const app = express();
 const port = process.env.PORT || 3001;
+const frontendRoot = process.env.FRONTEND_ROOT || "";
 const requiredEnv = ["DATABASE_URL", "JWT_SECRET", "CLIENT_ORIGIN"];
 const missingEnv = requiredEnv.filter(name => !process.env[name]);
 
@@ -39,7 +41,9 @@ const allowedOrigins = process.env.CLIENT_ORIGIN
   .filter(Boolean);
 
 app.set("trust proxy", 1);
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: frontendRoot ? false : undefined
+}));
 app.use(cors({
   origin(origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -102,6 +106,18 @@ app.use("/api/availability", availabilityRoutes);
 app.use("/api/clinical-notes", clinicalNoteRoutes);
 app.use("/api/procedures", procedureRoutes);
 app.use("/api/billing", billingRoutes);
+
+if (frontendRoot) {
+  app.use(express.static(frontendRoot, {
+    extensions: ["html"],
+    index: "index.html",
+    maxAge: 0
+  }));
+
+  app.get("/", (req, res) => {
+    res.sendFile(path.join(frontendRoot, "index.html"));
+  });
+}
 
 app.use((req, res) => {
   res.status(404).json({ message: "Ruta no encontrada" });
