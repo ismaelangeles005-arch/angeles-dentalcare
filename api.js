@@ -1,22 +1,93 @@
 ﻿const DentalApi = (() => {
     const API_URL = localStorage.getItem("apiUrl") || "http://127.0.0.1:3001/api";
+    let sessionVerified = false;
 
     function getToken() {
-        return localStorage.getItem("sessionActive") || "";
+        return sessionVerified ? "true" : "";
+    }
+
+    function normalizeRole(role) {
+        const aliases = {
+            owner_doctor: "head_admin",
+            clinic_admin: "admin",
+            receptionist: "recepcion",
+            independent_assistant: "recepcion",
+            assistant: "recepcion",
+            cashier: "recepcion"
+        };
+        return ["head_admin", "admin", "doctor", "recepcion"].includes(role)
+            ? role : (Object.prototype.hasOwnProperty.call(aliases, role) ? aliases[role] : "");
+    }
+
+    function storeSession(user) {
+        if (!user || !user.id || !normalizeRole(user.role)) {
+            throw new Error("No fue posible validar el acceso de esta cuenta.");
+        }
+        clearSession();
+        sessionVerified = true;
+        localStorage.setItem("sessionActive", "true");
+        localStorage.setItem("userRole", user.role);
+        localStorage.setItem("rol", normalizeRole(user.role));
+        localStorage.setItem("usuario", user.username || "");
+        localStorage.setItem("organizationId", user.organizationId || "");
+        localStorage.setItem("organizationName", user.organizationName || "");
+        localStorage.setItem("organizationType", user.organizationType || "CLINIC");
+        localStorage.setItem("mustChangePassword", user.mustChangePassword ? "true" : "false");
+        if (user.doctor) localStorage.setItem("doctor", user.doctor);
+        return user;
+    }
+
+    async function getCurrentUser() {
+        // A failed logout must not silently restore the remaining HttpOnly cookie.
+        if (localStorage.getItem("logoutPending") === "true") {
+            await request("/auth/logout", { method: "POST" });
+            localStorage.removeItem("logoutPending");
+            clearSession();
+            const error = new Error("Inicia sesión para continuar.");
+            error.status = 401;
+            throw error;
+        }
+        const data = await request("/auth/me", { cache: "no-store" });
+        return storeSession(data.user);
+    }
+
+    function ensureSessionNotClosing(path) {
+        if (localStorage.getItem("logoutPending") === "true" &&
+            !["/auth/login", "/auth/pin-login", "/auth/logout"].includes(path)) {
+            clearSession();
+            window.location.href = "index.html";
+            const error = new Error("Inicia sesión para continuar.");
+            error.status = 401;
+            throw error;
+        }
     }
 
     async function request(path, options = {}) {
+        ensureSessionNotClosing(path);
         const isFormData = options.body instanceof FormData;
         const headers = {
             ...(!isFormData ? { "Content-Type": "application/json" } : {}),
             ...(options.headers || {})
         };
 
-        const response = await fetch(`${API_URL}${path}`, {
-            ...options,
-            headers,
-            credentials: "include"
-        });
+        let response;
+        const controller = new AbortController();
+        const timeout = path.startsWith("/auth/")
+            ? window.setTimeout(() => controller.abort(), 15000) : null;
+        try {
+            response = await fetch(`${API_URL}${path}`, {
+                ...options,
+                headers,
+                credentials: "include",
+                signal: options.signal || controller.signal
+            });
+        }
+        catch (error) {
+            throw new Error("No fue posible conectar con el servidor. Intenta nuevamente.");
+        }
+        finally {
+            if (timeout !== null) window.clearTimeout(timeout);
+        }
 
         if (response.status === 204) {
             return null;
@@ -25,12 +96,25 @@
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-            if (response.status === 401 && path !== "/auth/login") {
+            const credentialRequest = ["/auth/login", "/auth/pin-login"].includes(path);
+            const incorrectCurrentPassword = path === "/auth/change-password" && data.code === "INVALID_CURRENT_PASSWORD";
+            if (response.status === 401 && !credentialRequest && !incorrectCurrentPassword && path !== "/auth/me") {
                 clearSession();
                 window.location.href = "index.html";
             }
-
-            throw new Error(data.message || "Error de conexion con el servidor");
+            if (response.status === 403 && data.code === "PASSWORD_CHANGE_REQUIRED") {
+                localStorage.setItem("mustChangePassword", "true");
+                window.location.href = "cambiar-password.html";
+            }
+            const message = response.status >= 500
+                ? "No fue posible completar la solicitud. Intenta nuevamente."
+                : credentialRequest && response.status === 401
+                    ? "Credenciales incorrectas. Intenta nuevamente."
+                    : data.message || "No fue posible completar la solicitud.";
+            const error = new Error(message);
+            error.status = response.status;
+            error.code = data.code;
+            throw error;
         }
 
         return data;
@@ -42,24 +126,8 @@
             body: JSON.stringify({ username, password })
         });
 
-        localStorage.removeItem("token");
-        localStorage.setItem("sessionActive", "true");
-        localStorage.setItem("rol", data.user.role);
-        localStorage.setItem("usuario", data.user.username);
-        localStorage.setItem("organizationId", data.user.organizationId || "");
-        localStorage.setItem("organizationName", data.user.organizationName || "");
-        localStorage.setItem("organizationType", data.user.organizationType || "CLINIC");
-
-        localStorage.setItem("mustChangePassword", data.user.mustChangePassword ? "true" : "false");
-
-        if (data.user.doctor) {
-            localStorage.setItem("doctor", data.user.doctor);
-        }
-        else {
-            localStorage.removeItem("doctor");
-        }
-
-        return data.user;
+        localStorage.removeItem("logoutPending");
+        return storeSession(data.user);
     }
 
 
@@ -72,26 +140,14 @@
             })
         });
 
-        localStorage.removeItem("token");
-        localStorage.setItem("sessionActive", "true");
-        localStorage.setItem("rol", data.user.role);
-        localStorage.setItem("usuario", data.user.username || "");
-        localStorage.setItem("organizationId", data.user.organizationId || data.user.organization_id || "");
-        localStorage.setItem("organizationName", data.user.organizationName || "");
-        localStorage.setItem("organizationType", data.user.organizationType || data.user.operating_mode || "CLINIC");
-        localStorage.setItem("mustChangePassword", data.user.mustChangePassword ? "true" : "false");
-
-        if (data.user.doctor || data.user.doctorId || data.user.doctor_id) {
-            localStorage.setItem("doctor", data.user.doctor || data.user.doctorId || data.user.doctor_id);
-        }
-        else {
-            localStorage.removeItem("doctor");
-        }
-
-        return data.user;
+        localStorage.removeItem("logoutPending");
+        return storeSession(data.user);
     }
     function clearSession() {
+        sessionVerified = false;
         localStorage.removeItem("token");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("mustChangePassword");
         localStorage.removeItem("sessionActive");
         localStorage.removeItem("rol");
         localStorage.removeItem("doctor");
@@ -104,14 +160,16 @@
     }
 
     async function logout() {
+        localStorage.setItem("logoutPending", "true");
+        clearSession();
         try {
             await request("/auth/logout", { method: "POST" });
+            localStorage.removeItem("logoutPending");
+            return true;
         }
         catch (error) {
-            // Local session state is still cleared if the API is unavailable.
+            return false;
         }
-
-        clearSession();
     }
 
     async function changePassword(currentPassword, newPassword) {
@@ -233,6 +291,7 @@
     }
 
     async function downloadPatientFile(patientId, fileId, name) {
+        ensureSessionNotClosing("/patients/files");
         const response = await fetch(
             `${API_URL}/patients/${patientId}/files/${fileId}/download`,
             { credentials: "include" }
@@ -255,6 +314,7 @@
     }
 
     async function viewPatientFile(patientId, fileId) {
+        ensureSessionNotClosing("/patients/files");
         const response = await fetch(
             `${API_URL}/patients/${patientId}/files/${fileId}/view`,
             { credentials: "include" }
@@ -417,6 +477,9 @@
         logout,
         clearSession,
         getToken,
+        getCurrentUser,
+        normalizeRole,
+        changePassword,
         getDoctors,
         createDoctor,
         getUsers,

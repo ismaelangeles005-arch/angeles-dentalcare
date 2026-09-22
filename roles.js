@@ -1,8 +1,10 @@
 ﻿const DentalRoles = (() => {
-    const hasSession = localStorage.getItem("sessionActive") === "true";
-    const rol = hasSession ? (localStorage.getItem("rol") || "") : "";
-    const doctor = hasSession ? (localStorage.getItem("doctor") || "") : "";
-    const mustChangePassword = hasSession && localStorage.getItem("mustChangePassword") === "true";
+    let rol = "";
+    let doctor = "";
+    let user = null;
+    let sessionCheck;
+    document.body.hidden = true;
+    document.body.inert = true;
 
     function normalizeText(value) {
         return (value || "")
@@ -21,13 +23,25 @@
         return normalizeText(a) === normalizeText(b);
     }
 
-    function protectPage(options = {}) {
-        if (!rol) {
-            window.location.href = "index.html";
+    async function protectPage(options = {}) {
+        try {
+            sessionCheck = sessionCheck || DentalApi.getCurrentUser();
+            user = await sessionCheck;
+            rol = DentalApi.normalizeRole(user.role);
+            doctor = user.doctor || "";
+        }
+        catch (error) {
+            DentalApi.clearSession();
+            if (error.status === 401 || error.status === 403) {
+                window.location.href = "index.html";
+            }
+            else {
+                showSessionError();
+            }
             return false;
         }
 
-        if (mustChangePassword && !options.allowPasswordChange) {
+        if (user.mustChangePassword && !options.allowPasswordChange) {
             window.location.href = "cambiar-password.html";
             return false;
         }
@@ -44,10 +58,55 @@
 
         document.body.classList.add(`role-${rol}`);
         setupInactivityLock();
-        applyShell(options.active);
+        if (!options.allowPasswordChange) applyShell(options.active);
         return true;
     }
 
+    function showSessionError() {
+        const message = document.createElement("p");
+        message.textContent = "No fue posible verificar tu sesión. Comprueba la conexión e intenta nuevamente.";
+        const retry = document.createElement("button");
+        retry.type = "button";
+        retry.textContent = "Reintentar";
+        retry.addEventListener("click", () => window.location.reload());
+        document.body.replaceChildren(message, retry);
+        document.body.hidden = false;
+        document.body.inert = false;
+    }
+
+    async function startPrivatePage() {
+        const source = document.querySelector("script[data-dental-page]");
+        if (!source) return;
+        try {
+            if (!await protectPage(JSON.parse(source.dataset.dentalPage))) return;
+            // Keep classic-script globals used by existing inline event handlers.
+            const script = document.createElement("script");
+            script.textContent = source.textContent;
+            source.replaceWith(script);
+            document.body.hidden = false;
+            document.body.inert = false;
+        }
+        catch (error) {
+            showSessionError();
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", startPrivatePage, { once: true });
+    window.addEventListener("pagehide", () => {
+        document.body.hidden = true;
+        document.body.inert = true;
+    });
+    window.addEventListener("pageshow", event => {
+        if (event.persisted) window.location.reload();
+    });
+    window.addEventListener("storage", event => {
+        if (event.key === "logoutPending" && event.newValue === "true") {
+            DentalApi.clearSession();
+            document.body.hidden = true;
+            document.body.inert = true;
+            window.location.href = "index.html";
+        }
+    });
 
     function setupInactivityLock() {
         const minutes = Number(localStorage.getItem("autoLockMinutes") || 15);
@@ -229,8 +288,8 @@
         `;
 
         if (logoutButton) {
-            logoutButton.textContent = "Bloquear sesion";
-            logoutButton.title = "Cerrar la sesion local y volver al acceso por PIN";
+            logoutButton.textContent = "Bloquear sesión";
+            logoutButton.title = "Cerrar la sesión local y volver al acceso por PIN";
             const actions = document.createElement("div");
             actions.className = "topbar-actions";
             logoutButton.parentNode.insertBefore(actions, logoutButton);
@@ -396,8 +455,12 @@
     }
 
     async function logout() {
+        document.body.inert = true;
         if (typeof DentalApi !== "undefined") {
-            await DentalApi.logout();
+            const confirmed = await DentalApi.logout();
+            if (!confirmed) {
+                sessionStorage.setItem("authNotice", "Acceso local bloqueado. El servidor no pudo confirmar el cierre de sesión; vuelve a intentarlo cuando haya conexión.");
+            }
         }
         else {
             localStorage.removeItem("token");
@@ -520,8 +583,9 @@
     }
 
     return {
-        rol,
-        doctor,
+        get rol() { return rol; },
+        get doctor() { return doctor; },
+        get user() { return user; },
         normalizeText,
         sameDoctor,
         escapeHtml,

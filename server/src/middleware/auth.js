@@ -35,14 +35,19 @@ function getCookie(req, name) {
 async function authenticate(req, res, next) {
   const header = req.headers.authorization || "";
   const bearerToken = header.startsWith("Bearer ") ? header.slice(7) : "";
-  const token = getCookie(req, "dental_session") || bearerToken;
-
-  if (!token) {
-    return res.status(401).json({ message: "Sesion requerida" });
+  let session;
+  try {
+    const token = getCookie(req, "dental_session") || bearerToken;
+    if (!token) {
+      return res.status(401).json({ message: "Sesion requerida" });
+    }
+    session = jwt.verify(token, process.env.JWT_SECRET);
+  }
+  catch (error) {
+    return res.status(401).json({ message: "Sesion invalida o vencida" });
   }
 
   try {
-    const session = jwt.verify(token, process.env.JWT_SECRET);
     const result = await db.query(`
       SELECT
         u.id,
@@ -50,6 +55,7 @@ async function authenticate(req, res, next) {
         u.role,
         u.doctor_id,
         u.organization_id,
+        u.must_change_password,
         d.name AS doctor,
         o.name AS organization_name,
         o.organization_type
@@ -77,15 +83,27 @@ async function authenticate(req, res, next) {
       organizationId: user.organization_id,
       organizationName: user.organization_name,
       organizationType: user.organization_type || "CLINIC",
+      mustChangePassword: user.must_change_password === true,
       isDoctor: hasAnyRole(user.role, ["doctor"]),
       isAdmin: hasAnyRole(user.role, ["head_admin", "admin"]),
       isReception: hasAnyRole(user.role, ["recepcion"]),
       isCashier: hasAnyRole(user.role, ["cashier"])
     };
+    const authPath = req.path.toLowerCase().replace(/\/+$/, "");
+    const passwordChangeResource = req.baseUrl.toLowerCase() === "/api/auth" && (
+      (["GET", "HEAD"].includes(req.method) && authPath === "/me") ||
+      (req.method === "POST" && ["/change-password", "/logout"].includes(authPath))
+    );
+    if (req.user.mustChangePassword && !passwordChangeResource) {
+      return res.status(403).json({
+        code: "PASSWORD_CHANGE_REQUIRED",
+        message: "Debes cambiar tu contrasena antes de continuar"
+      });
+    }
     return next();
   }
   catch (error) {
-    return res.status(401).json({ message: "Sesion invalida o vencida" });
+    return next(error);
   }
 }
 

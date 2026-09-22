@@ -781,9 +781,8 @@
     <script src="api.js?v=20260626e"></script>
     <script src="roles.js?v=20260626e"></script>
 
-    <script>
+    <script type="text/plain" data-dental-page='{"active":"citas"}'>
 
-        DentalRoles.protectPage({ active: "citas" });
 
         let citas = JSON.parse(localStorage.getItem("citas")) || [];
         let doctoresApi = [];

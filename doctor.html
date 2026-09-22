@@ -56,7 +56,7 @@ img{
 
     <h2>Tratamientos Pendientes</h2>
 
-    <p>3 pacientes pendientes de evaluacion</p>
+    <p>3 pacientes pendientes de evaluación</p>
 
 </div>
 
@@ -73,14 +73,16 @@ img{
 <br><br>
 
 <button onclick="cerrarSesion()">
-    Cerrar Sesion
+    Cerrar Sesión
 </button>
 
-<script>
+<script src="api.js"></script>
+<script src="roles.js"></script>
+<script type="text/plain" data-dental-page='{"allowedRoles":["doctor","head_admin"]}'>
 
 /* BIENVENIDA */
 
-let doctor = localStorage.getItem("doctorNombre");
+let doctor = DentalRoles.doctor;
 
 document.getElementById("bienvenida").innerText =
 "Bienvenido " + doctor;
@@ -91,11 +93,11 @@ let mensajes = [
 
     "Recuerda revisar los pacientes pendientes.",
 
-    "Tienes 2 citas proximas esta tarde.",
+    "Tienes 2 citas próximas esta tarde.",
 
     "El sistema fue actualizado correctamente.",
 
-    "Nueva radiografia cargada."
+    "Nueva radiografía cargada."
 
 ];
 
@@ -109,9 +111,7 @@ mensajes[random];
 
 function cerrarSesion(){
 
-    localStorage.removeItem("rol");
-
-    window.location.href = "index.html";
+    DentalRoles.logout();
 
 }
 

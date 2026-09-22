@@ -164,7 +164,7 @@ router.post("/pin-login", pinLimiter, asyncHandler(async (req, res) => {
 
   if (!validPin(pin)) {
     await bcrypt.compare("0000", dummyHash);
-    return res.status(401).json({ success: false, message: "Codigo incorrecto" });
+    return res.status(400).json({ success: false, message: "Escribe un codigo de cuatro digitos" });
   }
 
   const resolvedOrganizationId = await resolveOrganizationId(organizationId);
@@ -269,7 +269,7 @@ router.post("/change-password", authenticate, asyncHandler(async (req, res) => {
   const validPassword = await bcrypt.compare(currentPassword, user?.password_hash || dummyHash);
 
   if (!user || !validPassword) {
-    return res.status(401).json({ message: "La contrasena actual no es correcta" });
+    return res.status(401).json({ code: "INVALID_CURRENT_PASSWORD", message: "La contrasena actual no es correcta" });
   }
 
   const passwordHash = await bcrypt.hash(newPassword, 12);
@@ -306,6 +306,7 @@ router.post("/change-password", authenticate, asyncHandler(async (req, res) => {
 }));
 
 router.get("/me", authenticate, (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
   return res.json({ user: req.user });
 });
 

@@ -142,15 +142,15 @@
                 </svg>
                 <div class="logo-title">ANGELES</div>
                 <div class="logo-sub">DENTALCARE</div>
-                <div class="clinic-name" id="clinicName">Sistema clinico odontologico</div>
+                <div class="clinic-name" id="clinicName">Sistema clínico odontológico</div>
             </div>
 
             <div class="welcome">
-                <h1>Ingrese su codigo de acceso</h1>
-                <p>Acceso rapido para personal autorizado.</p>
+                <h1>Ingrese su código de acceso</h1>
+                <p>Acceso rápido para personal autorizado.</p>
             </div>
 
-            <div class="pin-dots" id="pinDots" aria-label="PIN de cuatro digitos">
+            <div class="pin-dots" id="pinDots" aria-label="PIN de cuatro dígitos">
                 <span class="pin-dot"></span>
                 <span class="pin-dot"></span>
                 <span class="pin-dot"></span>
@@ -169,14 +169,14 @@
                 <button class="pin-key" type="button" data-digit="9">9</button>
                 <button class="pin-action" type="button" data-clear>Limpiar</button>
                 <button class="pin-key" type="button" data-digit="0">0</button>
-                <button class="pin-action icon" type="button" data-backspace aria-label="Borrar ultimo digito"><i class="fa-solid fa-delete-left"></i></button>
+                <button class="pin-action icon" type="button" data-backspace aria-label="Borrar último dígito"><i class="fa-solid fa-delete-left"></i></button>
             </div>
 
             <div id="pinMessage" class="pin-message" role="status" aria-live="polite"></div>
 
             <div class="utility-row">
                 <button class="utility-btn" type="button" onclick="toggleLegacyLogin()">Acceso administrador</button>
-                <button class="utility-btn" type="button" onclick="closeDesktopApp()">Cerrar aplicacion</button>
+                <button class="utility-btn" type="button" onclick="closeDesktopApp()">Cerrar aplicación</button>
             </div>
 
             <div class="legacy-panel" id="legacyPanel">
@@ -186,7 +186,7 @@
                 </div>
                 <div class="input-group">
                     <i class="fa-solid fa-lock"></i>
-                    <input type="password" id="password" placeholder="Contrasena" autocomplete="current-password">
+                    <input type="password" id="password" placeholder="Contraseña" autocomplete="current-password">
                 </div>
                 <button class="login-btn" type="button" onclick="login()">Ingresar</button>
             </div>
@@ -197,10 +197,16 @@
     <script>
         let pin = "";
         let pending = false;
+        let legacyPending = false;
         const dots = Array.from(document.querySelectorAll(".pin-dot"));
         const pinBox = document.getElementById("pinBox");
         const messageBox = document.getElementById("pinMessage");
         const clinicName = localStorage.getItem("organizationName");
+        const authNotice = sessionStorage.getItem("authNotice");
+        if (authNotice) {
+            showMessage(authNotice, "error");
+            sessionStorage.removeItem("authNotice");
+        }
 
         if (clinicName) {
             document.getElementById("clinicName").textContent = clinicName;
@@ -230,7 +236,7 @@
         }
 
         function appendDigit(digit) {
-            if (pending || pin.length >= 4) return;
+            if (pending || legacyPending || pin.length >= 4) return;
             clearMessage();
             pin += digit;
             updateDots();
@@ -247,7 +253,7 @@
         }
 
         async function submitPin() {
-            if (pending || pin.length !== 4) return;
+            if (pending || legacyPending || pin.length !== 4) return;
             pending = true;
             setPadDisabled(true);
 
@@ -260,7 +266,7 @@
                 }, 650);
             }
             catch (error) {
-                showMessage(error.message || "Codigo incorrecto. Intentelo nuevamente.", "error");
+                showMessage(error.message || "Código incorrecto. Inténtelo nuevamente.", "error");
                 pinBox.classList.remove("shake");
                 void pinBox.offsetWidth;
                 pinBox.classList.add("shake");
@@ -296,10 +302,11 @@
 
         function closeDesktopApp() {
             window.close();
-            showMessage("Si la ventana no se cierra, usa el boton cerrar de la aplicacion.", "success");
+            showMessage("Si la ventana no se cierra, usa el botón cerrar de la aplicación.", "success");
         }
 
         async function login() {
+            if (legacyPending || pending) return;
             const usuario = document.getElementById("usuario").value.trim();
             const password = document.getElementById("password").value;
 
@@ -309,12 +316,17 @@
             }
 
             try {
+                legacyPending = true;
                 showMessage("Validando acceso...", "success");
                 const user = await DentalApi.login(usuario, password);
                 window.location.href = user.mustChangePassword ? "cambiar-password.html" : "dashboard.html";
             }
             catch (error) {
-                showMessage(error.message || "Usuario o contrasena incorrectos", "error");
+                document.getElementById("password").value = "";
+                showMessage(error.message || "Usuario o contraseña incorrectos", "error");
+            }
+            finally {
+                legacyPending = false;
             }
         }
     </script>

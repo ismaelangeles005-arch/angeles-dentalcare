@@ -127,12 +127,11 @@
 
     <script src="api.js?v=20260626e"></script>
     <script src="roles.js?v=20260626e"></script>
-    <script>
-        DentalRoles.protectPage({ active: "usuarios", adminOnly: true });
+    <script type="text/plain" data-dental-page='{"active":"usuarios","adminOnly":true}'>
 
         const roleLabels = {
             head_admin: "Administrador principal",
-            admin: "Administrador de clinica",
+            admin: "Administrador de clínica",
             doctor: "Doctor",
             recepcion: "Recepcion"
         };
@@ -169,12 +168,12 @@
                             <h3>${DentalRoles.escapeHtml(user.full_name)}</h3>
                             <p>Usuario: ${safeUsername}</p>
                             <p>Rol: ${roleLabels[user.role] || user.role}</p>
-                            ${user.doctor_name ? `<p>Perfil medico: ${DentalRoles.escapeHtml(user.doctor_name)}${user.specialty ? ` · ${DentalRoles.escapeHtml(user.specialty)}` : ""}</p>` : ""}
+                            ${user.doctor_name ? `<p>Perfil médico: ${DentalRoles.escapeHtml(user.doctor_name)}${user.specialty ? ` · ${DentalRoles.escapeHtml(user.specialty)}` : ""}</p>` : ""}
                             <span class="badge ${user.active ? "" : "off"}">${user.active ? "Activo" : "Inactivo"}</span>
                             <span class="badge ${user.pin_enabled ? "" : "off"}">${user.pin_configured ? (user.pin_enabled ? "PIN activo" : "PIN desactivado") : "Sin PIN"}</span>
                         </div>
                         <div class="user-actions">
-                            <button type="button" class="neutral" onclick="openPasswordReset('${user.id}', '${safeUsername}')">Contrasena</button>
+                            <button type="button" class="neutral" onclick="openPasswordReset('${user.id}', '${safeUsername}')">Contraseña</button>
                             <button type="button" class="neutral" onclick="openPinReset('${user.id}', '${safeUsername}')">PIN</button>
                             ${user.pin_configured ? `<button type="button" class="neutral" onclick="togglePinStatus('${user.id}', ${!user.pin_enabled})">${user.pin_enabled ? "Desactivar PIN" : "Activar PIN"}</button>` : ""}
                             ${canToggle ? `
@@ -301,13 +300,13 @@
             modal.innerHTML = `
                 <div class="inline-dialog" role="dialog" aria-modal="true">
                     <div class="inline-dialog-top">
-                        <h2>Cambiar contrasena</h2>
+                        <h2>Cambiar contraseña</h2>
                         <button type="button" class="icon-close" data-close>&times;</button>
                     </div>
                     <form class="form-stack" id="passwordForm">
                         <p>Usuario: ${username}</p>
-                        <input type="password" id="newPassword" minlength="6" placeholder="Nueva contrasena segura" required>
-                        <button class="primary-btn" type="submit">Guardar contrasena</button>
+                        <input type="password" id="newPassword" minlength="6" placeholder="Nueva contraseña segura" required>
+                        <button class="primary-btn" type="submit">Guardar contraseña</button>
                     </form>
                 </div>
             `;
@@ -326,7 +325,7 @@
             try {
                 await DentalApi.resetUserPassword(id, document.getElementById("newPassword").value);
                 document.querySelector(".inline-modal").remove();
-                DentalRoles.notify("Contrasena temporal actualizada. El usuario debera cambiarla al iniciar sesion.", "success");
+                DentalRoles.notify("Contraseña temporal actualizada. El usuario deberá cambiarla al iniciar sesión.", "success");
             }
             catch (error) {
                 DentalRoles.notify(error.message, "error");
@@ -365,7 +364,7 @@
                 event.target.reset();
                 toggleDoctorFields();
                 await loadManagement();
-                DentalRoles.notify("Usuario creado. Debera cambiar la contrasena en su primer inicio de sesion.", "success");
+                DentalRoles.notify("Usuario creado. Deberá cambiar la contraseña en su primer inicio de sesión.", "success");
             }
             catch (error) {
                 DentalRoles.notify(error.message, "error");

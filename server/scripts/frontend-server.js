@@ -14,9 +14,12 @@ const publicFiles = new Set([
   "reportes.html",
   "usuarios.html",
   "auditoria.html",
+  "cambiar-password.html",
   "facturacion.html",
   "procedimientos.html",
   "doctor.html",
+  "images/logo.svg",
+  "images/logo_files/css2",
   "styles.css",
   "roles.js",
   "api.js"
@@ -25,7 +28,9 @@ const publicFiles = new Set([
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
-  ".js": "application/javascript; charset=utf-8"
+  ".js": "application/javascript; charset=utf-8",
+  ".svg": "image/svg+xml; charset=utf-8",
+  "css2": "text/css; charset=utf-8"
 };
 
 const server = http.createServer((req, res) => {
@@ -49,7 +54,7 @@ const server = http.createServer((req, res) => {
     }
 
     res.writeHead(200, {
-      "Content-Type": contentTypes[extension] || "application/octet-stream",
+      "Content-Type": contentTypes[extension] || contentTypes[fileName] || "application/octet-stream",
       "Cache-Control": "no-store"
     });
     res.end(content);

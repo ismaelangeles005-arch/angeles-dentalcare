@@ -14,3 +14,51 @@ apps/desktop/dist/
 logs/
 *.local.json
 *.local.env
+
+# Local secrets and configuration; keep distributable examples.
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Development backups and database exports, not schema/migration sources.
+*.backup-*
+qa-backups/
+dumps/
+*.dump
+*.sql.gz
+*.sql.zip
+*.sql.bak
+
+# Local clinical uploads and generated signatures.
+uploads/
+signatures/
+signature-*.png
+signature-*.base64
+signature-*.b64
+
+# Docker disk images and cold backups.
+Docker-Cold-Backups/
+*.vhd
+*.vhdx
+
+# Temporary files, caches and test output.
+tmp/
+temp/
+.cache/
+.npm/
+coverage/
+test-results/
+playwright-report/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

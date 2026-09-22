@@ -49,7 +49,7 @@
     <main class="main">
         <div class="topbar">
             <h1>Control de Cambios</h1>
-            <button class="logout-btn" onclick="DentalRoles.logout()">Cerrar Sesion</button>
+            <button class="logout-btn" onclick="DentalRoles.logout()">Cerrar Sesión</button>
         </div>
         <section class="panel">
             <h2>Actividad del sistema</h2>
@@ -61,14 +61,13 @@
 
     <script src="api.js?v=20260626e"></script>
     <script src="roles.js?v=20260626e"></script>
-    <script>
-        DentalRoles.protectPage({ active: "auditoria", adminOnly: true });
+    <script type="text/plain" data-dental-page='{"active":"auditoria","adminOnly":true}'>
 
         const actionLabels = {
             create: "Creacion",
             activate: "Activacion",
             deactivate: "Desactivacion",
-            reset_password: "Cambio de contrasena",
+            reset_password: "Cambio de contraseña",
             update_status: "Cambio de estado",
             delete: "Eliminacion",
             upsert: "Actualizacion"
