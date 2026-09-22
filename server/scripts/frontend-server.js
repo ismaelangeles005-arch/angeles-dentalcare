@@ -19,6 +19,8 @@ const publicFiles = new Set([
   "procedimientos.html",
   "doctor.html",
   "images/logo.svg",
+  "images/maelven-dental-logo.svg",
+  "images/maelven-dental-favicon.svg",
   "images/logo_files/css2",
   "styles.css",
   "roles.js",

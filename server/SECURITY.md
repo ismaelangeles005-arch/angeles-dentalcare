@@ -1,4 +1,4 @@
-# Seguridad de Angeles DentalCare
+# Seguridad de MAELVEN Dental
 
 ## Protecciones activas
 

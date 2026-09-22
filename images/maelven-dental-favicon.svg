@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>MAELVEN Dental</title>
+  <rect width="64" height="64" rx="12" fill="#2563A6"/>
+  <path d="M0 -37 Q20 -50 34 -37 Q50 -22 42 6 Q32 32 18 47 Q9 56 0 47 Q-9 56 -18 47 Q-32 32 -42 6 Q-50 -22 -34 -37 Q-20 -50 0 -37 Z" transform="translate(32 31) scale(.48)" fill="#FFFFFF"/>
+</svg>

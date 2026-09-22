@@ -1,4 +1,4 @@
-# Angeles DentalCare API
+# MAELVEN Dental API
 
 Backend de produccion para mover la app desde `localStorage` hacia PostgreSQL.
 
@@ -32,7 +32,7 @@ CLIENT_ORIGIN=http://localhost:5500
 ```
 
 
-> Nota de puertos: Angeles DentalCare usa PostgreSQL Docker publicado en `localhost:5433`, mapeado al puerto interno `5432` del contenedor. No reviertas esta separación: Foodie RMS o un PostgreSQL local de Windows pueden usar `5432` al mismo tiempo.
+> Nota de puertos: MAELVEN Dental usa PostgreSQL Docker publicado en `localhost:5433`, mapeado al puerto interno `5432` del contenedor. No reviertas esta separación: Foodie RMS o un PostgreSQL local de Windows pueden usar `5432` al mismo tiempo.
 ## Base de datos
 
 Con Docker:
@@ -47,7 +47,7 @@ En Windows tambien puedes abrir:
 setup-db-docker.bat
 ```
 
-Eso levanta PostgreSQL para Angeles DentalCare en `localhost:5433` por fuera de Docker. Dentro del contenedor PostgreSQL sigue usando el puerto interno `5432`:
+Eso levanta PostgreSQL para MAELVEN Dental en `localhost:5433` por fuera de Docker. Dentro del contenedor PostgreSQL sigue usando el puerto interno `5432`:
 
 ```txt
 database: dentalcare
@@ -127,7 +127,7 @@ Eso significa:
 - Usuario: `postgres`
 - Password: `postgres`
 - Host: `localhost`
-- Puerto externo DentalCare: `5433`
+- Puerto externo MAELVEN Dental: `5433`
 - Puerto interno del contenedor PostgreSQL: `5432`
 - Base de datos: `dentalcare`
 
@@ -163,7 +163,7 @@ Te dira:
 - si existe `.env`
 - si existen `node_modules`
 - si la API escucha en puerto `3001`
-- si PostgreSQL de Angeles DentalCare escucha en puerto `5433`
+- si PostgreSQL de MAELVEN Dental escucha en puerto `5433`
 
 Para iniciar todo después de reiniciar Windows puedes abrir:
 

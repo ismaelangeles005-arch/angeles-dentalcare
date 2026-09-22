@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Angeles DentalCare</title>
+    <title>MAELVEN Dental | Sistema de Gestión Odontológica</title>
+    <link rel="icon" href="/images/maelven-dental-favicon.svg" type="image/svg+xml">
+    <meta name="description" content="MAELVEN Dental - Sistema de Gestión Odontológica">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
@@ -43,10 +45,7 @@
             box-shadow: var(--shadow-md);
         }
         .logo { text-align: center; margin-bottom: 18px; }
-        .logo svg { width: 112px; height: auto; display: block; margin: 0 auto 8px; }
-        .logo svg path { fill: var(--color-primary); }
-        .logo-title { color: var(--color-primary-dark); font-size: 27px; font-weight: 800; letter-spacing: 2px; }
-        .logo-sub { color: var(--color-secondary); letter-spacing: 5px; font-size: 12px; font-weight: 800; margin-top: 2px; }
+        .logo .brand-logo { width: min(280px, 100%); height: 98px; object-fit: contain; display: block; margin: 0 auto 8px; }
         .clinic-name { margin-top: 10px; color: var(--color-text-muted); font-size: 14px; font-weight: 700; }
         .welcome { text-align: center; margin-bottom: 22px; }
         .welcome h1 { color: var(--color-text); margin-bottom: 7px; font-size: 22px; }
@@ -135,14 +134,9 @@
     <main class="access-shell">
         <section class="login-box" id="pinBox" aria-label="Acceso por PIN">
             <div class="logo">
-                <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <g transform="translate(340,122)">
-                        <path d="M0 -37 Q20 -50 34 -37 Q50 -22 42 6 Q32 32 18 47 Q9 56 0 47 Q-9 56 -18 47 Q-32 32 -42 6 Q-50 -22 -34 -37 Q-20 -50 0 -37 Z" />
-                    </g>
-                </svg>
-                <div class="logo-title">ANGELES</div>
-                <div class="logo-sub">DENTALCARE</div>
-                <div class="clinic-name" id="clinicName">Sistema clínico odontológico</div>
+                <img class="brand-logo" src="images/maelven-dental-logo.svg" alt="MAELVEN Dental" width="320" height="112">
+                <div class="clinic-name">Sistema de Gestión Odontológica</div>
+                <div class="clinic-name" id="clinicName">Clínica</div>
             </div>
 
             <div class="welcome">

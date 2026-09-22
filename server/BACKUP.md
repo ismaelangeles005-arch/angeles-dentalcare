@@ -1,4 +1,4 @@
-# Backups de Angeles DentalCare
+# Backups de MAELVEN Dental
 
 Este sistema guarda datos sensibles: pacientes, citas, evoluciones clinicas y archivos del expediente. Los backups deben protegerse igual que la base de datos.
 

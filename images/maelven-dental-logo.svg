@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="112" viewBox="0 0 320 112" role="img" aria-labelledby="brand-title">
+  <title id="brand-title">MAELVEN Dental</title>
+  <path d="M0 -37 Q20 -50 34 -37 Q50 -22 42 6 Q32 32 18 47 Q9 56 0 47 Q-9 56 -18 47 Q-32 32 -42 6 Q-50 -22 -34 -37 Q-20 -50 0 -37 Z" transform="translate(48 54)" fill="#2563A6"/>
+  <text x="108" y="52" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#183B5B">MAELVEN</text>
+  <text x="108" y="84" font-family="Arial, sans-serif" font-size="24" fill="#183B5B">Dental</text>
+</svg>
