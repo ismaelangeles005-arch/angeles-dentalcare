@@ -590,3 +590,69 @@ body.role-recepcion .role-note { background: rgba(47, 167, 160, 0.12); color: #1
     .brand-logo { width: 150px; height: 106px; }
     .filters-bar, .detail-row { grid-template-columns: 1fr; }
 }
+
+.clinical-choice-row,
+.tooth-toolbar,
+.conditions-grid,
+.classification-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.clinical-choice {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: #ffffff;
+    color: var(--color-text);
+    padding: 10px 12px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.clinical-choice.active,
+.clinical-choice:focus-visible {
+    outline: 2px solid rgba(37, 99, 166, 0.24);
+    border-color: var(--color-primary);
+    background: rgba(37, 99, 166, 0.10);
+    color: var(--color-primary-dark);
+}
+
+.tooth-grid {
+    display: grid;
+    grid-template-columns: repeat(16, minmax(34px, 1fr));
+    gap: 8px;
+    width: 100%;
+}
+
+.tooth-button {
+    min-height: 38px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: #ffffff;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.tooth-button.selected {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: #ffffff;
+}
+
+.clinical-alert {
+    border-left: 4px solid var(--color-error);
+    background: rgba(200, 75, 75, 0.08);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    color: #7f1d1d;
+    font-weight: 800;
+}
+
+.patient-badge.ambulatory { background: rgba(245, 158, 11, 0.15); color: #92400e; }
+.patient-badge.regular { background: rgba(46, 139, 114, 0.14); color: #17624e; }
+
+@media(max-width:900px) {
+    .tooth-grid { grid-template-columns: repeat(8, minmax(34px, 1fr)); }
+}

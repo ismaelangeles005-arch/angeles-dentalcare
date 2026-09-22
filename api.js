@@ -273,6 +273,27 @@
         });
     }
 
+    function updatePatientType(id, patientType) {
+        return request(`/patients/${id}/type`, {
+            method: "PATCH",
+            body: JSON.stringify({ patientType })
+        });
+    }
+
+    function updatePatientClassification(id, classification, observation) {
+        return request(`/patients/${id}/classification`, {
+            method: "PATCH",
+            body: JSON.stringify({ classification, observation })
+        });
+    }
+
+    function updatePatientMedicalConditions(id, conditions) {
+        return request(`/patients/${id}/medical-conditions`, {
+            method: "PUT",
+            body: JSON.stringify({ conditions })
+        });
+    }
+
     function deletePatient(id) {
         return request(`/patients/${id}`, {
             method: "DELETE"
@@ -397,6 +418,31 @@
         });
     }
 
+    function getPatientOdontogramCurrent(patientId) {
+        return request(`/odontogram/patient/${patientId}/current`);
+    }
+
+    function createOdontogramEntry(entry) {
+        return request("/odontogram", {
+            method: "POST",
+            body: JSON.stringify(entry)
+        });
+    }
+
+    function updateOdontogramEntryStatus(id, status, reason) {
+        return request(`/odontogram/${encodeURIComponent(id)}/status`, {
+            method: "PATCH",
+            body: JSON.stringify({ status, reason })
+        });
+    }
+
+    function correctOdontogramEntry(id, reason, entry) {
+        return request(`/odontogram/${encodeURIComponent(id)}/correct`, {
+            method: "POST",
+            body: JSON.stringify({ ...entry, reason })
+        });
+    }
+
     function getProcedures(includeInactive = false) {
         const query = includeInactive ? "?includeInactive=true" : "";
         return request("/procedures" + query);
@@ -495,6 +541,9 @@
         claimPatient,
         assignPatientToMe,
         updatePatientStatus,
+        updatePatientType,
+        updatePatientClassification,
+        updatePatientMedicalConditions,
         deletePatient,
         getPatientFiles,
         uploadPatientFile,
@@ -510,6 +559,10 @@
         deleteAvailability,
         getClinicalNotes,
         createClinicalNote,
+        getPatientOdontogramCurrent,
+        createOdontogramEntry,
+        updateOdontogramEntryStatus,
+        correctOdontogramEntry,
         getProcedures,
         createProcedure,
         updateProcedure,

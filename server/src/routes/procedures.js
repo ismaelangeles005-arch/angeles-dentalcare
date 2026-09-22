@@ -7,6 +7,22 @@ const { writeAuditLog } = require("../utils/audit");
 const router = express.Router();
 router.use(authenticate);
 
+const ALLOWED_PROCEDURE_AREAS = new Map([
+  ["operatoria", "Operatoria"],
+  ["cirugia", "Cirugía"],
+  ["endodoncia", "Endodoncia"],
+  ["periodoncia", "Periodoncia"],
+  ["estetica", "Estética"],
+  ["ortodoncia", "Ortodoncia"],
+  ["odontopediatria", "Odontopediatría"],
+  ["protesis", "Prótesis y rehabilitación"],
+  ["evaluacion", "Evaluación y diagnóstico"]
+]);
+
+function isAllowedProcedureArea(item) {
+  return ALLOWED_PROCEDURE_AREAS.get(item.categoryKey) === item.categoryName;
+}
+
 function cleanProcedure(body) {
   return {
     categoryKey: String(body.categoryKey || "").trim().toLowerCase().replace(/[^a-z0-9_\-]/g, "_"),
@@ -36,6 +52,9 @@ router.post("/", allowRoles("head_admin", "admin"), asyncHandler(async (req, res
   if (!item.categoryKey || !item.categoryName || !item.name) {
     return res.status(400).json({ message: "Completa categoria y nombre del procedimiento" });
   }
+  if (!isAllowedProcedureArea(item)) {
+    return res.status(400).json({ message: "Selecciona un area odontologica valida" });
+  }
   if (item.basePrice < 0 || ![15, 30, 45, 60, 90, 120].includes(item.durationMinutes)) {
     return res.status(400).json({ message: "Precio o duracion invalida" });
   }
@@ -52,6 +71,18 @@ router.patch("/:id", allowRoles("head_admin", "admin"), asyncHandler(async (req,
   const item = cleanProcedure(req.body);
   if (!item.categoryKey || !item.categoryName || !item.name) {
     return res.status(400).json({ message: "Completa categoria y nombre del procedimiento" });
+  }
+  const current = await db.query(`
+    SELECT category_key, category_name
+    FROM procedure_catalog
+    WHERE id = $1 AND organization_id = $2 AND deleted_at IS NULL
+  `, [req.params.id, req.user.organizationId]);
+  if (!current.rows.length) {
+    return res.status(404).json({ message: "Procedimiento no encontrado" });
+  }
+  const keepsHistoricalArea = current.rows[0].category_key === item.categoryKey && current.rows[0].category_name === item.categoryName;
+  if (!keepsHistoricalArea && !isAllowedProcedureArea(item)) {
+    return res.status(400).json({ message: "Selecciona un area odontologica valida" });
   }
   const result = await db.query(`
     UPDATE procedure_catalog

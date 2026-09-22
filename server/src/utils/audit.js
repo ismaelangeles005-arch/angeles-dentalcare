@@ -1,11 +1,11 @@
 ﻿const db = require("../db");
 
-async function writeAuditLog(req, action, entity, entityId = null, payload = {}) {
+async function writeAuditLog(req, action, entity, entityId = null, payload = {}, queryClient = db) {
   if (!req.user) {
     return;
   }
 
-  await db.query(`
+  await queryClient.query(`
     INSERT INTO audit_logs (organization_id, user_id, action, entity, entity_id, payload)
     VALUES ($1, $2, $3, $4, $5, $6)
   `, [

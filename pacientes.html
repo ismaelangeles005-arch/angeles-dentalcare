@@ -423,6 +423,136 @@
             border-left: 4px solid var(--color-primary);
         }
 
+        .patients-page .odontogram-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+            gap: 14px;
+            align-items: start;
+        }
+
+        .patients-page .odontogram-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .patients-page .odontogram-toolbar label {
+            color: var(--color-text-muted);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .patients-page .odontogram-toolbar select {
+            min-width: 140px;
+        }
+
+        .patients-page .odontogram-arch {
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: rgba(244, 248, 251, 0.72);
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .patients-page .odontogram-arch-title {
+            color: var(--color-text-muted);
+            display: block;
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .patients-page .odontogram-tooth-grid {
+            display: grid;
+            grid-template-columns: repeat(16, minmax(32px, 1fr));
+            gap: 6px;
+        }
+
+        .patients-page .odontogram-tooth {
+            position: relative;
+        }
+
+        .patients-page .odontogram-tooth.has-record::after {
+            content: "";
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: var(--color-primary);
+        }
+
+        .patients-page .odontogram-detail {
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: #fff;
+            padding: 14px;
+        }
+
+        .patients-page .odontogram-detail h3 {
+            color: var(--color-primary-dark);
+            margin: 0 0 8px;
+        }
+
+        .patients-page .odontogram-entry {
+            border-top: 1px solid var(--color-border);
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        .patients-page .odontogram-entry span {
+            color: var(--color-text-muted);
+            display: block;
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 3px;
+        }
+
+        .patients-page .odontogram-condition-form {
+            border-top: 1px solid var(--color-border);
+            display: grid;
+            gap: 9px;
+            margin-top: 12px;
+            padding-top: 12px;
+        }
+
+        .patients-page .odontogram-condition-form label {
+            color: var(--color-text-muted);
+            display: grid;
+            font-size: 12px;
+            font-weight: 800;
+            gap: 5px;
+        }
+
+        .patients-page .odontogram-condition-form textarea {
+            min-height: 72px;
+            resize: vertical;
+        }
+
+        .patients-page .odontogram-entry-group {
+            border-top: 1px solid var(--color-border);
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+
+        .patients-page .odontogram-entry-group h4 {
+            color: var(--color-primary-dark);
+            margin: 0 0 8px;
+        }
+
+        .patients-page .odontogram-custom-diagnosis[hidden] {
+            display: none;
+        }
+
+        @media (max-width: 900px) {
+            .patients-page .odontogram-layout { grid-template-columns: 1fr; }
+            .patients-page .odontogram-tooth-grid { grid-template-columns: repeat(8, minmax(34px, 1fr)); }
+        }
+
         .patients-page .upload-panel {
             display: grid;
             grid-template-columns: 170px 1fr;
@@ -626,13 +756,13 @@
         <div class="topbar">
 
             <h1 id="pacientesTitle">
-                GestiÃ³n de Pacientes
+                Gestión de Pacientes
             </h1>
 
             <button class="logout-btn"
                     onclick="cerrarSesion()">
 
-                Cerrar SesiÃ³n
+                Cerrar Sesión
 
             </button>
 
@@ -656,32 +786,44 @@
 
                 <input type="text"
                        id="cedula"
-                       placeholder="CÃ©dula de identidad">
+                       placeholder="Cédula de identidad">
 
                 <input type="text"
                        id="codigoPaciente"
-                       placeholder="CÃ³digo del paciente (opcional)">
+                       placeholder="Código del paciente (opcional)">
 
                 <input type="tel"
                        id="telefono"
-                       placeholder="TelÃ©fono">
+                       placeholder="Teléfono">
 
                 <input type="email"
                        id="email"
-                       placeholder="Correo electrÃ³nico">
+                       placeholder="Correo electrónico">
 
                 <select id="doctorAsignado">
                     <option value="">Sin doctor asignado por ahora</option>
                 </select>
 
+                <select id="tipoPaciente" onchange="toggleAmbulatoryFields()">
+                    <option value="regular">Paciente regular</option>
+                    <option value="ambulatory">Paciente ambulatorio</option>
+                </select>
+
+                <div class="form-grid span-2" id="ambulatoryFields" hidden>
+                    <input type="date" id="ambulatoryDate" aria-label="Fecha de atención ambulatoria">
+                    <input type="time" id="ambulatoryTime" aria-label="Hora de atención ambulatoria">
+                    <input type="text" id="ambulatoryProcedure" maxlength="160" placeholder="Procedimiento realizado">
+                    <textarea id="ambulatoryObservations" placeholder="Observaciones ambulatorias"></textarea>
+                </div>
+
                 <textarea id="notas"
-                          placeholder="Notas generales, alergias o informaciÃ³n importante"></textarea>
+                          placeholder="Notas generales, alergias o información importante"></textarea>
 
                 <textarea id="alergias"
                           placeholder="Alergias conocidas"></textarea>
 
                 <textarea id="antecedentesMedicos"
-                          placeholder="Antecedentes mÃ©dicos relevantes"></textarea>
+                          placeholder="Antecedentes médicos relevantes"></textarea>
 
                 <textarea id="medicamentosActuales"
                           placeholder="Medicamentos actuales"></textarea>
@@ -706,7 +848,7 @@
 
             <input type="text"
                    id="busqueda"
-                   placeholder="Buscar paciente por nombre, cÃ©dula o cÃ³digo..."
+                   placeholder="Buscar paciente por nombre, cédula o código..."
                    onkeyup="renderPacientes()">
 
         </div>
@@ -724,19 +866,20 @@
         <section class="clinical-dialog" role="dialog" aria-modal="true" aria-labelledby="clinicalTitle">
             <div class="clinical-header">
                 <div>
-                    <h2 id="clinicalTitle">Expediente clÃ­nico</h2>
+                    <h2 id="clinicalTitle">Expediente clínico</h2>
                     <p id="clinicalPatientName"></p>
                 </div>
                 <button type="button" class="clinical-close" id="clinicalClose" aria-label="Cerrar">&times;</button>
             </div>
             <div class="clinical-body">
-                <div class="clinical-tabs" role="tablist" aria-label="Secciones del expediente clinico">
-                    <button type="button" class="clinical-tab active" data-clinical-tab="general" onclick="cambiarPestanaExpediente('general')">Informacion General</button>
-                    <button type="button" class="clinical-tab" data-clinical-tab="historia" onclick="cambiarPestanaExpediente('historia')">Historia Clinica</button>
-                    <button type="button" class="clinical-tab" data-clinical-tab="evaluacion" onclick="cambiarPestanaExpediente('evaluacion')">Evaluacion Clinica</button>
+                <div class="clinical-tabs" role="tablist" aria-label="Secciones del expediente clínico">
+                    <button type="button" class="clinical-tab active" data-clinical-tab="general" onclick="cambiarPestanaExpediente('general')">Información General</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="historia" onclick="cambiarPestanaExpediente('historia')">Historia Clínica</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="evaluacion" onclick="cambiarPestanaExpediente('evaluacion')">Evaluación Clínica</button>
                     <button type="button" class="clinical-tab" data-clinical-tab="procedimientos" onclick="cambiarPestanaExpediente('procedimientos')">Procedimientos</button>
-                    <button type="button" class="clinical-tab" data-clinical-tab="evolucion" onclick="cambiarPestanaExpediente('evolucion')">Evolucion</button>
-                    <button type="button" class="clinical-tab" data-clinical-tab="archivos" onclick="cambiarPestanaExpediente('archivos')">Imagenes y Documentos</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="odontograma" onclick="cambiarPestanaExpediente('odontograma')">Odontograma</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="evolucion" onclick="cambiarPestanaExpediente('evolucion')">Evolución</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="archivos" onclick="cambiarPestanaExpediente('archivos')">Imágenes y Documentos</button>
                 </div>
 
                 <section class="clinical-panel" data-clinical-panel="general">
@@ -755,11 +898,39 @@
                     <div class="clinical-history-list" id="clinicalProcedureList"></div>
                 </section>
 
+                <section class="clinical-panel" data-clinical-panel="odontograma" hidden>
+                    <div class="odontogram-toolbar">
+                        <strong>Odontograma clínico</strong>
+                        <label>
+                            Sistema dental
+                            <select id="odontogramNumberingSystem" onchange="renderOdontogramView()">
+                                <option value="FDI">FDI</option>
+                                <option value="UNIVERSAL">Universal</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="odontogram-layout">
+                        <div>
+                            <section class="odontogram-arch">
+                                <span class="odontogram-arch-title">Superior</span>
+                                <div class="odontogram-tooth-grid" id="odontogramUpperGrid"></div>
+                            </section>
+                            <section class="odontogram-arch">
+                                <span class="odontogram-arch-title">Inferior</span>
+                                <div class="odontogram-tooth-grid" id="odontogramLowerGrid"></div>
+                            </section>
+                        </div>
+                        <aside class="odontogram-detail" id="odontogramDetail">
+                            <div class="empty-state">Selecciona una pieza para ver su información clínica.</div>
+                        </aside>
+                    </div>
+                </section>
+
                 <section class="clinical-panel" data-clinical-panel="evolucion" hidden>
                     <form class="clinical-note-form" id="clinicalNoteForm">
-                        <select id="clinicalNoteType" aria-label="Tipo de registro clinico">
+                        <select id="clinicalNoteType" aria-label="Tipo de registro clínico">
                             <option value="consulta_ambulatoria">Consulta ambulatoria</option>
-                            <option value="evolucion">Hoja de evolucion</option>
+                            <option value="evolucion">Hoja de evolución</option>
                             <option value="procedimiento">Procedimiento realizado</option>
                         </select>
                         <select id="consultationStatus" aria-label="Estado de consulta">
@@ -775,20 +946,49 @@
                             <option value="pendiente">Procedimiento pendiente</option>
                             <option value="cancelado">Procedimiento cancelado</option>
                         </select>
-                        <input type="text" id="clinicalToothNumber" placeholder="Pieza dental (opcional)">
+                        <div class="span-2">
+                            <label>Número de piezas</label>
+                            <div class="tooth-toolbar">
+                                <select id="clinicalToothCountMode" onchange="renderClinicalToothSelector()">
+                                    <option value="">Sin piezas</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="multiple">Múltiples</option>
+                                </select>
+                                <select id="clinicalToothNumberingSystem" onchange="renderClinicalToothSelector()">
+                                    <option value="FDI">FDI</option>
+                                    <option value="UNIVERSAL">Universal</option>
+                                </select>
+                            </div>
+                            <input type="hidden" id="clinicalToothNumber">
+                            <div class="tooth-grid" id="clinicalToothGrid"></div>
+                        </div>
                         <input type="date" id="nextReviewDate" aria-label="Proxima revision">
                         <textarea class="span-2" id="chiefComplaint" placeholder="Motivo de consulta"></textarea>
-                        <textarea class="span-2" id="clinicalEvaluation" placeholder="Evaluacion clinica"></textarea>
-                        <textarea class="span-2" id="odontologicalDiagnosis" placeholder="Diagnostico odontologico"></textarea>
+                        <textarea class="span-2" id="clinicalEvaluation" placeholder="Evaluación clínica"></textarea>
+                        <textarea class="span-2" id="odontologicalDiagnosis" placeholder="Diagnóstico odontológico"></textarea>
                         <textarea class="span-2" id="performedProcedures" placeholder="Procedimientos realizados"></textarea>
                         <textarea id="clinicalIndications" placeholder="Indicaciones"></textarea>
                         <textarea id="clinicalObservations" placeholder="Observaciones"></textarea>
-                        <textarea id="clinicalMedications" placeholder="Medicamentos indicados"></textarea>
+                        <div class="span-2">
+                            <label>Farmacoterapia</label>
+                            <div class="form-grid">
+                                <input type="text" id="clinicalDrug" maxlength="160" placeholder="Fármaco">
+                                <input type="text" id="clinicalPresentation" maxlength="160" placeholder="Presentación">
+                                <input type="text" id="clinicalDose" maxlength="160" placeholder="Dosis">
+                                <input type="text" id="clinicalFrequency" maxlength="160" placeholder="Frecuencia">
+                                <input type="text" id="clinicalRoute" maxlength="160" placeholder="Vía de administración">
+                                <input type="text" id="clinicalPharmaIndications" maxlength="500" placeholder="Indicaciones">
+                            </div>
+                        </div>
+                        <textarea id="clinicalMedications" placeholder="Medicamentos históricos o resumen farmacológico"></textarea>
                         <textarea id="materialUsed" placeholder="Material utilizado (opcional)"></textarea>
-                        <textarea class="span-2" id="clinicalEvolutionText" placeholder="Evolucion / hallazgos clinicos"></textarea>
+                        <textarea class="span-2" id="clinicalEvolutionText" placeholder="Evolución / hallazgos clínicos"></textarea>
                         <input type="date" id="nextAppointmentDate" aria-label="Proxima cita">
                         <input type="time" id="nextAppointmentTime" aria-label="Hora proxima cita">
-                        <button type="submit" class="add-btn span-2">Guardar evolucion clinica</button>
+                        <button type="submit" class="add-btn span-2">Guardar evolución clínica</button>
                     </form>
                     <div class="clinical-timeline" id="clinicalHistoryList"></div>
                 </section>
@@ -797,7 +997,7 @@
                     <form class="upload-panel" id="clinicalUploadForm">
                         <select id="fileCategory" name="category" aria-label="Tipo de archivo">
                             <option value="radiografia">Radiografia / RX</option>
-                            <option value="fotografia">Fotografia clinica</option>
+                            <option value="fotografia">Fotografía clínica</option>
                             <option value="documento">Documento</option>
                             <option value="otro">Otro</option>
                         </select>
@@ -808,7 +1008,7 @@
                         <button type="submit" class="add-btn">Subir al expediente</button>
                     </form>
                     <section class="clinical-section">
-                        <h3>Imagenes y documentos clinicos</h3>
+                        <h3>Imágenes y documentos clínicos</h3>
                         <div class="file-list" id="clinicalFileList"></div>
                     </section>
                 </section>
@@ -828,6 +1028,7 @@
 
     <script src="api.js?v=20260626e"></script>
     <script src="roles.js?v=20260626e"></script>
+    <script src="dental-tooth-selector.js?v=20260903a"></script>
 
     <script type="text/plain" data-dental-page='{"active":"pacientes"}'>
 
@@ -846,7 +1047,56 @@
         let pacienteExpediente = null;
         let archivosExpediente = [];
         let notasClinicas = [];
+        let odontogramCurrent = { teeth: {} };
+        let odontogramOpening = Promise.resolve();
+        let odontogramLoaded = false;
+        let selectedOdontogramToothId = "";
         let previewObjectUrl = "";
+        const clinicalToothSelector = DentalToothSelector.createSelector({
+            gridId: "clinicalToothGrid",
+            countModeId: "clinicalToothCountMode",
+            numberingSystemId: "clinicalToothNumberingSystem",
+            hiddenInputId: "clinicalToothNumber",
+            toggleFunctionName: "toggleClinicalTooth"
+        });
+        const ODONTOGRAM_EXISTING_CONDITIONS = [
+            { code: "CARIES", label: "Caries" },
+            { code: "RESTORATION", label: "Restauración existente" },
+            { code: "CROWN", label: "Corona" },
+            { code: "BRIDGE", label: "Puente" },
+            { code: "IMPLANT", label: "Implante" },
+            { code: "MISSING", label: "Ausente" },
+            { code: "FRACTURE", label: "Fractura" },
+            { code: "SEALANT", label: "Sellante" },
+            { code: "ROOT_CANAL", label: "Endodoncia existente" },
+            { code: "PROSTHESIS", label: "Prótesis" }
+        ];
+        const ODONTOGRAM_DIAGNOSES = [
+            { code: "CARIES_ACTIVE", label: "Caries activa" },
+            { code: "PULPITIS", label: "Pulpitis" },
+            { code: "PULP_NECROSIS", label: "Necrosis pulpar" },
+            { code: "PERIAPICAL_LESION", label: "Lesión periapical" },
+            { code: "GINGIVITIS", label: "Gingivitis" },
+            { code: "PERIODONTITIS", label: "Periodontitis" },
+            { code: "TOOTH_FRACTURE", label: "Fractura dental" },
+            { code: "TOOTH_WEAR", label: "Desgaste dental" },
+            { code: "SENSITIVITY", label: "Sensibilidad dental" },
+            { code: "IMPACTED_TOOTH", label: "Diente impactado" },
+            { code: "RETAINED_ROOT", label: "Resto radicular" },
+            { code: "MALOCCLUSION", label: "Maloclusión" },
+            { code: "OTHER", label: "Otro" }
+        ];
+        const ODONTOGRAM_FULL_TOOTH_CONDITIONS = new Set(["MISSING", "IMPLANT", "CROWN", "PROSTHESIS"]);
+        const ODONTOGRAM_SURFACES = [
+            { value: "", label: "Pieza completa" },
+            { value: "MESIAL", label: "Mesial" },
+            { value: "DISTAL", label: "Distal" },
+            { value: "BUCCAL", label: "Bucal/Vestibular" },
+            { value: "LINGUAL", label: "Lingual" },
+            { value: "PALATAL", label: "Palatina" },
+            { value: "OCCLUSAL", label: "Oclusal" },
+            { value: "INCISAL", label: "Incisal" }
+        ];
 
         async function cargarDoctores() {
             if (!apiActiva || rol === "doctor") {
@@ -907,9 +1157,9 @@
             let note = document.getElementById("roleNote");
 
             if (rol === "doctor") {
-                title.innerText = "Pacientes de la clÃ­nica";
+                title.innerText = "Pacientes de la clínica";
                 form.style.display = "none";
-                note.innerText = "Vista mÃ©dica: puede consultar todos los pacientes e identificar los asignados a " + doctorActual + ".";
+                note.innerText = "Vista médica: puede consultar todos los pacientes e identificar los asignados a " + doctorActual + ".";
             }
             else if (rol === "recepcion") {
                 title.innerText = "Pacientes - Recepci\u00f3n";
@@ -956,6 +1206,11 @@
             let medicamentosActuales = document.getElementById("medicamentosActuales").value.trim();
             let motivoConsulta = document.getElementById("motivoConsulta").value.trim();
             let doctorId = document.getElementById("doctorAsignado").value;
+            let patientType = document.getElementById("tipoPaciente").value;
+            let appointmentDate = document.getElementById("ambulatoryDate").value;
+            let appointmentTime = document.getElementById("ambulatoryTime").value;
+            let procedureName = document.getElementById("ambulatoryProcedure").value.trim();
+            let ambulatoryObservations = document.getElementById("ambulatoryObservations").value.trim();
 
             if (!nombre) {
                 DentalRoles.notify("Escribe el nombre del paciente.", "warning");
@@ -1011,7 +1266,11 @@
                 medical_history: antecedentesMedicos,
                 current_medications: medicamentosActuales,
                 diagnosis: motivoConsulta,
-                motivo_consulta: motivoConsulta
+                motivo_consulta: motivoConsulta,
+                patient_type: patientType,
+                procedure_name: procedureName,
+                appointment_date: appointmentDate,
+                appointment_time: appointmentTime
 
             };
 
@@ -1075,7 +1334,7 @@
                 });
 
             if (visibles.length === 0) {
-                grid.innerHTML = `<div class='empty-state'>${busqueda ? "No hay pacientes que coincidan con la bÃºsqueda actual." : "No hay pacientes para mostrar."}</div>`;
+                grid.innerHTML = `<div class='empty-state'>${busqueda ? "No hay pacientes que coincidan con la búsqueda actual." : "No hay pacientes para mostrar."}</div>`;
                 return;
             }
 
@@ -1101,6 +1360,7 @@
                 let identityBadge = p.patient_code
                     ? `<span class="patient-badge neutral">${DentalRoles.escapeHtml(p.patient_code)}</span>`
                     : "";
+                let typeBadge = `<span class="patient-badge ${p.patient_type === "ambulatory" ? "ambulatory" : "regular"}">${p.patient_type === "ambulatory" ? "Ambulatorio" : "Regular"}</span>`;
                 let takeButton = rol === "doctor" && !esPacienteDelDoctor ? `
                     <button class="assign-btn" onclick="tomarPaciente(${index})">
                         Atender visita
@@ -1129,16 +1389,17 @@
                     <div class="patient-badges">
                         ${ownershipBadge}
                         ${identityBadge}
+                        ${typeBadge}
                     </div>
                 </header>
 
                 <div class="patient-meta">
                     <div class="meta-item">
-                        <span class="meta-label">CÃ©dula</span>
+                        <span class="meta-label">Cédula</span>
                         <span class="meta-value" title="${DentalRoles.escapeHtml(p.national_id || "No registrada")}">${DentalRoles.escapeHtml(p.national_id || "No registrada")}</span>
                     </div>
                     <div class="meta-item">
-                        <span class="meta-label">TelÃ©fono</span>
+                        <span class="meta-label">Teléfono</span>
                         <span class="meta-value" title="${DentalRoles.escapeHtml(p.phone || "No registrado")}">${DentalRoles.escapeHtml(p.phone || "No registrado")}</span>
                     </div>
                     <div class="meta-item">
@@ -1158,6 +1419,9 @@
                     </button>
 
                     ${clinicalButton}
+                    ${rol !== "recepcion" ? `<button class="assign-btn" onclick="abrirClasificacionPaciente(${index})">Clasificación</button>` : ""}
+                    ${rol !== "recepcion" ? `<button class="file-btn" onclick="abrirCondicionesMedicas(${index})">Alertas clínicas</button>` : ""}
+                    ${rol !== "doctor" && p.patient_type === "ambulatory" ? `<button class="complete-btn" onclick="convertirPacienteRegular(${index})">Convertir a regular</button>` : ""}
                     ${takeButton}
                     ${followButton}
                     ${assignButton}
@@ -1173,6 +1437,101 @@
 
         }
 
+
+
+        function toggleAmbulatoryFields() {
+            const isAmbulatory = document.getElementById("tipoPaciente")?.value === "ambulatory";
+            const fields = document.getElementById("ambulatoryFields");
+            if (fields) fields.hidden = !isAmbulatory;
+        }
+
+        function clinicalToothSelections() {
+            return clinicalToothSelector.selections();
+        }
+
+        function renderClinicalToothSelector() {
+            clinicalToothSelector.render();
+        }
+
+        function toggleClinicalTooth(toothId) {
+            clinicalToothSelector.toggle(toothId);
+        }
+
+        function clinicalToothCountIsValid() {
+            return clinicalToothSelector.isValid();
+        }
+
+        async function convertirPacienteRegular(index) {
+            const paciente = pacientes[index];
+            if (!paciente?.id) return;
+            try {
+                await DentalApi.updatePatientType(paciente.id, "regular");
+                await cargarPacientes();
+                DentalRoles.notify("Paciente convertido a regular.", "success");
+            } catch (error) { DentalRoles.notify(error.message, "error"); }
+        }
+
+        function abrirClasificacionPaciente(index) {
+            const paciente = pacientes[index];
+            if (!paciente?.id) return;
+            const backdrop = document.createElement("div");
+            const options = [
+                ["sin_clasificacion", "Sin clasificación"], ["cumplido", "Cumplido"], ["impuntual", "Impuntual"],
+                ["ausencias_frecuentes", "Ausencias frecuentes"], ["requiere_confirmacion", "Requiere confirmación"],
+                ["incumplimiento_indicaciones", "Incumplimiento recurrente de citas o indicaciones"],
+                ["documentacion_pendiente", "Documentación pendiente"]
+            ];
+            backdrop.className = "confirm-backdrop";
+            backdrop.innerHTML = `
+                <div class="confirm-dialog" role="dialog" aria-modal="true">
+                    <h3>Clasificación operativa</h3>
+                    <p>${DentalRoles.escapeHtml(paciente.nombre)}</p>
+                    <select data-classification style="width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px">
+                        ${options.map(([value,label]) => `<option value="${value}" ${value === paciente.operational_classification ? "selected" : ""}>${label}</option>`).join("")}
+                    </select>
+                    <textarea data-observation placeholder="Observación" style="width:100%;margin-top:10px;padding:11px;border:1px solid #cbd5e1;border-radius:8px">${DentalRoles.escapeHtml(paciente.operational_classification_observation || "")}</textarea>
+                    <div class="confirm-actions">
+                        <button type="button" class="confirm-secondary" data-cancel>Cancelar</button>
+                        <button type="button" class="confirm-danger success" data-save>Guardar</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(backdrop);
+            backdrop.querySelector("[data-cancel]").onclick = () => backdrop.remove();
+            backdrop.querySelector("[data-save]").onclick = async () => {
+                try {
+                    await DentalApi.updatePatientClassification(paciente.id, backdrop.querySelector("[data-classification]").value, backdrop.querySelector("[data-observation]").value);
+                    backdrop.remove();
+                    await cargarPacientes();
+                    DentalRoles.notify("Clasificación guardada.", "success");
+                } catch (error) { DentalRoles.notify(error.message, "error"); }
+            };
+        }
+
+        function abrirCondicionesMedicas(index) {
+            const paciente = pacientes[index];
+            if (!paciente?.id) return;
+            const keys = [["alzheimer","Alzheimer"],["diabetes","Diabetes"],["hipertension","Hipertensión"],["anticoagulacion","Anticoagulación"],["alergias","Alergias"],["discapacidad_cognitiva","Discapacidad cognitiva"],["necesita_acompanante","Necesita acompañante"],["riesgo_medico_especial","Riesgo médico especial"],["otro","Otro"]];
+            const active = new Set((paciente.medical_conditions || []).map(item => item.condition_key));
+            const backdrop = document.createElement("div");
+            backdrop.className = "confirm-backdrop";
+            backdrop.innerHTML = `
+                <div class="confirm-dialog" role="dialog" aria-modal="true">
+                    <h3>Alertas clínicas</h3>
+                    <div class="conditions-grid">${keys.map(([key,label]) => `<label><input type="checkbox" value="${key}" ${active.has(key) ? "checked" : ""}> ${label}</label>`).join("")}</div>
+                    <div class="confirm-actions"><button type="button" class="confirm-secondary" data-cancel>Cancelar</button><button type="button" class="confirm-danger success" data-save>Guardar</button></div>
+                </div>`;
+            document.body.appendChild(backdrop);
+            backdrop.querySelector("[data-cancel]").onclick = () => backdrop.remove();
+            backdrop.querySelector("[data-save]").onclick = async () => {
+                const conditions = Array.from(backdrop.querySelectorAll("input:checked")).map(input => ({ conditionKey: input.value }));
+                try {
+                    await DentalApi.updatePatientMedicalConditions(paciente.id, conditions);
+                    backdrop.remove();
+                    await cargarPacientes();
+                    DentalRoles.notify("Alertas clínicas guardadas.", "success");
+                } catch (error) { DentalRoles.notify(error.message, "error"); }
+            };
+        }
 
         async function tomarPaciente(index) {
             const paciente = pacientes[index];
@@ -1277,7 +1636,7 @@
         async function abrirExpediente(index) {
             const paciente = pacientes[index];
             if (!paciente?.id || rol === "recepcion") {
-                DentalRoles.notify("No tienes acceso al expediente clÃ­nico.", "warning");
+                DentalRoles.notify("No tienes acceso al expediente clínico.", "warning");
                 return;
             }
 
@@ -1287,7 +1646,8 @@
             cambiarPestanaExpediente("general");
             await Promise.all([
                 cargarArchivosPaciente(),
-                cargarEvolucionPaciente()
+                cargarEvolucionPaciente(),
+                (odontogramOpening = cargarOdontogramaPaciente())
             ]);
         }
 
@@ -1297,8 +1657,13 @@
             pacienteExpediente = null;
             archivosExpediente = [];
             notasClinicas = [];
+            odontogramCurrent = { teeth: {} };
+            selectedOdontogramToothId = "";
             document.getElementById("clinicalFileList").innerHTML = "";
             document.getElementById("clinicalHistoryList").innerHTML = "";
+            document.getElementById("odontogramUpperGrid").innerHTML = "";
+            document.getElementById("odontogramLowerGrid").innerHTML = "";
+            document.getElementById("odontogramDetail").innerHTML = '<div class="empty-state">Selecciona una pieza para ver su información clínica.</div>';
             document.getElementById("clinicalUploadForm").reset();
             document.getElementById("clinicalNoteForm").reset();
         }
@@ -1313,6 +1678,685 @@
             document.querySelectorAll("[data-clinical-panel]").forEach(panel => {
                 panel.hidden = panel.dataset.clinicalPanel !== tab;
             });
+        }
+
+        function codigoOdontograma(tooth) {
+            const system = document.getElementById("odontogramNumberingSystem")?.value || "FDI";
+            return tooth?.[system] || "";
+        }
+
+        function entradasOdontograma(toothId) {
+            return odontogramCurrent?.teeth?.[toothId] || [];
+        }
+
+        function renderOdontogramArch(containerId, teeth) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = teeth.map(tooth => {
+                const entries = entradasOdontograma(tooth.toothId);
+                const selected = selectedOdontogramToothId === tooth.toothId;
+                return `
+                    <button type="button"
+                            class="tooth-button odontogram-tooth ${selected ? "selected" : ""} ${entries.length ? "has-record" : ""}"
+                            onclick="seleccionarPiezaOdontograma('${tooth.toothId}')"
+                            title="${DentalRoles.escapeHtml(tooth.toothId)}">
+                        ${DentalRoles.escapeHtml(codigoOdontograma(tooth))}
+                    </button>
+                `;
+            }).join("");
+        }
+
+        function renderOdontogramView() {
+            const teeth = DentalToothSelector.toothMap || [];
+            renderOdontogramArch("odontogramUpperGrid", teeth.slice(0, 16));
+            renderOdontogramArch("odontogramLowerGrid", teeth.slice(16));
+            renderOdontogramDetail();
+        }
+
+        function seleccionarPiezaOdontograma(toothId) {
+            selectedOdontogramToothId = toothId;
+            renderOdontogramView();
+        }
+
+        function etiquetaEntradaOdontograma(value) {
+            const labels = {
+                EXISTING_CONDITION: "Condición existente",
+                DIAGNOSIS: "Diagnóstico",
+                PROPOSED_TREATMENT: "Tratamiento propuesto",
+                COMPLETED_TREATMENT: "Tratamiento completado"
+            };
+            return labels[value] || value || "Sin tipo";
+        }
+
+        function renderOdontogramDetail() {
+            const detail = document.getElementById("odontogramDetail");
+            if (!detail) return;
+
+            if (!selectedOdontogramToothId) {
+                detail.innerHTML = '<div class="empty-state">Selecciona una pieza para ver su información clínica.</div>';
+                return;
+            }
+
+            const tooth = (DentalToothSelector.toothMap || []).find(item => item.toothId === selectedOdontogramToothId);
+            const entries = entradasOdontograma(selectedOdontogramToothId);
+            const existingConditions = entries.filter(entry => entry.entry_type === "EXISTING_CONDITION");
+            const diagnoses = entries.filter(entry => entry.entry_type === "DIAGNOSIS");
+            const activeDiagnoses = diagnoses.filter(entry => entry.status === "ACTIVE" && entry.id);
+            const proposedTreatments = entries.filter(entry => entry.entry_type === "PROPOSED_TREATMENT");
+            const completedTreatments = entries.filter(entry => entry.entry_type === "COMPLETED_TREATMENT");
+            const activeProposals = proposedTreatments.filter(entry => entry.status === "ACTIVE");
+            const code = codigoOdontograma(tooth);
+
+            detail.innerHTML = `
+                <h3>Pieza ${DentalRoles.escapeHtml(code)}</h3>
+                <div class="clinical-info-item">
+                    <span>toothId</span>
+                    <strong>${DentalRoles.escapeHtml(selectedOdontogramToothId)}</strong>
+                </div>
+                ${entries.length ? `
+                    <section class="odontogram-entry-group">
+                        <h4>Condiciones existentes</h4>
+                        ${existingConditions.length ? existingConditions.map(entry => renderOdontogramEntry(entry)).join("") : '<div class="empty-state">Sin condiciones existentes</div>'}
+                    </section>
+                    <section class="odontogram-entry-group">
+                        <h4>Diagnósticos</h4>
+                        ${diagnoses.length ? diagnoses.map(entry => renderOdontogramEntry(entry)).join("") : '<div class="empty-state">Sin diagnósticos registrados</div>'}
+                    </section>
+                ` : '<div class="empty-state">Sin condiciones registradas</div>'}
+                <section class="odontogram-entry-group">
+                    <h4>Tratamientos propuestos</h4>
+                    ${proposedTreatments.length ? proposedTreatments.map(entry => renderOdontogramEntry(entry) + (!entry.surface ? '<p>Superficie: Pieza completa</p>' : '')).join("") : '<div class="empty-state">Sin tratamientos propuestos</div>'}
+                </section>
+                <details ontoggle="if (this.open) cargarProcedimientosOdontograma(this)">
+                    <summary>Proponer tratamiento</summary>
+                    <form class="odontogram-condition-form" id="odontogramProposedForm" onsubmit="guardarTratamientoPropuestoOdontograma(event)">
+                        ${activeDiagnoses.length ? `
+                            <label>
+                                Relacionado con diagnóstico
+                                <select name="related_entry_id">
+                                    <option value="">Sin relación</option>
+                                    ${activeDiagnoses.map(entry => `<option value="${DentalRoles.escapeHtml(entry.id)}">${DentalRoles.escapeHtml(etiquetaRelacionOdontograma(entry))}</option>`).join("")}
+                                </select>
+                            </label>
+                        ` : ""}
+                        <label>
+                            Procedimiento
+                            <select name="procedure_id" required disabled>
+                                <option value="">Cargando procedimientos...</option>
+                            </select>
+                        </label>
+                        <p data-catalog-status role="status"></p>
+                        <label>
+                            Superficie
+                            <select name="surface">
+                                ${ODONTOGRAM_SURFACES.map(surface => `
+                                    <option value="${DentalRoles.escapeHtml(surface.value)}">${DentalRoles.escapeHtml(surface.label)}</option>
+                                `).join("")}
+                            </select>
+                        </label>
+                        <label>
+                            Notas opcionales
+                            <textarea name="notes" maxlength="2000" placeholder="Observación breve"></textarea>
+                        </label>
+                        <button type="submit" class="add-btn" disabled>Guardar propuesta</button>
+                    </form>
+                </details>
+                <section class="odontogram-entry-group">
+                    <h4>Tratamientos realizados</h4>
+                    ${completedTreatments.length ? completedTreatments.map(entry => renderOdontogramEntry(entry) + (!entry.surface ? '<p>Superficie: Pieza completa</p>' : '')).join("") : '<div class="empty-state">Sin tratamientos realizados</div>'}
+                </section>
+                <details ontoggle="if (this.open) cargarProcedimientosOdontograma(this)">
+                    <summary>Registrar tratamiento realizado</summary>
+                    ${activeProposals.length ? `
+                        <section class="odontogram-entry-group">
+                            <h4>Tratamientos propuestos activos</h4>
+                            ${activeProposals.map(entry => renderOdontogramEntry(entry)).join("")}
+                        </section>
+                    ` : ""}
+                    <form class="odontogram-condition-form" id="odontogramCompletedForm" onsubmit="guardarTratamientoRealizadoOdontograma(event)">
+                        ${activeProposals.some(entry => entry.id) ? `
+                            <label>
+                                Relacionado con tratamiento propuesto
+                                <select name="related_entry_id">
+                                    <option value="">Sin relación</option>
+                                    ${activeProposals.filter(entry => entry.id).map(entry => `<option value="${DentalRoles.escapeHtml(entry.id)}">${DentalRoles.escapeHtml(etiquetaRelacionOdontograma(entry))}</option>`).join("")}
+                                </select>
+                            </label>
+                        ` : ""}
+                        <label>
+                            Procedimiento
+                            <select name="procedure_id" required disabled>
+                                <option value="">Cargando procedimientos...</option>
+                            </select>
+                        </label>
+                        <p data-catalog-status role="status"></p>
+                        <label>
+                            Superficie
+                            <select name="surface">
+                                ${ODONTOGRAM_SURFACES.map(surface => `
+                                    <option value="${DentalRoles.escapeHtml(surface.value)}">${DentalRoles.escapeHtml(surface.label)}</option>
+                                `).join("")}
+                            </select>
+                        </label>
+                        <label>
+                            Notas opcionales
+                            <textarea name="notes" maxlength="2000" placeholder="Observación breve"></textarea>
+                        </label>
+                        <button type="submit" class="add-btn" disabled>Guardar tratamiento realizado</button>
+                    </form>
+                </details>
+                <form class="odontogram-condition-form" id="odontogramConditionForm" onsubmit="guardarCondicionOdontograma(event)">
+                    <strong>Registrar condición</strong>
+                    <label>
+                        Condición
+                        <select id="odontogramConditionCode" onchange="actualizarSuperficieOdontograma()">
+                            <option value="">Seleccionar condición</option>
+                            ${ODONTOGRAM_EXISTING_CONDITIONS.map(condition => `
+                                <option value="${DentalRoles.escapeHtml(condition.code)}">${DentalRoles.escapeHtml(condition.label)}</option>
+                            `).join("")}
+                        </select>
+                    </label>
+                    <label>
+                        Superficie
+                        <select id="odontogramSurface">
+                            ${ODONTOGRAM_SURFACES.map(surface => `
+                                <option value="${DentalRoles.escapeHtml(surface.value)}">${DentalRoles.escapeHtml(surface.label)}</option>
+                            `).join("")}
+                        </select>
+                    </label>
+                    <label>
+                        Notas opcionales
+                        <textarea id="odontogramNotes" maxlength="2000" placeholder="Observación breve"></textarea>
+                    </label>
+                    <button type="submit" class="add-btn">Guardar condición</button>
+                </form>
+                <form class="odontogram-condition-form" id="odontogramDiagnosisForm" onsubmit="guardarDiagnosticoOdontograma(event)">
+                    <strong>Registrar diagnóstico</strong>
+                    <label>
+                        Diagnóstico
+                        <select id="odontogramDiagnosisCode" onchange="actualizarDiagnosticoOdontograma()">
+                            <option value="">Seleccionar diagnóstico</option>
+                            ${ODONTOGRAM_DIAGNOSES.map(diagnosis => `
+                                <option value="${DentalRoles.escapeHtml(diagnosis.code)}">${DentalRoles.escapeHtml(diagnosis.label)}</option>
+                            `).join("")}
+                        </select>
+                    </label>
+                    <label class="odontogram-custom-diagnosis" id="odontogramCustomDiagnosisGroup" hidden>
+                        Etiqueta breve
+                        <input type="text" id="odontogramCustomDiagnosisLabel" maxlength="120" placeholder="Describe el diagnóstico">
+                    </label>
+                    <label>
+                        Superficie
+                        <select id="odontogramDiagnosisSurface">
+                            ${ODONTOGRAM_SURFACES.map(surface => `
+                                <option value="${DentalRoles.escapeHtml(surface.value)}">${DentalRoles.escapeHtml(surface.label)}</option>
+                            `).join("")}
+                        </select>
+                    </label>
+                    <label>
+                        Notas opcionales
+                        <textarea id="odontogramDiagnosisNotes" maxlength="2000" placeholder="Observación breve"></textarea>
+                    </label>
+                    <button type="submit" class="add-btn">Guardar diagnóstico</button>
+                </form>
+            `;
+            actualizarSuperficieOdontograma();
+            actualizarDiagnosticoOdontograma();
+        }
+
+        function etiquetaRelacionOdontograma(entry) {
+            const surface = ODONTOGRAM_SURFACES.find(item => item.value === (entry.surface || ""));
+            return `${entry.condition_label || "Sin nombre"} · ${surface?.label || entry.surface}`;
+        }
+
+        function renderOdontogramEntry(entry) {
+            const relatedType = entry.entry_type === "PROPOSED_TREATMENT" ? "DIAGNOSIS"
+                : entry.entry_type === "COMPLETED_TREATMENT" ? "PROPOSED_TREATMENT" : null;
+            let related = relatedType && entry.related_entry_id
+                ? entradasOdontograma(selectedOdontogramToothId).find(item => item.id === entry.related_entry_id && item.entry_type === relatedType)
+                : null;
+            if (!related && relatedType && entry.related_entry_id) {
+                const reference = odontogramCurrent?.related_entries?.[entry.related_entry_id];
+                if (reference?.id === entry.related_entry_id && reference.entry_type === relatedType) related = reference;
+            }
+            return `
+                <article class="odontogram-entry">
+                    <span>${DentalRoles.escapeHtml(etiquetaEntradaOdontograma(entry.entry_type))}</span>
+                    <strong>${DentalRoles.escapeHtml(entry.condition_label || "Sin condición")}</strong>
+                    ${related ? `<p>${entry.entry_type === "PROPOSED_TREATMENT" ? "Relacionado con" : "Basado en propuesta"}: ${DentalRoles.escapeHtml(etiquetaRelacionOdontograma(related))}</p>` : ""}
+                    ${entry.surface ? `<p><strong>Superficie:</strong> ${DentalRoles.escapeHtml(entry.surface)}</p>` : ""}
+                    ${entry.status ? `<p><strong>Estado:</strong> ${DentalRoles.escapeHtml(entry.status)}</p>` : ""}
+                    ${entry.notes ? `<p><strong>Notas:</strong> ${DentalRoles.escapeHtml(entry.notes)}</p>` : ""}
+                    ${entry.created_at ? `<p><strong>Fecha:</strong> ${DentalRoles.escapeHtml(new Date(entry.created_at).toLocaleString("es-DO"))}</p>` : ""}
+                    ${entry.id && !["VOIDED", "SUPERSEDED"].includes(entry.status) ? `
+                        <div class="confirm-actions">
+                            <button type="button" class="confirm-secondary" data-entry-id="${DentalRoles.escapeHtml(entry.id)}" onclick="solicitarCambioOdontograma(this.dataset.entryId, 'SUPERSEDED')">Corregir</button>
+                            <button type="button" class="confirm-secondary" data-entry-id="${DentalRoles.escapeHtml(entry.id)}" onclick="solicitarCambioOdontograma(this.dataset.entryId, 'VOIDED')">Anular</button>
+                        </div>
+                    ` : ""}
+                </article>
+            `;
+        }
+
+        function solicitarCambioOdontograma(entryId, status) {
+            if (document.getElementById("odontogramStatusDialog")) return;
+            const entry = entradasOdontograma(selectedOdontogramToothId).find(item => item.id === entryId);
+            if (!entry || !pacienteExpediente || !["VOIDED", "SUPERSEDED"].includes(status)) return;
+            const patient = pacienteExpediente;
+            const toothId = selectedOdontogramToothId;
+            const previousFocus = document.activeElement;
+            const backdrop = document.createElement("div");
+            backdrop.id = "odontogramStatusDialog";
+            backdrop.className = "confirm-backdrop";
+            backdrop.innerHTML = `
+                <form class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="odontogramStatusTitle">
+                    <h3 id="odontogramStatusTitle">${status === "VOIDED" ? "Anular registro" : "Corregir registro"}</h3>
+                    <p>${DentalRoles.escapeHtml(entry.condition_label)}</p>
+                    ${status === "SUPERSEDED" ? '<p>El original seguirá vigente hasta que guardes la corrección.</p>' : ""}
+                    <label>Motivo obligatorio<textarea name="reason" required maxlength="2000" rows="3"></textarea></label>
+                    <div class="confirm-actions">
+                        <button type="button" class="confirm-secondary" data-cancel>Cancelar</button>
+                        <button type="submit" class="confirm-danger">${status === "VOIDED" ? "Anular" : "Continuar corrección"}</button>
+                    </div>
+                </form>`;
+            document.body.appendChild(backdrop);
+            const form = backdrop.querySelector("form");
+            let saving = false;
+            const close = () => { backdrop.remove(); if (previousFocus?.isConnected) previousFocus.focus(); };
+            backdrop.querySelector("[data-cancel]").onclick = () => { if (!saving) close(); };
+            backdrop.addEventListener("keydown", event => {
+                if (event.key === "Escape" && !saving) close();
+            });
+            form.elements.reason.focus();
+            form.onsubmit = async event => {
+                event.preventDefault();
+                const reason = form.elements.reason.value.trim();
+                if (saving) return;
+                if (!reason) { DentalRoles.notify("Escribe el motivo del cambio.", "warning"); return; }
+                if (pacienteExpediente !== patient) { close(); return; }
+                if (status === "SUPERSEDED") {
+                    close();
+                    selectedOdontogramToothId = toothId;
+                    renderOdontogramView();
+                    await precargarCorreccionOdontograma(entry, reason);
+                    return;
+                }
+                saving = true;
+                form.querySelector('[type="submit"]').disabled = true;
+                try {
+                    await DentalApi.updateOdontogramEntryStatus(entryId, status, reason);
+                } catch (error) {
+                    DentalRoles.notify(error.message || "No fue posible cambiar el registro.", "error");
+                    saving = false;
+                    form.querySelector('[type="submit"]').disabled = false;
+                    return;
+                }
+                close();
+                DentalRoles.notify(status === "VOIDED" ? "Registro anulado con motivo auditado." : "Original marcado. Completa y guarda el nuevo registro.", "success");
+                if (pacienteExpediente !== patient) return;
+                odontogramCurrent.teeth[toothId] = entradasOdontograma(toothId).filter(item => item.id !== entryId);
+                try {
+                    const current = await DentalApi.getPatientOdontogramCurrent(patient.id);
+                    if (pacienteExpediente !== patient) return;
+                    odontogramCurrent = current;
+                } catch (error) {
+                    DentalRoles.notify("El cambio se guardó, pero no se pudo refrescar el odontograma.", "warning");
+                }
+                if (pacienteExpediente !== patient) return;
+                selectedOdontogramToothId = toothId;
+                renderOdontogramView();
+            };
+        }
+
+        async function precargarCorreccionOdontograma(entry, reason) {
+            const set = (id, value) => { document.getElementById(id).value = value || ""; };
+            let form;
+            if (entry.entry_type === "EXISTING_CONDITION") {
+                form = document.getElementById("odontogramConditionForm");
+                set("odontogramConditionCode", entry.condition_code);
+                set("odontogramSurface", entry.surface);
+                set("odontogramNotes", entry.notes);
+                actualizarSuperficieOdontograma();
+            } else if (entry.entry_type === "DIAGNOSIS") {
+                form = document.getElementById("odontogramDiagnosisForm");
+                set("odontogramDiagnosisCode", ODONTOGRAM_DIAGNOSES.some(item => item.code === entry.condition_code) ? entry.condition_code : "OTHER");
+                set("odontogramCustomDiagnosisLabel", entry.condition_label);
+                set("odontogramDiagnosisSurface", entry.surface);
+                set("odontogramDiagnosisNotes", entry.notes);
+                actualizarDiagnosticoOdontograma();
+            } else {
+                form = document.getElementById(entry.entry_type === "PROPOSED_TREATMENT" ? "odontogramProposedForm" : "odontogramCompletedForm");
+                const details = form.closest("details");
+                details.open = true;
+                await cargarProcedimientosOdontograma(details);
+                if (!form.isConnected) return;
+                form.elements.namedItem("surface").value = entry.surface || "";
+                form.elements.namedItem("notes").value = entry.notes || "";
+                const procedure = form.elements.namedItem("procedure_id");
+                procedure.value = entry.procedure_id || "";
+                if (!procedure.value) DentalRoles.notify("El procedimiento anterior no está disponible. Selecciona uno del catálogo antes de guardar.", "warning");
+                const relation = form.elements.namedItem("related_entry_id");
+                if (relation) relation.value = entry.related_entry_id || "";
+            }
+            form.odontogramCorrection = { original_entry_id: entry.id, reason };
+            const cancel = document.createElement("button");
+            cancel.type = "button";
+            cancel.className = "confirm-secondary";
+            cancel.textContent = "Cancelar corrección";
+            cancel.onclick = () => { if (!form.dataset.correctionSaving) renderOdontogramView(); };
+            form.appendChild(cancel);
+            form.scrollIntoView({ block: "nearest" });
+            form.querySelector("select")?.focus();
+        }
+
+        async function guardarEntradaOdontograma(form, payload) {
+            const correction = form.odontogramCorrection;
+            if (!correction) return DentalApi.createOdontogramEntry(payload);
+            if (form.dataset.correctionSaving) throw new Error("La corrección ya se está guardando.");
+            form.dataset.correctionSaving = "true";
+            try {
+                const result = await DentalApi.correctOdontogramEntry(correction.original_entry_id, correction.reason, payload);
+                // Prevent retrying an already committed correction if refreshing fails.
+                form.querySelectorAll('button[type="submit"]').forEach(button => { button.disabled = true; });
+                DentalRoles.notify("Corrección guardada. El original se conserva en el historial.", "success");
+                return result;
+            } catch (error) {
+                delete form.dataset.correctionSaving;
+                throw error;
+            }
+        }
+
+        function actualizarSuperficieOdontograma() {
+            const conditionCode = document.getElementById("odontogramConditionCode")?.value || "";
+            const surface = document.getElementById("odontogramSurface");
+            if (!surface) return;
+
+            if (ODONTOGRAM_FULL_TOOTH_CONDITIONS.has(conditionCode)) {
+                surface.value = "";
+                surface.disabled = true;
+            } else {
+                surface.disabled = false;
+            }
+        }
+
+        function actualizarDiagnosticoOdontograma() {
+            const diagnosisCode = document.getElementById("odontogramDiagnosisCode")?.value || "";
+            const customGroup = document.getElementById("odontogramCustomDiagnosisGroup");
+            if (!customGroup) return;
+            customGroup.hidden = diagnosisCode !== "OTHER";
+        }
+
+        async function guardarCondicionOdontograma(event) {
+            event.preventDefault();
+
+            if (!apiActiva || typeof DentalApi.createOdontogramEntry !== "function") {
+                DentalRoles.notify("El registro del odontograma requiere conexión con la API.", "warning");
+                return;
+            }
+
+            if (!pacienteExpediente?.id || !selectedOdontogramToothId) {
+                DentalRoles.notify("Selecciona una pieza dental.", "warning");
+                return;
+            }
+
+            const conditionCode = document.getElementById("odontogramConditionCode").value;
+            const condition = ODONTOGRAM_EXISTING_CONDITIONS.find(item => item.code === conditionCode);
+            const surfaceValue = document.getElementById("odontogramSurface").value || null;
+            const notes = document.getElementById("odontogramNotes").value.trim();
+
+            if (!condition) {
+                DentalRoles.notify("Selecciona una condición clínica.", "warning");
+                return;
+            }
+
+            const payload = {
+                patient_id: pacienteExpediente.id,
+                tooth_id: selectedOdontogramToothId,
+                entry_type: "EXISTING_CONDITION",
+                condition_code: condition.code,
+                condition_label: condition.label,
+                surface: surfaceValue,
+                status: "ACTIVE",
+                notes
+            };
+
+            try {
+                await guardarEntradaOdontograma(event.currentTarget, payload);
+                DentalRoles.notify("Condición registrada en el odontograma.", "success");
+                await recargarOdontogramaActual();
+            }
+            catch (error) {
+                DentalRoles.notify(error.message || "No fue posible registrar la condición.", "error");
+            }
+        }
+
+        async function guardarDiagnosticoOdontograma(event) {
+            event.preventDefault();
+
+            if (!apiActiva || typeof DentalApi.createOdontogramEntry !== "function") {
+                DentalRoles.notify("El registro del odontograma requiere conexión con la API.", "warning");
+                return;
+            }
+
+            if (!pacienteExpediente?.id || !selectedOdontogramToothId) {
+                DentalRoles.notify("Selecciona una pieza dental.", "warning");
+                return;
+            }
+
+            const diagnosisCode = document.getElementById("odontogramDiagnosisCode").value;
+            const diagnosis = ODONTOGRAM_DIAGNOSES.find(item => item.code === diagnosisCode);
+            const customLabel = document.getElementById("odontogramCustomDiagnosisLabel")?.value.trim() || "";
+            const surfaceValue = document.getElementById("odontogramDiagnosisSurface").value || null;
+            const notes = document.getElementById("odontogramDiagnosisNotes").value.trim();
+
+            if (!diagnosis) {
+                DentalRoles.notify("Selecciona un diagnóstico odontológico.", "warning");
+                return;
+            }
+
+            if (diagnosis.code === "OTHER" && !customLabel) {
+                DentalRoles.notify("Escribe una etiqueta breve para el diagnóstico.", "warning");
+                return;
+            }
+
+            const payload = {
+                patient_id: pacienteExpediente.id,
+                tooth_id: selectedOdontogramToothId,
+                entry_type: "DIAGNOSIS",
+                condition_code: diagnosis.code,
+                condition_label: diagnosis.code === "OTHER" ? customLabel : diagnosis.label,
+                surface: surfaceValue,
+                status: "ACTIVE",
+                notes
+            };
+
+            try {
+                await guardarEntradaOdontograma(event.currentTarget, payload);
+                DentalRoles.notify("Diagnóstico registrado en el odontograma.", "success");
+                await recargarOdontogramaActual();
+            }
+            catch (error) {
+                DentalRoles.notify(error.message || "No fue posible registrar el diagnóstico.", "error");
+            }
+        }
+
+        async function cargarProcedimientosOdontograma(details) {
+            const form = details.querySelector("form");
+            if (form.odontogramProcedures || form.dataset.loading) return;
+            const select = form.elements.namedItem("procedure_id");
+            const message = form.querySelector("[data-catalog-status]");
+            form.dataset.loading = "true";
+            message.textContent = "Cargando procedimientos...";
+            try {
+                if (!apiActiva) throw new Error("El catálogo requiere conexión con la API.");
+                const procedures = await DentalApi.getProcedures();
+                if (!form.isConnected) return;
+                if (!Array.isArray(procedures)) throw new Error("La respuesta del catálogo no es válida.");
+                form.odontogramProcedures = procedures.filter(item => item.id && item.name && item.active !== false);
+                select.innerHTML = '<option value="">Seleccionar procedimiento</option>' + form.odontogramProcedures.map(item =>
+                    `<option value="${DentalRoles.escapeHtml(item.id)}">${DentalRoles.escapeHtml(item.name)} (${DentalRoles.escapeHtml(item.category_name || "Sin área")})</option>`
+                ).join("");
+                select.disabled = !form.odontogramProcedures.length;
+                form.querySelector('[type="submit"]').disabled = select.disabled;
+                message.textContent = select.disabled ? "No hay procedimientos disponibles." : "";
+            } catch (error) {
+                if (!form.isConnected) return;
+                select.innerHTML = '<option value="">Catálogo no disponible</option>';
+                message.textContent = error.message || "No fue posible cargar los procedimientos.";
+            } finally {
+                delete form.dataset.loading;
+            }
+        }
+
+        async function guardarTratamientoPropuestoOdontograma(event) {
+            event.preventDefault();
+            const form = event.currentTarget;
+            if (form.dataset.saving) return;
+            const patient = pacienteExpediente;
+            const toothId = selectedOdontogramToothId;
+            if (!apiActiva || !patient?.id || !toothId) {
+                DentalRoles.notify("Selecciona una pieza y verifica la conexión con la API.", "warning");
+                return;
+            }
+            const procedure = form.odontogramProcedures?.find(item => item.id === form.elements.namedItem("procedure_id").value);
+            const surface = form.elements.namedItem("surface").value;
+            if (!procedure || !ODONTOGRAM_SURFACES.some(item => item.value === surface)) {
+                DentalRoles.notify("Selecciona un procedimiento y una superficie válidos.", "warning");
+                return;
+            }
+            const payload = {
+                patient_id: patient.id,
+                tooth_id: toothId,
+                entry_type: "PROPOSED_TREATMENT",
+                related_entry_id: form.elements.namedItem("related_entry_id")?.value || null,
+                procedure_id: procedure.id,
+                condition_code: procedure.id,
+                condition_label: procedure.name,
+                surface: surface || null,
+                status: "ACTIVE",
+                notes: form.elements.namedItem("notes").value.trim()
+            };
+            if (payload.related_entry_id && !entradasOdontograma(toothId).some(entry =>
+                entry.id === payload.related_entry_id && entry.entry_type === "DIAGNOSIS" && entry.status === "ACTIVE"
+            )) {
+                DentalRoles.notify("Selecciona un diagnóstico activo de esta pieza o deja la relación vacía.", "warning");
+                return;
+            }
+            const button = form.querySelector('[type="submit"]');
+            form.dataset.saving = "true";
+            button.disabled = true;
+            try {
+                await guardarEntradaOdontograma(event.currentTarget, payload);
+            } catch (error) {
+                DentalRoles.notify(error.message || "No fue posible guardar la propuesta.", "error");
+                delete form.dataset.saving;
+                button.disabled = false;
+                return;
+            }
+            DentalRoles.notify("Tratamiento propuesto registrado.", "success");
+            form.reset();
+            try {
+                const current = await DentalApi.getPatientOdontogramCurrent(patient.id);
+                if (pacienteExpediente === patient) {
+                    odontogramCurrent = current;
+                    renderOdontogramView();
+                }
+            } catch (error) {
+                DentalRoles.notify("La propuesta se guardó, pero no fue posible actualizar el odontograma. Vuelve a abrir el expediente para consultarla.", "warning");
+            } finally {
+                delete form.dataset.saving;
+                button.disabled = false;
+            }
+        }
+
+        async function guardarTratamientoRealizadoOdontograma(event) {
+            event.preventDefault();
+            const form = event.currentTarget;
+            if (form.dataset.saving) return;
+            const patient = pacienteExpediente;
+            const toothId = selectedOdontogramToothId;
+            if (!apiActiva || !patient?.id || !toothId) {
+                DentalRoles.notify("Selecciona una pieza y verifica la conexión con la API.", "warning");
+                return;
+            }
+            const procedure = form.odontogramProcedures?.find(item => item.id === form.elements.namedItem("procedure_id").value);
+            const surface = form.elements.namedItem("surface").value;
+            if (!procedure || !ODONTOGRAM_SURFACES.some(item => item.value === surface)) {
+                DentalRoles.notify("Selecciona un procedimiento y una superficie válidos.", "warning");
+                return;
+            }
+            const payload = {
+                patient_id: patient.id,
+                tooth_id: toothId,
+                entry_type: "COMPLETED_TREATMENT",
+                related_entry_id: form.elements.namedItem("related_entry_id")?.value || null,
+                procedure_id: procedure.id,
+                condition_code: procedure.id,
+                condition_label: procedure.name,
+                surface: surface || null,
+                status: "ACTIVE",
+                notes: form.elements.namedItem("notes").value.trim()
+            };
+            if (payload.related_entry_id && !entradasOdontograma(toothId).some(entry =>
+                entry.id === payload.related_entry_id && entry.entry_type === "PROPOSED_TREATMENT" && entry.status === "ACTIVE"
+            )) {
+                DentalRoles.notify("Selecciona una propuesta activa de esta pieza o deja la relación vacía.", "warning");
+                return;
+            }
+            const button = form.querySelector('[type="submit"]');
+            form.dataset.saving = "true";
+            button.disabled = true;
+            try {
+                await guardarEntradaOdontograma(event.currentTarget, payload);
+            } catch (error) {
+                DentalRoles.notify(error.message || "No fue posible guardar el tratamiento realizado.", "error");
+                delete form.dataset.saving;
+                button.disabled = false;
+                return;
+            }
+            DentalRoles.notify("Tratamiento realizado registrado.", "success");
+            form.reset();
+            try {
+                const current = await DentalApi.getPatientOdontogramCurrent(patient.id);
+                if (pacienteExpediente === patient) {
+                    odontogramCurrent = current;
+                    renderOdontogramView();
+                }
+            } catch (error) {
+                DentalRoles.notify("El tratamiento se guardó, pero no fue posible actualizar el odontograma. Vuelve a abrir el expediente para consultarlo.", "warning");
+            } finally {
+                delete form.dataset.saving;
+                button.disabled = false;
+            }
+        }
+
+        async function recargarOdontogramaActual() {
+            if (!pacienteExpediente?.id) return;
+            odontogramCurrent = await DentalApi.getPatientOdontogramCurrent(pacienteExpediente.id);
+            renderOdontogramView();
+        }
+
+        async function cargarOdontogramaPaciente() {
+            odontogramLoaded = false;
+            odontogramCurrent = { teeth: {} };
+            selectedOdontogramToothId = "";
+            renderOdontogramView();
+
+            if (!apiActiva || !pacienteExpediente?.id || typeof DentalApi.getPatientOdontogramCurrent !== "function") {
+                document.getElementById("odontogramDetail").innerHTML = '<div class="empty-state">El odontograma requiere conexión con la API.</div>';
+                return;
+            }
+
+            try {
+                odontogramCurrent = await DentalApi.getPatientOdontogramCurrent(pacienteExpediente.id);
+                odontogramLoaded = true;
+                renderOdontogramView();
+            }
+            catch (error) {
+                odontogramCurrent = { teeth: {} };
+                renderOdontogramView();
+                document.getElementById("odontogramDetail").innerHTML = '<div class="empty-state">No fue posible cargar el odontograma clínico.</div>';
+            }
         }
 
         function valorClinico(value, fallback = "No registrado") {
@@ -1333,7 +2377,7 @@
             const labels = {
                 consulta_ambulatoria: "Consulta ambulatoria",
                 procedimiento: "Procedimiento",
-                evolucion: "Evolucion",
+                evolucion: "Evolución",
                 en_espera: "En espera",
                 en_consulta: "En consulta",
                 atendido: "Atendido",
@@ -1343,7 +2387,7 @@
                 realizado: "Realizado",
                 cancelado: "Cancelado"
             };
-            return labels[value] || value || "Evolucion";
+            return labels[value] || value || "Evolución";
         }
 
         function renderResumenExpediente() {
@@ -1357,7 +2401,9 @@
                 { label: "Correo", value: pacienteExpediente.email },
                 { label: "Doctor asignado", value: pacienteExpediente.doctor },
                 { label: "Proxima cita", value: pacienteExpediente.fecha ? `${pacienteExpediente.fecha} ${pacienteExpediente.hora || ""}`.trim() : "Sin cita registrada" },
-                { label: "Estado", value: pacienteExpediente.estado }
+                { label: "Estado", value: pacienteExpediente.estado },
+                { label: "Tipo de paciente", value: pacienteExpediente.patient_type === "ambulatory" ? "Ambulatorio" : "Regular" },
+                { label: "Clasificación operativa", value: pacienteExpediente.operational_classification || "sin_clasificacion" }
             ]);
 
             renderInfoGrid("clinicalHistorySummary", [
@@ -1366,8 +2412,8 @@
                 { label: "Antecedentes odontologicos", value: pacienteExpediente.notes },
                 { label: "Alergias", value: pacienteExpediente.allergies },
                 { label: "Medicamentos", value: pacienteExpediente.current_medications },
-                { label: "Enfermedades sistemicas", value: "Preparado para registro clinico" },
-                { label: "Habitos", value: "Preparado para registro clinico" },
+                { label: "Condiciones médicas relevantes", value: (pacienteExpediente.medical_conditions || []).map(item => item.condition_label).join(", ") || "Sin alertas clínicas" },
+                { label: "Hábitos", value: "Preparado para registro clínico" },
                 { label: "Observaciones", value: pacienteExpediente.notes }
             ]);
 
@@ -1377,9 +2423,9 @@
 
             renderInfoGrid("clinicalEvaluationSummary", [
                 { label: "Estado general", value: ultimaEvaluacion.estado_general },
-                { label: "Hallazgos clinicos", value: ultimaEvaluacion.hallazgos_clinicos || ultimaEvaluacion.evaluacion_clinica },
-                { label: "Evaluacion clinica", value: ultimaEvaluacion.evaluacion_clinica },
-                { label: "Diagnostico odontologico", value: ultimaEvaluacion.diagnostico_odontologico },
+                { label: "Hallazgos clínicos", value: ultimaEvaluacion.hallazgos_clinicos || ultimaEvaluacion.evaluacion_clinica },
+                { label: "Evaluación clínica", value: ultimaEvaluacion.evaluacion_clinica },
+                { label: "Diagnóstico odontológico", value: ultimaEvaluacion.diagnostico_odontologico },
                 { label: "Indicaciones", value: ultimaEvaluacion.indicaciones || ultimaEvaluacion.receta },
                 { label: "Proxima cita", value: ultimaEvaluacion.proxima_cita_fecha ? `${ultimaEvaluacion.proxima_cita_fecha} ${ultimaEvaluacion.proxima_cita_hora || ""}`.trim() : "No programada" }
             ]);
@@ -1401,14 +2447,14 @@
                         <p><strong>Estado:</strong> ${DentalRoles.escapeHtml(estadoClinico(note.procedure_status || "realizado"))}</p>
                         ${note.procedimiento ? `<p><strong>Procedimiento:</strong> ${DentalRoles.escapeHtml(note.procedimiento)}</p>` : ""}
                         ${note.tooth_number ? `<p><strong>Pieza dental:</strong> ${DentalRoles.escapeHtml(note.tooth_number)}</p>` : ""}
-                        ${note.descripcion_clinica ? `<p><strong>Descripcion clinica:</strong> ${DentalRoles.escapeHtml(note.descripcion_clinica)}</p>` : ""}
+                        ${note.descripcion_clinica ? `<p><strong>Descripción clínica:</strong> ${DentalRoles.escapeHtml(note.descripcion_clinica)}</p>` : ""}
                         ${note.procedimientos_realizados ? `<p><strong>Realizado:</strong> ${DentalRoles.escapeHtml(note.procedimientos_realizados)}</p>` : ""}
                         ${note.material_utilizado ? `<p><strong>Material:</strong> ${DentalRoles.escapeHtml(note.material_utilizado)}</p>` : ""}
                         ${note.proxima_revision ? `<p><strong>Proxima revision:</strong> ${DentalRoles.escapeHtml(note.proxima_revision)}</p>` : ""}
                         ${note.observaciones ? `<p><strong>Observaciones:</strong> ${DentalRoles.escapeHtml(note.observaciones)}</p>` : ""}
                     </article>
                 `).join("")
-                : '<div class="empty-state">Este paciente todavia no tiene procedimientos clinicos registrados.</div>';
+                : '<div class="empty-state">Este paciente todavía no tiene procedimientos clínicos registrados.</div>';
         }
 
         function renderLineaTiempoClinica() {
@@ -1424,27 +2470,27 @@
                         ${note.consultation_status ? `<p><strong>Estado consulta:</strong> ${DentalRoles.escapeHtml(estadoClinico(note.consultation_status))}</p>` : ""}
                         ${note.motivo_consulta ? `<p><strong>Motivo de consulta:</strong> ${DentalRoles.escapeHtml(note.motivo_consulta)}</p>` : ""}
                         ${note.estado_general ? `<p><strong>Estado general:</strong> ${DentalRoles.escapeHtml(note.estado_general)}</p>` : ""}
-                        ${note.hallazgos_clinicos ? `<p><strong>Hallazgos clinicos:</strong> ${DentalRoles.escapeHtml(note.hallazgos_clinicos)}</p>` : ""}
-                        ${note.evaluacion_clinica ? `<p><strong>Evaluacion clinica:</strong> ${DentalRoles.escapeHtml(note.evaluacion_clinica)}</p>` : ""}
-                        ${note.diagnostico_odontologico ? `<p><strong>Diagnostico odontologico:</strong> ${DentalRoles.escapeHtml(note.diagnostico_odontologico)}</p>` : ""}
+                        ${note.hallazgos_clinicos ? `<p><strong>Hallazgos clínicos:</strong> ${DentalRoles.escapeHtml(note.hallazgos_clinicos)}</p>` : ""}
+                        ${note.evaluacion_clinica ? `<p><strong>Evaluación clínica:</strong> ${DentalRoles.escapeHtml(note.evaluacion_clinica)}</p>` : ""}
+                        ${note.diagnostico_odontologico ? `<p><strong>Diagnóstico odontológico:</strong> ${DentalRoles.escapeHtml(note.diagnostico_odontologico)}</p>` : ""}
                         ${note.procedimiento ? `<p><strong>Procedimiento:</strong> ${DentalRoles.escapeHtml(note.procedimiento)}</p>` : ""}
                         ${note.procedimientos_realizados ? `<p><strong>Procedimientos realizados:</strong> ${DentalRoles.escapeHtml(note.procedimientos_realizados)}</p>` : ""}
                         ${note.medicamentos_indicados ? `<p><strong>Medicamentos:</strong> ${DentalRoles.escapeHtml(note.medicamentos_indicados)}</p>` : ""}
                         ${note.indicaciones ? `<p><strong>Indicaciones:</strong> ${DentalRoles.escapeHtml(note.indicaciones)}</p>` : ""}
                         ${note.observaciones ? `<p><strong>Observaciones:</strong> ${DentalRoles.escapeHtml(note.observaciones)}</p>` : ""}
                         ${note.proxima_cita_fecha ? `<p><strong>Proxima cita:</strong> ${DentalRoles.escapeHtml(`${note.proxima_cita_fecha} ${note.proxima_cita_hora || ""}`.trim())}</p>` : ""}
-                        <p><strong>Nota clinica:</strong> ${DentalRoles.escapeHtml(note.nota)}</p>
+                        <p><strong>Nota clínica:</strong> ${DentalRoles.escapeHtml(note.nota)}</p>
                     </article>
                 `).join("")
-                : '<div class="empty-state">Este paciente todavia no tiene evolucion clinica registrada.</div>';
+                : '<div class="empty-state">Este paciente todavía no tiene evolución clínica registrada.</div>';
         }
 
         async function cargarEvolucionPaciente() {
             const list = document.getElementById("clinicalHistoryList");
-            list.innerHTML = "<p>Cargando evolucion clinica...</p>";
+            list.innerHTML = "<p>Cargando evolución clínica...</p>";
 
             if (!apiActiva || !pacienteExpediente?.id) {
-                list.innerHTML = '<div class="empty-state">La evolucion clinica requiere conexion con la API.</div>';
+                list.innerHTML = '<div class="empty-state">La evolución clínica requiere conexión con la API.</div>';
                 renderResumenExpediente();
                 renderProcedimientosClinicos();
                 return;
@@ -1457,7 +2503,7 @@
                 renderLineaTiempoClinica();
             }
             catch (error) {
-                list.innerHTML = '<div class="empty-state">No fue posible cargar la evolucion clinica.</div>';
+                list.innerHTML = '<div class="empty-state">No fue posible cargar la evolución clínica.</div>';
                 DentalRoles.notify(error.message, "error");
             }
         }
@@ -1473,8 +2519,8 @@
                             <div>
                                 <strong>${DentalRoles.escapeHtml(file.name)}</strong>
                                 <span>
-                                    ${DentalRoles.escapeHtml(file.category)} Â· ${formatFileSize(file.size_bytes)}
-                                    Â· ${new Date(file.created_at).toLocaleDateString("es-DO")}
+                                    ${DentalRoles.escapeHtml(file.category)} · ${formatFileSize(file.size_bytes)}
+                                    · ${new Date(file.created_at).toLocaleDateString("es-DO")}
                                 </span>
                                 ${file.description ? `<span>${DentalRoles.escapeHtml(file.description)}</span>` : ""}
                             </div>
@@ -1494,7 +2540,7 @@
                             </div>
                         </article>
                     `).join("")
-                    : '<div class="empty-state">Este paciente todavÃ­a no tiene archivos clÃ­nicos.</div>';
+                    : '<div class="empty-state">Este paciente todavía no tiene archivos clínicos.</div>';
             }
             catch (error) {
                 list.innerHTML = '<div class="empty-state">No fue posible cargar el expediente.</div>';
@@ -1563,7 +2609,7 @@
         function eliminarArchivo(fileId) {
             DentalRoles.confirmAction({
                 title: "Eliminar archivo",
-                message: "El documento dejarÃ¡ de estar disponible en el expediente.",
+                message: "El documento dejará de estar disponible en el expediente.",
                 confirmText: "Eliminar",
                 onConfirm: async () => {
                     try {
@@ -1636,7 +2682,7 @@
 
             DentalRoles.confirmAction({
                 title: "Eliminar paciente",
-                message: "Esta acciÃ³n quitarÃ¡ el registro de la lista de pacientes.",
+                message: "Esta acción quitará el registro de la lista de pacientes.",
                 confirmText: "Eliminar",
                 onConfirm: async () => {
                     if (apiActiva && pacientes[index]?.id) {
@@ -1670,17 +2716,17 @@
 
             DentalRoles.showDetails("Detalle de paciente", [
                 { label: "Paciente", value: paciente.nombre },
-                { label: "CÃ©dula", value: paciente.national_id },
-                { label: "CÃ³digo", value: paciente.patient_code },
-                { label: "TelÃ©fono", value: paciente.phone },
+                { label: "Cédula", value: paciente.national_id },
+                { label: "Código", value: paciente.patient_code },
+                { label: "Teléfono", value: paciente.phone },
                 { label: "Correo", value: paciente.email },
                 { label: "Doctor asignado", value: paciente.doctor },
-                { label: "PrÃ³xima cita", value: paciente.fecha ? `${paciente.fecha} ${paciente.hora || ""}`.trim() : "Sin cita registrada" },
+                { label: "Próxima cita", value: paciente.fecha ? `${paciente.fecha} ${paciente.hora || ""}`.trim() : "Sin cita registrada" },
                 { label: "Procedimiento", value: paciente.proceso },
                 { label: "Estado", value: paciente.estado },
                 { label: "Notas", value: paciente.notes },
                 { label: "Alergias", value: paciente.allergies },
-                { label: "Antecedentes mÃ©dicos", value: paciente.medical_history },
+                { label: "Antecedentes médicos", value: paciente.medical_history },
                 { label: "Medicamentos actuales", value: paciente.current_medications },
                 { label: "Motivo de consulta", value: paciente.motivo_consulta || paciente.diagnosis },
             ]);
@@ -1769,6 +2815,9 @@
                 procedureName: document.getElementById("clinicalProcedureName").value,
                 procedureStatus: document.getElementById("procedureStatus").value,
                 toothNumber: document.getElementById("clinicalToothNumber").value,
+                toothSelections: clinicalToothSelections(),
+                toothCountMode: document.getElementById("clinicalToothCountMode").value,
+                toothNumberingSystem: document.getElementById("clinicalToothNumberingSystem").value,
                 chiefComplaint: document.getElementById("chiefComplaint").value,
                 clinicalEvaluation: document.getElementById("clinicalEvaluation").value,
                 odontologicalDiagnosis: document.getElementById("odontologicalDiagnosis").value,
@@ -1776,6 +2825,14 @@
                 indications: document.getElementById("clinicalIndications").value,
                 observations: document.getElementById("clinicalObservations").value,
                 medications: document.getElementById("clinicalMedications").value,
+                pharmacotherapy: [{
+                    drug: document.getElementById("clinicalDrug").value,
+                    presentation: document.getElementById("clinicalPresentation").value,
+                    dose: document.getElementById("clinicalDose").value,
+                    frequency: document.getElementById("clinicalFrequency").value,
+                    route: document.getElementById("clinicalRoute").value,
+                    indications: document.getElementById("clinicalPharmaIndications").value
+                }].filter(item => Object.values(item).some(value => (value || "").trim())),
                 materialUsed: document.getElementById("materialUsed").value,
                 clinicalDescription: document.getElementById("clinicalEvolutionText").value,
                 clinicalFindings: document.getElementById("clinicalEvolutionText").value,
@@ -1793,13 +2850,19 @@
                 payload.indications,
                 payload.observations,
                 payload.medications,
+                ...(payload.pharmacotherapy || []).flatMap(item => Object.values(item)),
                 payload.materialUsed,
                 payload.evolution,
                 payload.procedureName
             ].some(value => (value || "").trim());
 
             if (!hasClinicalText) {
-                DentalRoles.notify("Registra al menos un dato clinico.", "warning");
+                DentalRoles.notify("Registra al menos un dato clínico.", "warning");
+                return;
+            }
+
+            if (!clinicalToothCountIsValid()) {
+                DentalRoles.notify("La cantidad de piezas no coincide con la selección.", "warning");
                 return;
             }
 
@@ -1807,7 +2870,7 @@
                 await DentalApi.createClinicalNote(payload);
                 event.target.reset();
                 await cargarEvolucionPaciente();
-                DentalRoles.notify("Evolucion clinica guardada.", "success");
+                DentalRoles.notify("Evolución clínica guardada.", "success");
             }
             catch (error) {
                 DentalRoles.notify(error.message, "error");

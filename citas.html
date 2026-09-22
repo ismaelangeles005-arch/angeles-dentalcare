@@ -602,7 +602,14 @@
                 </div>
 
                 <div class="field-group">
-                    <label for="duracion">Duración</label>
+                    <label for="areaOdontologica">Área odontológica</label>
+                    <select id="areaOdontologica" required onchange="actualizarProcedimientos()">
+                        <option value="">Seleccionar área</option>
+                    </select>
+                </div>
+
+                <div class="field-group" id="duracionGroup" hidden>
+                    <label for="duracion">Duración interna</label>
                     <select id="duracion">
                         <option value="30">30 minutos</option>
                         <option value="15">15 minutos</option>
@@ -624,10 +631,10 @@
                 </div>
 
                 <div class="clinical-fields">
-                    <div class="field-group">
-                        <label for="categoriaProcedimiento">Área clínica</label>
-                        <select id="categoriaProcedimiento" onchange="actualizarProcedimientos()">
-                            <option value="">Seleccionar área</option>
+                    <div class="field-group" hidden>
+                        <label for="categoriaProcedimiento">Categoría de procedimiento</label>
+                        <select id="categoriaProcedimiento">
+                            <option value="">Seleccionar categoría</option>
                         </select>
                     </div>
 
@@ -638,17 +645,29 @@
                         </select>
                     </div>
 
-                    <div class="field-group" id="piezaDentalGroup" hidden>
-                        <label for="piezaDental">Pieza dental (FDI)</label>
-                        <select id="piezaDental">
-                            <option value="">Seleccionar pieza</option>
-                        </select>
+                    <div class="field-group span-2" id="piezaDentalGroup" hidden>
+                        <label>Número de piezas</label>
+                        <div class="tooth-toolbar">
+                            <select id="toothCountMode" onchange="renderToothSelector()">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="multiple">Múltiples</option>
+                            </select>
+                            <select id="toothNumberingSystem" onchange="renderToothSelector()">
+                                <option value="FDI">FDI</option>
+                                <option value="UNIVERSAL">Universal</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="piezaDental">
+                        <div class="tooth-grid" id="toothGrid"></div>
                     </div>
 
                     <div class="field-group">
-                        <label for="detalleClinico">Detalle clínico</label>
+                        <label for="detalleClinico">Motivo de consulta</label>
                         <input type="text" id="detalleClinico" maxlength="500"
-                               placeholder="Observación breve para preparar la cita">
+                               placeholder="Razón por la que el paciente solicita atención">
                     </div>
                 </div>
 
@@ -753,17 +772,23 @@
                         <label for="clinicalTreatment">Tratamiento realizado</label>
                         <textarea id="clinicalTreatment" maxlength="2000" placeholder="Describe el procedimiento realizado"></textarea>
                     </div>
-                    <div class="field-group">
-                        <label for="clinicalPrescription">Receta o indicaciones</label>
-                        <textarea id="clinicalPrescription" maxlength="2000" placeholder="Medicamentos, cuidados o restricciones"></textarea>
+                    <div class="field-group span-2">
+                        <label>Farmacoterapia</label>
+                        <div class="form-grid">
+                            <input type="text" id="pharmaDrug" maxlength="160" placeholder="Fármaco">
+                            <input type="text" id="pharmaPresentation" maxlength="160" placeholder="Presentación">
+                            <input type="text" id="pharmaDose" maxlength="160" placeholder="Dosis">
+                            <input type="text" id="pharmaFrequency" maxlength="160" placeholder="Frecuencia">
+                            <input type="text" id="pharmaRoute" maxlength="160" placeholder="Vía de administración">
+                            <input type="text" id="pharmaIndications" maxlength="500" placeholder="Indicaciones">
+                        </div>
                     </div>
                     <div class="field-group">
                         <label for="clinicalNextSteps">Próxima indicación</label>
                         <textarea id="clinicalNextSteps" maxlength="1000" placeholder="Seguimiento, control o próxima cita sugerida"></textarea>
                     </div>
-                    <div class="field-group">
-                        <label for="clinicalNote">Nota médica</label>
-                        <textarea id="clinicalNote" maxlength="3000" placeholder="Resumen clínico de la visita"></textarea>
+                    <div class="field-group" hidden>
+                        <textarea id="clinicalNote"></textarea>
                     </div>
                 </div>
                 <div class="clinical-modal-actions">
@@ -780,6 +805,7 @@
 
     <script src="api.js?v=20260626e"></script>
     <script src="roles.js?v=20260626e"></script>
+    <script src="dental-tooth-selector.js?v=20260903a"></script>
 
     <script type="text/plain" data-dental-page='{"active":"citas"}'>
 
@@ -794,6 +820,13 @@
         let rol = DentalRoles.rol;
         let doctorActual = DentalRoles.doctor;
         let quickFilter = "todas";
+        const appointmentToothSelector = DentalToothSelector.createSelector({
+            gridId: "toothGrid",
+            countModeId: "toothCountMode",
+            numberingSystemId: "toothNumberingSystem",
+            hiddenInputId: "piezaDental",
+            toggleFunctionName: "toggleTooth"
+        });
         const filtrosUrl = new URLSearchParams(window.location.search);
         const estadosCita = {
             pendiente: "Pendiente",
@@ -803,6 +836,46 @@
             cancelada: "Cancelada",
             no_asistio: "No asistió",
             reprogramada: "Reprogramada"
+        };
+        const AREAS_ODONTOLOGICAS = [
+            "Operatoria",
+            "Cirugía",
+            "Endodoncia",
+            "Periodoncia",
+            "Estética",
+            "Ortodoncia",
+            "Odontopediatría",
+            "Prótesis y rehabilitación",
+            "Evaluación y diagnóstico"
+        ];
+
+        const CATEGORIA_A_AREA = {
+            evaluacion: "Evaluación y diagnóstico",
+            prevencion: "Evaluación y diagnóstico",
+            urgencia: "Evaluación y diagnóstico",
+            caries: "Operatoria",
+            restauracion: "Operatoria",
+            operatoria: "Operatoria",
+            endodoncia: "Endodoncia",
+            extraccion: "Cirugía",
+            cirugia: "Cirugía",
+            periodoncia: "Periodoncia",
+            ortodoncia: "Ortodoncia",
+            protesis: "Prótesis y rehabilitación",
+            estetica: "Estética",
+            odontopediatria: "Odontopediatría"
+        };
+
+        const AREA_CATEGORIA_INTERNA = {
+            "Operatoria": "restauracion",
+            "Cirugía": "cirugia",
+            "Endodoncia": "endodoncia",
+            "Periodoncia": "periodoncia",
+            "Estética": "estetica",
+            "Ortodoncia": "ortodoncia",
+            "Odontopediatría": "odontopediatria",
+            "Prótesis y rehabilitación": "protesis",
+            "Evaluación y diagnóstico": "evaluacion"
         };
         let catalogoProcedimientos = {
             evaluacion: ["Evaluacion y diagnostico", [
@@ -865,67 +938,93 @@
             ]]
         };
 
+        function normalizarCatalogoTexto(value) {
+            return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        }
+
+        function areaDesdeCategoria(categoryKey, categoryName) {
+            const key = String(categoryKey || "").trim().toLowerCase();
+            if (CATEGORIA_A_AREA[key]) return CATEGORIA_A_AREA[key];
+            const name = normalizarCatalogoTexto(categoryName);
+            if (name.includes("caries") || name.includes("restauradora") || name.includes("operatoria")) return "Operatoria";
+            if (name.includes("extraccion") || name.includes("cirugia")) return "Cirugía";
+            if (name.includes("endodoncia")) return "Endodoncia";
+            if (name.includes("periodoncia")) return "Periodoncia";
+            if (name.includes("estetica")) return "Estética";
+            if (name.includes("ortodoncia")) return "Ortodoncia";
+            if (name.includes("odontopediatria")) return "Odontopediatría";
+            if (name.includes("protesis") || name.includes("rehabilitacion")) return "Prótesis y rehabilitación";
+            return "Evaluación y diagnóstico";
+        }
+
+        function normalizarProcedimientoCatalogo(item, categoryKey) {
+            if (Array.isArray(item)) return { name: item[0], requiresTooth: Boolean(item[1]), categoryKey, duration: "", price: "", id: "" };
+            return { id: item.id || "", name: item.name, requiresTooth: Boolean(item.requiresTooth), duration: item.duration || "", price: item.price || "", categoryKey: item.categoryKey || categoryKey };
+        }
+
+        function crearCatalogoPorArea(source) {
+            const grouped = AREAS_ODONTOLOGICAS.reduce((acc, area) => { acc[area] = [area, []]; return acc; }, {});
+            Object.entries(source || {}).forEach(([categoryKey, category]) => {
+                const area = areaDesdeCategoria(categoryKey, category?.[0]);
+                const procedures = Array.isArray(category?.[1]) ? category[1] : [];
+                grouped[area][1].push(...procedures.map(item => normalizarProcedimientoCatalogo(item, categoryKey)));
+            });
+            return grouped;
+        }
+
+        function renderAreaOdontologicaOptions() {
+            const areaSelect = document.getElementById("areaOdontologica");
+            areaSelect.innerHTML = '<option value="">Seleccionar área</option>' + AREAS_ODONTOLOGICAS.map(area => '<option value="' + DentalRoles.escapeHtml(area) + '">' + DentalRoles.escapeHtml(area) + '</option>').join("");
+        }
+
+        function categoriaProcedimientoActual() {
+            const selected = document.getElementById("procedimiento").selectedOptions[0];
+            const area = document.getElementById("areaOdontologica").value;
+            return selected?.dataset.categoryKey || AREA_CATEGORIA_INTERNA[area] || "";
+        }
+
+        catalogoProcedimientos = crearCatalogoPorArea(catalogoProcedimientos);
         async function cargarCatalogoClinico() {
             if (apiActiva && typeof DentalApi.getProcedures === "function") {
                 try {
                     const proceduresApi = await DentalApi.getProcedures();
                     if (proceduresApi.length) {
-                        catalogoProcedimientos = proceduresApi.reduce((acc, item) => {
-                            if (!acc[item.category_key]) {
-                                acc[item.category_key] = [item.category_name, []];
-                            }
-                            acc[item.category_key][1].push({
-                                id: item.id,
-                                name: item.name,
-                                requiresTooth: item.requires_tooth,
-                                duration: item.duration_minutes,
-                                price: item.base_price
-                            });
-                            return acc;
-                        }, {});
+                        const catalogoApi = proceduresApi.reduce((acc, item) => {
+                                                    if (!acc[item.category_key]) { acc[item.category_key] = [item.category_name, []]; }
+                                                    acc[item.category_key][1].push({ id: item.id, name: item.name, requiresTooth: item.requires_tooth, duration: item.duration_minutes, price: item.base_price, categoryKey: item.category_key });
+                                                    return acc;
+                                                }, {});
+                                                catalogoProcedimientos = crearCatalogoPorArea(catalogoApi);
                     }
                 }
                 catch (error) {
-                    DentalRoles.notify("No se pudo cargar el catalogo editable. Usando catalogo local.", "warning");
+                    DentalRoles.notify("No se pudo cargar el catálogo editable. Usando catálogo local.", "warning");
                 }
             }
 
             const categorySelect = document.getElementById("categoriaProcedimiento");
-            categorySelect.innerHTML = '<option value="">Seleccionar área</option>' +
-                Object.entries(catalogoProcedimientos).map(([value, category]) =>
-                    `<option value="${value}">${category[0]}</option>`
-                ).join("");
-
-            const toothSelect = document.getElementById("piezaDental");
-            const permanentTeeth = [1, 2, 3, 4].flatMap(quadrant =>
-                Array.from({ length: 8 }, (_, index) => `${quadrant}${index + 1}`)
-            );
-            const temporaryTeeth = [5, 6, 7, 8].flatMap(quadrant =>
-                Array.from({ length: 5 }, (_, index) => `${quadrant}${index + 1}`)
-            );
-
-            toothSelect.innerHTML = '<option value="">Seleccionar pieza</option>' +
-                '<optgroup label="Denticion permanente">' +
-                permanentTeeth.map(tooth => `<option value="${tooth}">Pieza ${tooth}</option>`).join("") +
-                '</optgroup><optgroup label="Denticion temporal">' +
-                temporaryTeeth.map(tooth => `<option value="${tooth}">Pieza ${tooth}</option>`).join("") +
-                "</optgroup>";
+            categorySelect.innerHTML = '<option value="">Seleccionar categoría</option>' + Object.values(AREA_CATEGORIA_INTERNA).map(value => '<option value="' + DentalRoles.escapeHtml(value) + '">' + DentalRoles.escapeHtml(value) + '</option>').join("");
+            renderAreaOdontologicaOptions();
+            actualizarProcedimientos();
+            renderToothSelector();
         }
 
         function actualizarProcedimientos() {
-            const category = document.getElementById("categoriaProcedimiento").value;
+            const area = document.getElementById("areaOdontologica").value;
+            const categorySelect = document.getElementById("categoriaProcedimiento");
             const procedureSelect = document.getElementById("procedimiento");
-            const procedures = catalogoProcedimientos[category]?.[1] || [];
-
-            procedureSelect.disabled = !category;
+            const procedures = catalogoProcedimientos[area]?.[1] || [];
+            if (categorySelect) categorySelect.value = AREA_CATEGORIA_INTERNA[area] || "";
+            procedureSelect.disabled = !area;
             procedureSelect.innerHTML = '<option value="">Seleccionar procedimiento</option>' +
                 procedures.map(item => {
-                    const name = Array.isArray(item) ? item[0] : item.name;
-                    const requiresTooth = Array.isArray(item) ? item[1] : item.requiresTooth;
-                    const duration = Array.isArray(item) ? "" : item.duration;
-                    const price = Array.isArray(item) ? "" : item.price;
-                    const id = Array.isArray(item) ? "" : item.id;
-                    return `<option value="${DentalRoles.escapeHtml(name)}" data-procedure-id="${DentalRoles.escapeHtml(id)}" data-duration="${DentalRoles.escapeHtml(duration)}" data-price="${DentalRoles.escapeHtml(price)}" data-requires-tooth="${requiresTooth}">${DentalRoles.escapeHtml(name)}</option>`;
+                    const name = item.name;
+                    const requiresTooth = item.requiresTooth;
+                    const duration = item.duration || "";
+                    const price = item.price || "";
+                    const id = item.id || "";
+                    const categoryKey = item.categoryKey || AREA_CATEGORIA_INTERNA[area] || "";
+                    return '<option value="' + DentalRoles.escapeHtml(name) + '" data-category-key="' + DentalRoles.escapeHtml(categoryKey) + '" data-procedure-id="' + DentalRoles.escapeHtml(id) + '" data-duration="' + DentalRoles.escapeHtml(duration) + '" data-price="' + DentalRoles.escapeHtml(price) + '" data-requires-tooth="' + requiresTooth + '">' + DentalRoles.escapeHtml(name) + '</option>';
                 }).join("");
             actualizarPiezaDental();
         }
@@ -938,11 +1037,11 @@
                 document.getElementById("duracion").value = suggestedDuration;
             }
             document.getElementById("piezaDentalGroup").hidden = !requiresTooth;
-            document.getElementById("piezaDental").required = requiresTooth;
-
             if (!requiresTooth) {
+                appointmentToothSelector.reset();
                 document.getElementById("piezaDental").value = "";
             }
+            renderToothSelector();
         }
 
         async function cargarDoctoresCitas() {
@@ -1278,6 +1377,23 @@
             return inicio === "Sin hora" ? inicio : `${inicio} - ${fin}`;
         }
 
+
+        function currentToothSelections() {
+            return appointmentToothSelector.selections();
+        }
+
+        function toothCountIsValid() {
+            return appointmentToothSelector.isValid();
+        }
+
+        function renderToothSelector() {
+            appointmentToothSelector.render();
+        }
+
+        function toggleTooth(toothId) {
+            appointmentToothSelector.toggle(toothId);
+        }
+
         function renderCitas() {
 
             let lista = document.getElementById("listaCitas");
@@ -1410,7 +1526,8 @@
             let hora = document.getElementById("hora").value;
             let duracionMinutos = Number(document.getElementById("duracion").value || 30);
             let doctor = document.getElementById("doctor").value;
-            let categoriaProcedimiento = document.getElementById("categoriaProcedimiento").value;
+            let dentalArea = document.getElementById("areaOdontologica").value;
+            let categoriaProcedimiento = categoriaProcedimientoActual();
             let procedimiento = document.getElementById("procedimiento").value;
             let piezaDental = document.getElementById("piezaDental").value;
             let detalleClinico = document.getElementById("detalleClinico").value.trim();
@@ -1425,13 +1542,13 @@
             );
 
             if (paciente === "" || fecha === "" || hora === "" || doctor === "" ||
-                categoriaProcedimiento === "" || procedimiento === "") {
+                dentalArea === "" || procedimiento === "") {
                 DentalRoles.notify("Completa todos los campos.", "warning");
                 return;
             }
 
-            if (requierePieza && !piezaDental) {
-                DentalRoles.notify("Selecciona la pieza dental para este procedimiento.", "warning");
+            if (requierePieza && !toothCountIsValid()) {
+                DentalRoles.notify("La cantidad de piezas no coincide con la selección.", "warning");
                 return;
             }
 
@@ -1470,10 +1587,14 @@
                         duracionMinutos,
                         doctorId: doctor,
                         zonaHoraria: ZONA_HORARIA,
-                        motivo: procedimiento,
+                        motivo: detalleClinico || procedimiento,
+                        dentalArea,
                         categoriaProcedimiento,
                         procedimiento,
                         piezaDental,
+                        toothCountMode: document.getElementById("toothCountMode").value,
+                        toothNumberingSystem: document.getElementById("toothNumberingSystem").value,
+                        toothSelections: currentToothSelections(),
                         detalleClinico
                     });
 
@@ -1495,10 +1616,12 @@
                 duracion_minutos: duracionMinutos,
                 hora_fin: sumarMinutosHora(hora, duracionMinutos),
                 doctor: doctorNombre,
-                motivo: procedimiento,
+                motivo: detalleClinico || procedimiento,
+                dental_area: dentalArea,
                 categoria_procedimiento: categoriaProcedimiento,
                 procedimiento,
-                pieza_dental: piezaDental,
+                pieza_dental: currentToothSelections().map(item => item.displayCode).join(", ") || piezaDental,
+                tooth_selections: currentToothSelections(),
                 detalle_clinico: detalleClinico,
                 estado: "pendiente"
             });
@@ -1517,11 +1640,14 @@
             document.getElementById("fecha").value = "";
             document.getElementById("hora").value = "";
             document.getElementById("duracion").value = "30";
+            document.getElementById("areaOdontologica").value = "";
             document.getElementById("categoriaProcedimiento").value = "";
             document.getElementById("procedimiento").innerHTML = '<option value="">Seleccionar procedimiento</option>';
             document.getElementById("procedimiento").disabled = true;
+            appointmentToothSelector.reset();
             document.getElementById("piezaDental").value = "";
             document.getElementById("piezaDentalGroup").hidden = true;
+            renderToothSelector();
             document.getElementById("detalleClinico").value = "";
             if (rol !== "doctor") {
                 document.getElementById("doctor").value = "";
@@ -1561,7 +1687,7 @@
             document.getElementById("clinicalProcedure").value = cita.procedimiento || cita.motivo || "";
             document.getElementById("clinicalDiagnosis").value = "";
             document.getElementById("clinicalTreatment").value = "";
-            document.getElementById("clinicalPrescription").value = "";
+            ["pharmaDrug", "pharmaPresentation", "pharmaDose", "pharmaFrequency", "pharmaRoute", "pharmaIndications"].forEach(id => document.getElementById(id).value = "");
             document.getElementById("clinicalNextSteps").value = "";
             document.getElementById("clinicalNote").value = "";
             document.getElementById("clinicalNotesList").innerHTML = '<div class="empty-state">Cargando historial...</div>';
@@ -1596,9 +1722,9 @@
                     ${note.procedimiento ? `<p><strong>Procedimiento:</strong> ${DentalRoles.escapeHtml(note.procedimiento)}</p>` : ""}
                     ${note.diagnostico ? `<p><strong>Diagnóstico:</strong> ${DentalRoles.escapeHtml(note.diagnostico)}</p>` : ""}
                     ${note.tratamiento ? `<p><strong>Tratamiento:</strong> ${DentalRoles.escapeHtml(note.tratamiento)}</p>` : ""}
-                    ${note.receta ? `<p><strong>Receta/indicaciones:</strong> ${DentalRoles.escapeHtml(note.receta)}</p>` : ""}
+                    ${note.receta ? `<p><strong>Farmacoterapia histórica:</strong> ${DentalRoles.escapeHtml(note.receta)}</p>` : ""}
                     ${note.proxima_indicacion ? `<p><strong>Próxima indicación:</strong> ${DentalRoles.escapeHtml(note.proxima_indicacion)}</p>` : ""}
-                    <p><strong>Nota:</strong> ${DentalRoles.escapeHtml(note.nota)}</p>
+                    ${note.nota ? `<p><strong>Nota histórica:</strong> ${DentalRoles.escapeHtml(note.nota)}</p>` : ""}
                 </div>
             `).join("");
         }
@@ -1612,12 +1738,19 @@
                 return;
             }
 
-            const note = document.getElementById("clinicalNote").value.trim();
-
-            if (!note) {
-                DentalRoles.notify("Escribe la nota médica de la evolución.", "warning");
-                return;
-            }
+            const pharmacotherapy = [{
+                drug: document.getElementById("pharmaDrug").value.trim(),
+                presentation: document.getElementById("pharmaPresentation").value.trim(),
+                dose: document.getElementById("pharmaDose").value.trim(),
+                frequency: document.getElementById("pharmaFrequency").value.trim(),
+                route: document.getElementById("pharmaRoute").value.trim(),
+                indications: document.getElementById("pharmaIndications").value.trim()
+            }].filter(item => Object.values(item).some(Boolean));
+            const note = [
+                document.getElementById("clinicalDiagnosis").value.trim(),
+                document.getElementById("clinicalTreatment").value.trim(),
+                document.getElementById("clinicalNextSteps").value.trim()
+            ].filter(Boolean).join("\n");
 
             try {
                 await DentalApi.createClinicalNote({
@@ -1626,7 +1759,12 @@
                     procedureName: document.getElementById("clinicalProcedure").value.trim(),
                     diagnosis: document.getElementById("clinicalDiagnosis").value.trim(),
                     treatment: document.getElementById("clinicalTreatment").value.trim(),
-                    prescription: document.getElementById("clinicalPrescription").value.trim(),
+                    dentalArea: cita.dental_area,
+                    toothSelections: cita.tooth_selections || [],
+                    toothCountMode: cita.tooth_count_mode || "",
+                    toothNumberingSystem: cita.tooth_numbering_system || "FDI",
+                    prescription: "",
+                    pharmacotherapy,
                     nextSteps: document.getElementById("clinicalNextSteps").value.trim(),
                     note
                 });
@@ -1738,13 +1876,12 @@
             DentalRoles.showDetails("Detalle de cita", [
                 { label: "Paciente", value: cita.paciente },
                 { label: "Doctor", value: cita.doctor },
-                { label: "Área clínica", value: catalogoProcedimientos[cita.categoria_procedimiento]?.[0] || cita.categoria_procedimiento },
-                { label: "Procedimiento", value: cita.procedimiento || cita.motivo },
-                { label: "Pieza dental", value: cita.pieza_dental },
-                { label: "Detalle clínico", value: cita.detalle_clinico },
+                { label: "Área odontológica", value: cita.dental_area },
+                { label: "Categoría de procedimiento", value: cita.categoria_procedimiento },
+                { label: "Procedimiento", value: cita.procedimiento || cita.motivo },                { label: "Piezas", value: (cita.tooth_selections || []).map(item => item.displayCode).join(", ") || cita.pieza_dental },
+                { label: "Motivo de consulta", value: cita.detalle_clinico || cita.motivo },
                 { label: "Fecha", value: cita.fecha },
                 { label: "Hora", value: rangoHorarioCita(cita) },
-                { label: "Duración", value: `${Number(cita.duracion_minutos || 30)} minutos` },
                 { label: "Estado", value: estadoEtiqueta(cita.estado) }
             ]);
         }

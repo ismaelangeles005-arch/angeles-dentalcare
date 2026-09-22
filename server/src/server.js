@@ -20,6 +20,7 @@ const availabilityRoutes = require("./routes/availability");
 const clinicalNoteRoutes = require("./routes/clinicalNotes");
 const procedureRoutes = require("./routes/procedures");
 const billingRoutes = require("./routes/billing");
+const odontogramRoutes = require("./routes/odontogram");
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -106,6 +107,7 @@ app.use("/api/availability", availabilityRoutes);
 app.use("/api/clinical-notes", clinicalNoteRoutes);
 app.use("/api/procedures", procedureRoutes);
 app.use("/api/billing", billingRoutes);
+app.use("/api/odontogram", odontogramRoutes);
 
 if (frontendRoot) {
   app.use(express.static(frontendRoot, {

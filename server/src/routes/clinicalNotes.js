@@ -11,7 +11,51 @@ router.use(authenticate);
 const NOTE_TYPES = ["consulta_ambulatoria", "procedimiento", "evolucion"];
 const CONSULTATION_STATUSES = ["en_espera", "en_consulta", "atendido", "finalizado"];
 const PROCEDURE_STATUSES = ["pendiente", "programado", "realizado", "cancelado"];
-const TOOTH_PATTERN = /^(1[1-8]|2[1-8]|3[1-8]|4[1-8]|5[1-5]|6[1-5]|7[1-5]|8[1-5])$/;
+const TOOTH_PATTERN = /^([1-4]\.[1-8]|[1-4][1-8]|[1-9]|[12][0-9]|3[0-2])$/;
+const DENTAL_AREAS = [
+  "Operatoria",
+  "Cirugía",
+  "Endodoncia",
+  "Periodoncia",
+  "Estética",
+  "Ortodoncia",
+  "Odontopediatría",
+  "Prótesis y rehabilitación",
+  "Evaluación y diagnóstico"
+];
+const AREA_ALIASES = new Map([
+  ["Cirugia", "Cirugía"],
+  ["Estetica", "Estética"],
+  ["Odontopediatria", "Odontopediatría"],
+  ["Protesis y rehabilitacion", "Prótesis y rehabilitación"],
+  ["Evaluacion y diagnostico", "Evaluación y diagnóstico"]
+]);
+
+function normalizeDentalArea(value) {
+  const clean = typeof value === "string" ? value.trim() : "";
+  return AREA_ALIASES.get(clean) || clean;
+}
+
+function cleanToothSelections(value) {
+  const selections = Array.isArray(value) ? value : [];
+  return selections.map(item => ({
+    toothId: String(item?.toothId || "").trim(),
+    numberingSystem: String(item?.numberingSystem || "FDI") === "UNIVERSAL" ? "UNIVERSAL" : "FDI",
+    displayCode: String(item?.displayCode || "").trim()
+  })).filter(item => item.toothId && item.displayCode).slice(0, 32);
+}
+
+function cleanPharmacotherapy(value) {
+  const rows = Array.isArray(value) ? value : [];
+  return rows.map(item => ({
+    drug: cleanText(item?.drug, 160),
+    presentation: cleanText(item?.presentation, 160),
+    dose: cleanText(item?.dose, 160),
+    frequency: cleanText(item?.frequency, 160),
+    route: cleanText(item?.route, 160),
+    indications: cleanText(item?.indications, 500)
+  })).filter(item => Object.values(item).some(Boolean)).slice(0, 20);
+}
 
 function cleanText(value, maxLength = 2000) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
@@ -28,10 +72,10 @@ function cleanTime(value) {
 function buildFallbackNote(payload) {
   return [
     payload.chiefComplaint && `Motivo: ${payload.chiefComplaint}`,
-    payload.clinicalEvaluation && `Evaluacion: ${payload.clinicalEvaluation}`,
-    payload.odontologicalDiagnosis && `Diagnostico: ${payload.odontologicalDiagnosis}`,
+    payload.clinicalEvaluation && `Evaluación: ${payload.clinicalEvaluation}`,
+    payload.odontologicalDiagnosis && `Diagnóstico: ${payload.odontologicalDiagnosis}`,
     payload.performedProcedures && `Procedimientos: ${payload.performedProcedures}`,
-    payload.evolution && `Evolucion: ${payload.evolution}`,
+    payload.evolution && `Evolución: ${payload.evolution}`,
     payload.indications && `Indicaciones: ${payload.indications}`,
     payload.observations && `Observaciones: ${payload.observations}`
   ].filter(Boolean).join("\n");
@@ -73,11 +117,16 @@ router.get("/", asyncHandler(async (req, res) => {
       cn.consultation_status,
       cn.procedure_name AS procedimiento,
       cn.procedure_status,
+      cn.dental_area,
       cn.tooth_number,
+      cn.tooth_count_mode,
+      cn.tooth_numbering_system,
+      cn.tooth_selections,
       cn.diagnosis AS diagnostico,
       COALESCE(cn.odontological_diagnosis, cn.diagnosis) AS diagnostico_odontologico,
       cn.treatment AS tratamiento,
       cn.prescription AS receta,
+      cn.pharmacotherapy,
       cn.next_steps AS proxima_indicacion,
       cn.chief_complaint AS motivo_consulta,
       cn.clinical_evaluation AS evaluacion_clinica,
@@ -114,10 +163,15 @@ router.post("/", allowRoles("head_admin", "admin", "doctor"), asyncHandler(async
     procedureName,
     procedureStatus,
     toothNumber,
+    toothSelections,
+    toothCountMode,
+    toothNumberingSystem,
+    dentalArea,
     diagnosis,
     odontologicalDiagnosis,
     treatment,
     prescription,
+    pharmacotherapy,
     nextSteps,
     chiefComplaint,
     clinicalEvaluation,
@@ -139,7 +193,12 @@ router.post("/", allowRoles("head_admin", "admin", "doctor"), asyncHandler(async
   const cleanNoteType = NOTE_TYPES.includes(noteType) ? noteType : "evolucion";
   const cleanConsultationStatus = CONSULTATION_STATUSES.includes(consultationStatus) ? consultationStatus : null;
   const cleanProcedureStatus = PROCEDURE_STATUSES.includes(procedureStatus) ? procedureStatus : null;
-  const cleanTooth = cleanText(toothNumber, 8);
+  const cleanTooth = cleanText(toothNumber, 12);
+  const cleanSelections = cleanToothSelections(toothSelections);
+  const cleanToothCountMode = ["1", "2", "3", "4", "multiple"].includes(String(toothCountMode)) ? String(toothCountMode) : "";
+  const cleanNumberingSystem = toothNumberingSystem === "UNIVERSAL" ? "UNIVERSAL" : "FDI";
+  const cleanDentalArea = normalizeDentalArea(dentalArea);
+  const cleanPharma = cleanPharmacotherapy(pharmacotherapy);
   const payload = {
     procedureName: cleanText(procedureName, 160),
     diagnosis: cleanText(diagnosis, 1000),
@@ -164,7 +223,11 @@ router.post("/", allowRoles("head_admin", "admin", "doctor"), asyncHandler(async
   const finalNote = payload.note || buildFallbackNote(payload);
 
   if (!patientId || !finalNote) {
-    return res.status(400).json({ message: "Selecciona el paciente y registra informacion clinica" });
+    return res.status(400).json({ message: "Selecciona el paciente y registra información clínica" });
+  }
+
+  if (cleanDentalArea && !DENTAL_AREAS.includes(cleanDentalArea)) {
+    return res.status(400).json({ message: "Selecciona un area odontologica valida" });
   }
 
   if (cleanTooth && !TOOTH_PATTERN.test(cleanTooth)) {
@@ -196,7 +259,7 @@ router.post("/", allowRoles("head_admin", "admin", "doctor"), asyncHandler(async
   if (!patient.rows.length) {
     return res.status(404).json({
       message: req.user.isDoctor
-        ? "Solo puedes registrar evolucion de pacientes asignados o atendidos por ti"
+        ? "Solo puedes registrar evolución de pacientes asignados o atendidos por ti"
         : "Paciente no encontrado"
     });
   }
@@ -236,11 +299,16 @@ router.post("/", allowRoles("head_admin", "admin", "doctor"), asyncHandler(async
       consultation_status,
       procedure_name,
       procedure_status,
+      dental_area,
       tooth_number,
+      tooth_count_mode,
+      tooth_numbering_system,
+      tooth_selections,
       diagnosis,
       odontological_diagnosis,
       treatment,
       prescription,
+      pharmacotherapy,
       next_steps,
       chief_complaint,
       clinical_evaluation,
@@ -259,7 +327,7 @@ router.post("/", allowRoles("head_admin", "admin", "doctor"), asyncHandler(async
       note,
       created_by
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)
     RETURNING id
   `, [
     req.user.organizationId,
@@ -270,11 +338,16 @@ router.post("/", allowRoles("head_admin", "admin", "doctor"), asyncHandler(async
     cleanConsultationStatus,
     payload.procedureName || null,
     cleanProcedureStatus,
-    cleanTooth || null,
+    cleanDentalArea || null,
+    cleanSelections[0]?.displayCode || cleanTooth || null,
+    cleanToothCountMode || null,
+    cleanNumberingSystem,
+    JSON.stringify(cleanSelections),
     payload.diagnosis || null,
     payload.odontologicalDiagnosis || null,
     payload.treatment || null,
     payload.prescription || null,
+    JSON.stringify(cleanPharma),
     payload.nextSteps || null,
     payload.chiefComplaint || null,
     payload.clinicalEvaluation || null,
@@ -304,6 +377,7 @@ router.post("/", allowRoles("head_admin", "admin", "doctor"), asyncHandler(async
         UPDATE appointments
         SET status = $2, updated_at = NOW()
         WHERE id = $1
+          AND organization_id = $3
           AND deleted_at IS NULL
           AND status <> 'cancelada'
       `, [appointmentId, nextStatus, req.user.organizationId]);

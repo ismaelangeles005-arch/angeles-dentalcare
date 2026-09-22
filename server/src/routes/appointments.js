@@ -5,6 +5,49 @@ const { authenticate, allowRoles } = require("../middleware/auth");
 const { writeAuditLog } = require("../utils/audit");
 
 const router = express.Router();
+
+const DENTAL_AREAS = [
+  "Operatoria",
+  "Cirugía",
+  "Endodoncia",
+  "Periodoncia",
+  "Estética",
+  "Ortodoncia",
+  "Odontopediatría",
+  "Prótesis y rehabilitación",
+  "Evaluación y diagnóstico"
+];
+const AREA_ALIASES = new Map([
+  ["Cirugia", "Cirugía"],
+  ["Estetica", "Estética"],
+  ["Odontopediatria", "Odontopediatría"],
+  ["Protesis y rehabilitacion", "Prótesis y rehabilitación"],
+  ["Evaluacion y diagnostico", "Evaluación y diagnóstico"]
+]);
+
+function normalizeDentalArea(value) {
+  const clean = typeof value === "string" ? value.trim() : "";
+  return AREA_ALIASES.get(clean) || clean;
+}
+
+function cleanToothSelections(value) {
+  const selections = Array.isArray(value) ? value : [];
+  return selections
+    .filter(item => item && typeof item === "object")
+    .map(item => ({
+      toothId: String(item.toothId || "").trim(),
+      numberingSystem: String(item.numberingSystem || "FDI").trim() === "UNIVERSAL" ? "UNIVERSAL" : "FDI",
+      displayCode: String(item.displayCode || "").trim()
+    }))
+    .filter(item => item.toothId && item.displayCode)
+    .slice(0, 32);
+}
+
+function validToothCount(mode, selections) {
+  if (["1", "2", "3", "4"].includes(mode)) return selections.length === Number(mode);
+  if (mode === "multiple") return selections.length >= 5;
+  return selections.length === 0;
+}
 router.use(authenticate);
 
 const CLOSED_STATUSES = ["cancelada", "no_asistio", "reprogramada"];
@@ -76,7 +119,11 @@ router.get("/", asyncHandler(async (req, res) => {
       a.reason AS motivo,
       a.procedure_category AS categoria_procedimiento,
       a.procedure_name AS procedimiento,
+      a.dental_area,
       a.tooth_number AS pieza_dental,
+      a.tooth_count_mode,
+      a.tooth_numbering_system,
+      a.tooth_selections,
       a.clinical_detail AS detalle_clinico,
       d.name AS doctor,
       a.doctor_id
@@ -91,16 +138,20 @@ router.get("/", asyncHandler(async (req, res) => {
 }));
 
 router.post("/", allowRoles("head_admin", "admin", "recepcion", "doctor"), asyncHandler(async (req, res) => {
-  const { pacienteId, fecha, hora, doctorId, duracionMinutos, motivo, categoriaProcedimiento, procedimiento, piezaDental, detalleClinico } = req.body;
+  const { pacienteId, fecha, hora, doctorId, duracionMinutos, motivo, categoriaProcedimiento, procedimiento, piezaDental, detalleClinico, dentalArea, toothSelections, toothCountMode, toothNumberingSystem } = req.body;
   const effectiveDoctorId = req.user.isDoctor ? req.user.doctorId : doctorId;
   const validCategories = ["evaluacion", "prevencion", "restauracion", "caries", "endodoncia", "extraccion", "ortodoncia", "periodoncia", "protesis", "cirugia", "estetica", "odontopediatria", "urgencia"];
   const cleanCategory = typeof categoriaProcedimiento === "string" ? categoriaProcedimiento.trim().toLowerCase() : "";
   const cleanProcedure = typeof procedimiento === "string" ? procedimiento.trim() : "";
   const cleanTooth = typeof piezaDental === "string" ? piezaDental.trim() : "";
   const cleanDetail = typeof detalleClinico === "string" ? detalleClinico.trim() : "";
+  const cleanDentalArea = normalizeDentalArea(dentalArea);
+  const cleanSelections = cleanToothSelections(toothSelections);
+  const cleanToothCountMode = ["1", "2", "3", "4", "multiple"].includes(String(toothCountMode)) ? String(toothCountMode) : "";
+  const cleanNumberingSystem = toothNumberingSystem === "UNIVERSAL" ? "UNIVERSAL" : "FDI";
   const duration = Number(duracionMinutos || 30);
 
-  if (!pacienteId || !fecha || !hora || !effectiveDoctorId || !cleanCategory || !cleanProcedure) {
+  if (!pacienteId || !fecha || !hora || !effectiveDoctorId || !cleanCategory || !cleanProcedure || !cleanDentalArea) {
     return res.status(400).json({ message: "Completa todos los campos requeridos" });
   }
   if (![15, 30, 45, 60, 90, 120].includes(duration)) {
@@ -109,10 +160,16 @@ router.post("/", allowRoles("head_admin", "admin", "recepcion", "doctor"), async
   if (!validCategories.includes(cleanCategory)) {
     return res.status(400).json({ message: "La categoria del procedimiento no es valida" });
   }
-  if (cleanProcedure.length > 160 || cleanDetail.length > 500) {
-    return res.status(400).json({ message: "Los datos clinicos superan el tamano permitido" });
+  if (!DENTAL_AREAS.includes(cleanDentalArea)) {
+    return res.status(400).json({ message: "Selecciona un area odontologica valida" });
   }
-  if (cleanTooth && !/^(1[1-8]|2[1-8]|3[1-8]|4[1-8]|5[1-5]|6[1-5]|7[1-5]|8[1-5])$/.test(cleanTooth)) {
+  if (cleanToothCountMode && !validToothCount(cleanToothCountMode, cleanSelections)) {
+    return res.status(400).json({ message: "La cantidad de piezas no coincide con la seleccion" });
+  }
+  if (cleanProcedure.length > 160 || cleanDetail.length > 500) {
+    return res.status(400).json({ message: "Los datos clínicos superan el tamaño permitido" });
+  }
+  if (cleanTooth && !/^([1-4]\.[1-8]|[1-4][1-8]|[1-9]|[12][0-9]|3[0-2])$/.test(cleanTooth)) {
     return res.status(400).json({ message: "La pieza dental no es valida" });
   }
 
@@ -197,9 +254,10 @@ router.post("/", allowRoles("head_admin", "admin", "recepcion", "doctor"), async
     INSERT INTO appointments (
       organization_id, patient_id, patient_name, appointment_date, appointment_time,
       appointment_duration_minutes, appointment_timezone, doctor_id, reason,
-      procedure_category, procedure_name, tooth_number, clinical_detail, status, created_by
+      procedure_category, procedure_name, dental_area, tooth_number, tooth_count_mode,
+      tooth_numbering_system, tooth_selections, clinical_detail, status, created_by
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'pendiente', $14)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'pendiente', $18)
     RETURNING *
   `, [
     req.user.organizationId,
@@ -213,7 +271,11 @@ router.post("/", allowRoles("head_admin", "admin", "recepcion", "doctor"), async
     typeof motivo === "string" ? motivo.trim().slice(0, 300) || cleanProcedure : cleanProcedure,
     cleanCategory,
     cleanProcedure,
-    cleanTooth || null,
+    cleanDentalArea,
+    cleanSelections[0]?.displayCode || cleanTooth || null,
+    cleanToothCountMode || null,
+    cleanNumberingSystem,
+    JSON.stringify(cleanSelections),
     cleanDetail || null,
     req.user.id
   ]);
@@ -231,7 +293,7 @@ router.post("/", allowRoles("head_admin", "admin", "recepcion", "doctor"), async
     await notifyClinicStaff("Nueva cita creada por doctor", `${patient.rows[0].full_name} fue agendado para ${fecha} a las ${hora}. Procedimiento: ${cleanProcedure}.`, "appointment", result.rows[0].id, req.user.organizationId);
   }
 
-  await writeAuditLog(req, "create", "appointments", result.rows[0].id, { patientId: pacienteId, doctorId: effectiveDoctorId, fecha, hora, duracionMinutos: duration, procedimiento: cleanProcedure });
+  await writeAuditLog(req, "create", "appointments", result.rows[0].id, { patientId: pacienteId, doctorId: effectiveDoctorId, fecha, hora, duracionMinutos: duration, procedimiento: cleanProcedure, dentalArea: cleanDentalArea });
   return res.status(201).json(result.rows[0]);
 }));
 

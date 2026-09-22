@@ -22,6 +22,7 @@ const publicFiles = new Set([
   "images/logo_files/css2",
   "styles.css",
   "roles.js",
+  "dental-tooth-selector.js",
   "api.js"
 ]);
 

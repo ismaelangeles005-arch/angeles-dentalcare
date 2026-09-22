@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS organizations (
   organization_type TEXT NOT NULL DEFAULT 'CLINIC'
     CHECK (organization_type IN ('INDEPENDENT', 'CLINIC')),
   owner_user_id UUID,
+  default_tooth_numbering_system TEXT NOT NULL DEFAULT 'FDI'
+    CHECK (default_tooth_numbering_system IN ('FDI', 'UNIVERSAL')),
   active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -71,6 +73,13 @@ CREATE TABLE IF NOT EXISTS patients (
   current_medications TEXT,
   diagnosis TEXT,
   treatment_plan TEXT,
+  patient_type TEXT NOT NULL DEFAULT 'regular'
+    CHECK (patient_type IN ('regular', 'ambulatory')),
+  operational_classification TEXT NOT NULL DEFAULT 'sin_clasificacion'
+    CHECK (operational_classification IN ('cumplido', 'impuntual', 'ausencias_frecuentes', 'requiere_confirmacion', 'incumplimiento_indicaciones', 'documentacion_pendiente', 'sin_clasificacion')),
+  operational_classification_observation TEXT,
+  operational_classification_at TIMESTAMPTZ,
+  operational_classification_by UUID REFERENCES users(id),
   created_by UUID REFERENCES users(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -93,7 +102,12 @@ CREATE TABLE IF NOT EXISTS appointments (
   reason TEXT,
   procedure_category TEXT,
   procedure_name TEXT,
+  dental_area TEXT,
   tooth_number TEXT,
+  tooth_count_mode TEXT,
+  tooth_numbering_system TEXT NOT NULL DEFAULT 'FDI'
+    CHECK (tooth_numbering_system IN ('FDI', 'UNIVERSAL')),
+  tooth_selections JSONB NOT NULL DEFAULT '[]'::jsonb,
   clinical_detail TEXT,
   created_by UUID REFERENCES users(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -114,11 +128,17 @@ CREATE TABLE IF NOT EXISTS clinical_notes (
   procedure_name TEXT,
   procedure_status TEXT
     CHECK (procedure_status IS NULL OR procedure_status IN ('pendiente', 'programado', 'realizado', 'cancelado')),
+  dental_area TEXT,
   tooth_number TEXT,
+  tooth_count_mode TEXT,
+  tooth_numbering_system TEXT NOT NULL DEFAULT 'FDI'
+    CHECK (tooth_numbering_system IN ('FDI', 'UNIVERSAL')),
+  tooth_selections JSONB NOT NULL DEFAULT '[]'::jsonb,
   diagnosis TEXT,
   odontological_diagnosis TEXT,
   treatment TEXT,
   prescription TEXT,
+  pharmacotherapy JSONB NOT NULL DEFAULT '[]'::jsonb,
   next_steps TEXT,
   chief_complaint TEXT,
   clinical_evaluation TEXT,
@@ -140,6 +160,62 @@ CREATE TABLE IF NOT EXISTS clinical_notes (
 );
 
 
+CREATE TABLE IF NOT EXISTS procedure_catalog (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id),
+  category_key TEXT NOT NULL,
+  category_name TEXT NOT NULL,
+  name TEXT NOT NULL,
+  base_price NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (base_price >= 0),
+  duration_minutes INTEGER NOT NULL DEFAULT 30 CHECK (duration_minutes IN (15, 30, 45, 60, 90, 120)),
+  requires_tooth BOOLEAN NOT NULL DEFAULT false,
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
+  UNIQUE (category_key, name)
+);
+
+
+CREATE TABLE IF NOT EXISTS odontogram_entries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id) ON DELETE NO ACTION,
+  patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE NO ACTION,
+  tooth_id TEXT NOT NULL,
+  surface TEXT
+    CHECK (surface IS NULL OR surface IN (
+      'MESIAL',
+      'DISTAL',
+      'BUCCAL',
+      'LINGUAL',
+      'PALATAL',
+      'OCCLUSAL',
+      'INCISAL'
+    )),
+  entry_type TEXT NOT NULL CHECK (entry_type IN (
+    'EXISTING_CONDITION',
+    'DIAGNOSIS',
+    'PROPOSED_TREATMENT',
+    'COMPLETED_TREATMENT'
+  )),
+  condition_code TEXT NOT NULL,
+  condition_label TEXT NOT NULL,
+  procedure_id UUID REFERENCES procedure_catalog(id) ON DELETE SET NULL,
+  related_entry_id UUID NULL REFERENCES odontogram_entries(id) ON DELETE SET NULL,
+  status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN (
+    'ACTIVE',
+    'RESOLVED',
+    'SUPERSEDED',
+    'VOIDED'
+  )),
+  notes TEXT,
+  doctor_id UUID REFERENCES doctors(id) ON DELETE SET NULL,
+  created_by UUID REFERENCES users(id) ON DELETE NO ACTION,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  source_clinical_note_id UUID REFERENCES clinical_notes(id) ON DELETE SET NULL
+);
+
+
 CREATE TABLE IF NOT EXISTS patient_visits (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID REFERENCES organizations(id),
@@ -150,6 +226,29 @@ CREATE TABLE IF NOT EXISTS patient_visits (
   created_by UUID REFERENCES users(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE TABLE IF NOT EXISTS patient_classification_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id),
+  patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  classification TEXT NOT NULL CHECK (classification IN ('cumplido', 'impuntual', 'ausencias_frecuentes', 'requiere_confirmacion', 'incumplimiento_indicaciones', 'documentacion_pendiente', 'sin_clasificacion')),
+  observation TEXT,
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS patient_medical_conditions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id),
+  patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  condition_key TEXT NOT NULL,
+  condition_label TEXT NOT NULL,
+  observation TEXT,
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID REFERENCES organizations(id),
@@ -253,6 +352,23 @@ CREATE INDEX IF NOT EXISTS idx_clinical_notes_procedure_status
   ON clinical_notes (procedure_status, created_at DESC)
   WHERE procedure_status IS NOT NULL;
 
+CREATE INDEX IF NOT EXISTS idx_odontogram_entries_patient
+  ON odontogram_entries (patient_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_odontogram_entries_patient_tooth
+  ON odontogram_entries (patient_id, tooth_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_odontogram_entries_procedure
+  ON odontogram_entries (procedure_id)
+  WHERE procedure_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_odontogram_entries_related_entry
+  ON odontogram_entries (related_entry_id)
+  WHERE related_entry_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_odontogram_entries_created_at
+  ON odontogram_entries (created_at DESC);
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_doctor_availability_active_day
   ON doctor_availability (doctor_id, work_date)
   WHERE deleted_at IS NULL;
@@ -282,4 +398,10 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_organization ON audit_logs (organizati
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_org_pin_lookup_active
   ON users (organization_id, pin_lookup_hash)
   WHERE pin_lookup_hash IS NOT NULL AND pin_enabled = true AND active = true AND deleted_at IS NULL;
+
+
+CREATE INDEX IF NOT EXISTS idx_patient_classification_history_patient
+  ON patient_classification_history (patient_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_patient_medical_conditions_patient
+  ON patient_medical_conditions (patient_id, active);
 
