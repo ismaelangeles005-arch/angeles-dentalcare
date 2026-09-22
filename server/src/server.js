@@ -21,6 +21,7 @@ const clinicalNoteRoutes = require("./routes/clinicalNotes");
 const procedureRoutes = require("./routes/procedures");
 const billingRoutes = require("./routes/billing");
 const odontogramRoutes = require("./routes/odontogram");
+const treatmentPlanRoutes = require("./routes/treatmentPlans");
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -108,6 +109,7 @@ app.use("/api/clinical-notes", clinicalNoteRoutes);
 app.use("/api/procedures", procedureRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/odontogram", odontogramRoutes);
+app.use("/api/treatment-plans", treatmentPlanRoutes);
 
 if (frontendRoot) {
   app.use(express.static(frontendRoot, {

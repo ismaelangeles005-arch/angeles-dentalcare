@@ -878,6 +878,7 @@
                     <button type="button" class="clinical-tab" data-clinical-tab="evaluacion" onclick="cambiarPestanaExpediente('evaluacion')">Evaluación Clínica</button>
                     <button type="button" class="clinical-tab" data-clinical-tab="procedimientos" onclick="cambiarPestanaExpediente('procedimientos')">Procedimientos</button>
                     <button type="button" class="clinical-tab" data-clinical-tab="odontograma" onclick="cambiarPestanaExpediente('odontograma')">Odontograma</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="plan" onclick="cambiarPestanaExpediente('plan')">Plan de tratamiento</button>
                     <button type="button" class="clinical-tab" data-clinical-tab="evolucion" onclick="cambiarPestanaExpediente('evolucion')">Evolución</button>
                     <button type="button" class="clinical-tab" data-clinical-tab="archivos" onclick="cambiarPestanaExpediente('archivos')">Imágenes y Documentos</button>
                 </div>
@@ -926,6 +927,22 @@
                     </div>
                 </section>
 
+                <section class="clinical-panel" data-clinical-panel="plan" hidden>
+                    <h3>Plan de tratamiento</h3>
+                    <div id="treatmentPlanList"></div>
+                    <details id="newTreatmentPlan">
+                        <summary>Nuevo plan</summary>
+                        <form class="odontogram-condition-form" onsubmit="crearPlanPaciente(event)">
+                            <label>Nombre del plan<input name="name" required maxlength="200"></label>
+                            <label>Doctor opcional<select name="doctor_id" id="treatmentPlanDoctor"><option value="">Sin doctor</option></select></label>
+                            <label>Notas opcionales<textarea name="notes" maxlength="2000"></textarea></label>
+                            <button type="submit" class="add-btn">Crear plan</button>
+                        </form>
+                    </details>
+                    <label>Numeración dental<select id="treatmentPlanNumbering" onchange="renderPlanPaciente()"><option value="FDI">FDI</option><option value="UNIVERSAL">Universal</option></select></label>
+                    <div id="treatmentPlanDetail"></div>
+                    <div id="treatmentPlanResults" role="status" aria-live="polite"></div>
+                </section>
                 <section class="clinical-panel" data-clinical-panel="evolucion" hidden>
                     <form class="clinical-note-form" id="clinicalNoteForm">
                         <select id="clinicalNoteType" aria-label="Tipo de registro clínico">
@@ -1048,6 +1065,7 @@
         let archivosExpediente = [];
         let notasClinicas = [];
         let odontogramCurrent = { teeth: {} };
+        let treatmentPlanState = null;
         let odontogramOpening = Promise.resolve();
         let odontogramLoaded = false;
         let selectedOdontogramToothId = "";
@@ -1641,6 +1659,12 @@
             }
 
             pacienteExpediente = paciente;
+            treatmentPlanState = { patient: paciente, plan: null, loading: false, busy: false };
+            document.getElementById("treatmentPlanList").innerHTML = "";
+            document.getElementById("treatmentPlanDetail").innerHTML = "";
+            document.getElementById("treatmentPlanResults").textContent = "";
+            document.querySelector("#newTreatmentPlan form").reset();
+            document.getElementById("newTreatmentPlan").open = false;
             document.getElementById("clinicalPatientName").textContent = paciente.nombre;
             document.getElementById("clinicalModal").hidden = false;
             cambiarPestanaExpediente("general");
@@ -1655,6 +1679,7 @@
             cerrarVistaArchivo();
             document.getElementById("clinicalModal").hidden = true;
             pacienteExpediente = null;
+            treatmentPlanState = null;
             archivosExpediente = [];
             notasClinicas = [];
             odontogramCurrent = { teeth: {} };
@@ -1669,6 +1694,7 @@
         }
 
         function cambiarPestanaExpediente(tab) {
+            if (tab === "plan") cargarPlanesPaciente();
             document.querySelectorAll("[data-clinical-tab]").forEach(button => {
                 const active = button.dataset.clinicalTab === tab;
                 button.classList.toggle("active", active);
@@ -2356,6 +2382,298 @@
                 odontogramCurrent = { teeth: {} };
                 renderOdontogramView();
                 document.getElementById("odontogramDetail").innerHTML = '<div class="empty-state">No fue posible cargar el odontograma clínico.</div>';
+            }
+        }
+
+        async function cargarPlanesPaciente() {
+            const state = treatmentPlanState;
+            if (!state || state.loading || state.busy) return;
+            state.loading = true;
+            try {
+                const plans = await DentalApi.getPatientTreatmentPlans(state.patient.id);
+                if (treatmentPlanState !== state) return;
+                const esc = DentalRoles.escapeHtml;
+                document.getElementById("treatmentPlanList").innerHTML = plans.length ? plans.map(plan => `
+                    <article class="odontogram-entry">
+                        <strong>${esc(plan.name)}</strong>
+                        <p>${esc(plan.status)} · ${esc(plan.doctor || "Sin doctor")} · ${esc(new Date(plan.created_at).toLocaleDateString("es-DO"))}</p>
+                        <p>Total: ${esc(plan.total)}</p>
+                        <button type="button" class="confirm-secondary" data-plan-id="${esc(plan.id)}" onclick="abrirPlanPaciente(this.dataset.planId)">Ver plan</button>
+                    </article>`).join("") : '<div class="empty-state">Sin planes de tratamiento</div>';
+                document.getElementById("treatmentPlanDoctor").innerHTML = '<option value="">Sin doctor</option>' + doctores.filter(d => d.active !== false).map(d => `<option value="${esc(d.id)}">${esc(d.name)}</option>`).join("");
+            } catch (error) {
+                if (treatmentPlanState === state) DentalRoles.notify(error.message || "No fue posible cargar los planes.", "error");
+            } finally { state.loading = false; }
+        }
+
+        async function crearPlanPaciente(event) {
+            event.preventDefault();
+            const state = treatmentPlanState;
+            if (!state || state.busy) return;
+            const form = event.currentTarget;
+            const name = form.elements.name.value.trim();
+            if (!name) return;
+            state.busy = true;
+            const button = form.querySelector('[type="submit"]');
+            button.disabled = true;
+            let plan;
+            try {
+                plan = await DentalApi.createTreatmentPlan({ patient_id: state.patient.id,
+                    doctor_id: form.elements.doctor_id.value || null, name, notes: form.elements.notes.value.trim() });
+            } catch (error) {
+                DentalRoles.notify(error.message || "No fue posible crear el plan.", "error");
+            } finally { state.busy = false; button.disabled = false; }
+            if (!plan || treatmentPlanState !== state) return;
+            state.plan = { ...plan, items: [], total: "0.00" };
+            form.reset();
+            document.getElementById("newTreatmentPlan").open = false;
+            DentalRoles.notify("Plan DRAFT creado.", "success");
+            renderPlanPaciente();
+            await abrirPlanPaciente(plan.id);
+            if (treatmentPlanState === state) await cargarPlanesPaciente();
+        }
+
+        async function abrirPlanPaciente(planId) {
+            const state = treatmentPlanState;
+            if (!state || state.busy) return;
+            state.busy = true;
+            document.getElementById("treatmentPlanResults").textContent = "";
+            try {
+                const plan = await DentalApi.getTreatmentPlan(planId);
+                if (treatmentPlanState !== state) return;
+                state.plan = plan;
+                await odontogramOpening;
+                if (treatmentPlanState !== state) return;
+                if (!odontogramLoaded) {
+                    const current = await DentalApi.getPatientOdontogramCurrent(state.patient.id);
+                    if (treatmentPlanState !== state) return;
+                    odontogramCurrent = current;
+                    odontogramLoaded = true;
+                }
+            } catch (error) {
+                if (treatmentPlanState === state) DentalRoles.notify(error.message || "No fue posible cargar el plan o las propuestas.", "error");
+            } finally {
+                state.busy = false;
+                if (treatmentPlanState === state) renderPlanPaciente();
+            }
+        }
+
+        function piezaPlanPaciente(toothId) {
+            if (!toothId) return "Sin pieza";
+            const tooth = DentalToothSelector.toothMap.find(item => item.toothId === toothId);
+            const system = document.getElementById("treatmentPlanNumbering").value;
+            return tooth?.[system] || toothId;
+        }
+
+        function renderPlanPaciente() {
+            const state = treatmentPlanState;
+            const plan = state?.plan;
+            if (!plan) return;
+            const container = document.getElementById("treatmentPlanDetail");
+            const checked = new Set(Array.from(container.querySelectorAll('input[name="proposal"]:checked'), el => el.value));
+            const esc = DentalRoles.escapeHtml;
+            const entries = Object.values(odontogramCurrent.teeth || {}).flat();
+            const proposals = odontogramLoaded ? entries.filter(entry => entry.entry_type === "PROPOSED_TREATMENT" && entry.status === "ACTIVE") : [];
+            const included = new Set(plan.items.map(item => item.odontogram_entry_id));
+            const surface = value => ODONTOGRAM_SURFACES.find(item => item.value === (value || ""))?.label || value;
+            container.innerHTML = `<h3>${esc(plan.name)}</h3><p>${esc(plan.status)}</p>
+                ${plan.items.length ? plan.items.map(item => `<article class="odontogram-entry">
+                    <strong>${esc(item.procedure_name_snapshot)}</strong>
+                    <p>Pieza: ${esc(piezaPlanPaciente(item.tooth_id))} · ${esc(surface(item.surface))}</p>
+                    <p>Precio unitario: ${esc(item.unit_price_snapshot)} · Cantidad: ${esc(item.quantity)}</p>
+                    <p>Descuento: ${esc(item.discount_amount)} · Total: ${esc(item.final_amount)}</p>
+                    <p>Estado: <strong>${esc(item.status)}</strong></p>
+                    ${["PRESENTED", "ACCEPTED", "PARTIALLY_ACCEPTED", "REJECTED", "POSTPONED"].includes(plan.status) && ["PROPOSED", "ACCEPTED", "REJECTED", "POSTPONED"].includes(item.status) ? `
+                        <div class="confirm-actions">
+                            ${[["ACCEPTED", "Aceptar"], ["REJECTED", "Rechazar"], ["POSTPONED", "Posponer"]].map(([status, label]) => `<button type="button" class="confirm-secondary" data-item-id="${esc(item.id)}" data-status="${status}" ${state.busy || item.status === status ? "disabled" : ""} onclick="cambiarDecisionPlan(this.dataset.itemId, this.dataset.status)">${label}</button>`).join("")}
+                        </div>` : ""}
+                </article>`).join("") : '<div class="empty-state">Sin ítems en el plan</div>'}
+                <p><strong>Total del plan: ${esc(plan.total ?? "Pendiente de actualizar")}</strong></p>
+                <p><strong>Total aceptado: ${esc(plan.accepted_total ?? (plan.status === "DRAFT" ? "0.00" : "Pendiente de actualizar"))}</strong></p>
+                ${(plan.acceptances || []).map(acceptance => `<p>Aceptación registrada: ${esc(acceptance.accepted_by_name)} · ${esc(new Date(acceptance.accepted_at).toLocaleString("es-DO"))} · Total aceptado: ${esc(acceptance.accepted_total_snapshot)}</p>`).join("")}
+                ${!["DRAFT", "CANCELLED"].includes(plan.status) && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="formalizarAceptacionPlan()">Formalizar aceptación</button>` : ""}
+                ${plan.status === "DRAFT" ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="presentarPlanPaciente()">Presentar plan</button>` : ""}
+                ${plan.status === "DRAFT" ? `<form onsubmit="agregarPropuestasPlan(event)">
+                    <h4>Tratamientos propuestos activos</h4>
+                    ${proposals.length ? proposals.map(entry => {
+                        const diagnosis = entries.find(d => d.id === entry.related_entry_id && d.entry_type === "DIAGNOSIS" && d.tooth_id === entry.tooth_id);
+                        const disabled = included.has(entry.id) || !entry.procedure_id || state.busy;
+                        return `<article class="odontogram-entry"><label>
+                            <input type="checkbox" name="proposal" value="${esc(entry.id)}" ${disabled ? "disabled" : ""} ${checked.has(entry.id) && !disabled ? "checked" : ""}>
+                            ${esc(entry.condition_label)} · ${esc(piezaPlanPaciente(entry.tooth_id))} · ${esc(surface(entry.surface))}</label>
+                            ${diagnosis ? `<p>Diagnóstico: ${esc(diagnosis.condition_label)}</p>` : ""}
+                            ${entry.notes ? `<p>${esc(entry.notes)}</p>` : ""}
+                            ${included.has(entry.id) ? '<p>Ya incluida en este plan</p>' : !entry.procedure_id ? '<p>Sin procedimiento vinculado al catálogo</p>' : ""}
+                        </article>`;
+                    }).join("") : '<div class="empty-state">Sin propuestas activas disponibles</div>'}
+                    <button type="submit" class="add-btn" ${state.busy ? "disabled" : ""}>Agregar seleccionadas</button>
+                </form>` : ""}`;
+        }
+
+        function formalizarAceptacionPlan() {
+            const state = treatmentPlanState;
+            const plan = state?.plan;
+            if (!plan || state.busy || ["DRAFT", "CANCELLED"].includes(plan.status) || !plan.items.some(item => item.status === "ACCEPTED")) return;
+            if (document.getElementById("planAcceptanceDialog")) return;
+            const esc = DentalRoles.escapeHtml;
+            const backdrop = document.createElement("div");
+            backdrop.id = "planAcceptanceDialog";
+            backdrop.className = "confirm-backdrop";
+            backdrop.innerHTML = `<form class="confirm-dialog odontogram-condition-form" role="dialog" aria-modal="true" aria-labelledby="planAcceptanceTitle" style="width: min(680px, 94vw); max-height: 90vh; overflow-y: auto; box-sizing: border-box;">
+                <h3 id="planAcceptanceTitle">Formalizar aceptación</h3>
+                <p>${esc(plan.name)}</p>
+                <p>Total del plan: ${esc(plan.total)} · Total aceptado: ${esc(plan.accepted_total)}</p>
+                <ul>${plan.items.filter(item => item.status === "ACCEPTED").map(item => `<li>${esc(item.procedure_name_snapshot)} · ${esc(piezaPlanPaciente(item.tooth_id))} · ${esc(item.surface || "Pieza completa")} · ${esc(item.final_amount)}</li>`).join("")}</ul>
+                <label>Nombre de quien acepta<input name="accepted_by_name" required maxlength="200" autocomplete="name"></label>
+                <label>Firma<canvas width="640" height="240" aria-label="Firma manuscrita" style="display: block; width: 100%; aspect-ratio: 8 / 3; border: 1px solid #9ca3af; background: white; touch-action: none;"></canvas></label>
+                <p role="status" data-feedback></p>
+                <div class="confirm-actions">
+                    <button type="button" class="confirm-secondary" data-clear>Limpiar</button>
+                    <button type="button" class="confirm-secondary" data-cancel>Cancelar</button>
+                    <button type="submit" class="add-btn">Confirmar aceptación</button>
+                </div>
+            </form>`;
+            document.body.appendChild(backdrop);
+            const form = backdrop.querySelector("form");
+            const canvas = backdrop.querySelector("canvas");
+            const context = canvas.getContext("2d");
+            const feedback = backdrop.querySelector("[data-feedback]");
+            let pointer = null;
+            let strokes = 0;
+            let saving = false;
+            const position = event => {
+                const rect = canvas.getBoundingClientRect();
+                return [(event.clientX - rect.left) * canvas.width / rect.width, (event.clientY - rect.top) * canvas.height / rect.height];
+            };
+            const clear = () => {
+                context.fillStyle = "#ffffff";
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                context.strokeStyle = "#111827";
+                context.lineWidth = 2.5;
+                context.lineCap = "round";
+                strokes = 0;
+                pointer = null;
+            };
+            clear();
+            canvas.onpointerdown = event => {
+                if (saving || pointer !== null || (event.pointerType === "mouse" && event.button !== 0)) return;
+                event.preventDefault(); pointer = event.pointerId; canvas.setPointerCapture(pointer);
+                context.beginPath(); context.moveTo(...position(event));
+            };
+            canvas.onpointermove = event => {
+                if (saving || pointer !== event.pointerId) return;
+                context.lineTo(...position(event)); context.stroke(); strokes++;
+            };
+            const end = event => { if (pointer === event.pointerId) pointer = null; };
+            canvas.onpointerup = end; canvas.onpointercancel = end; canvas.onlostpointercapture = end;
+            backdrop.querySelector("[data-clear]").onclick = () => { if (!saving) clear(); };
+            const close = () => { if (!saving) backdrop.remove(); };
+            backdrop.querySelector("[data-cancel]").onclick = close;
+            backdrop.onkeydown = event => { if (event.key === "Escape") { event.stopPropagation(); close(); } };
+            form.elements.accepted_by_name.focus();
+            form.onsubmit = async event => {
+                event.preventDefault();
+                if (saving) return;
+                const name = form.elements.accepted_by_name.value.trim();
+                if (!name || !strokes) { feedback.textContent = "Completa el nombre y dibuja la firma."; return; }
+                if (treatmentPlanState !== state || state.plan !== plan || state.busy) { feedback.textContent = "El plan cambió. Cierra esta ventana y revisa el plan."; return; }
+                saving = true; state.busy = true;
+                form.querySelector('[type="submit"]').disabled = true;
+                try {
+                    const acceptance = await DentalApi.createTreatmentPlanAcceptance(plan.id, {
+                        accepted_by_name: name, signature_data: canvas.toDataURL("image/png"), expected_updated_at: plan.updated_at
+                    });
+                    plan.acceptances = [acceptance, ...(plan.acceptances || [])];
+                    backdrop.remove();
+                    DentalRoles.notify("Aceptación registrada con firma.", "success");
+                } catch (error) {
+                    feedback.textContent = error.message || "No fue posible registrar la aceptación.";
+                    form.querySelector('[type="submit"]').disabled = false;
+                } finally {
+                    saving = false; state.busy = false;
+                    if (treatmentPlanState === state) renderPlanPaciente();
+                }
+            };
+        }
+
+        function presentarPlanPaciente() {
+            const state = treatmentPlanState;
+            const plan = state?.plan;
+            if (!plan || state.busy || plan.status !== "DRAFT") return;
+            if (!plan.items.length) { DentalRoles.notify("Agrega al menos un ítem antes de presentar el plan.", "warning"); return; }
+            DentalRoles.confirmAction({ title: "Presentar plan", message: "¿Confirmas que deseas presentar este plan al paciente?",
+                confirmText: "Presentar", type: "success", onConfirm: () => {
+                    if (treatmentPlanState === state && state.plan === plan) cambiarDecisionPlan(null, "PRESENTED");
+                } });
+        }
+
+        async function cambiarDecisionPlan(itemId, status) {
+            const state = treatmentPlanState;
+            const plan = state?.plan;
+            if (!plan || state.busy) return;
+            state.busy = true;
+            renderPlanPaciente();
+            let saved = false;
+            try {
+                const result = itemId
+                    ? await DentalApi.decideTreatmentPlanItem(plan.id, itemId, status)
+                    : await DentalApi.presentTreatmentPlan(plan.id);
+                saved = true;
+                if (itemId) {
+                    plan.items = plan.items.map(item => item.id === itemId ? result.item : item);
+                    plan.status = result.plan_status;
+                    plan.accepted_total = null;
+                } else { plan.status = result.status; }
+                const refreshed = await DentalApi.getTreatmentPlan(plan.id);
+                if (treatmentPlanState === state) state.plan = refreshed;
+                DentalRoles.notify("Estado del plan actualizado.", "success");
+            } catch (error) {
+                DentalRoles.notify(saved ? "La decisión se guardó, pero no se pudo refrescar el plan. Ábrelo nuevamente para consultar los totales." : error.message || "No fue posible guardar la decisión.", saved ? "warning" : "error");
+            } finally {
+                state.busy = false;
+                if (treatmentPlanState === state) {
+                    renderPlanPaciente();
+                    if (saved) await cargarPlanesPaciente();
+                }
+            }
+        }
+
+        async function agregarPropuestasPlan(event) {
+            event.preventDefault();
+            const state = treatmentPlanState;
+            if (!state?.plan || state.busy || state.plan.status !== "DRAFT") return;
+            const ids = Array.from(event.currentTarget.querySelectorAll('input[name="proposal"]:checked'), el => el.value);
+            if (!ids.length) { DentalRoles.notify("Selecciona al menos una propuesta.", "warning"); return; }
+            const plan = state.plan;
+            const entries = Object.values(odontogramCurrent.teeth || {}).flat();
+            const results = [];
+            state.busy = true;
+            renderPlanPaciente();
+            try {
+                for (const id of ids) {
+                    if (treatmentPlanState !== state) break;
+                    const entry = entries.find(e => e.id === id && e.entry_type === "PROPOSED_TREATMENT" && e.status === "ACTIVE");
+                    if (!entry?.procedure_id) { results.push("Propuesta no disponible."); continue; }
+                    if (plan.items.some(item => item.odontogram_entry_id === id)) { results.push(`${entry.condition_label}: ya incluida.`); continue; }
+                    try {
+                        const item = await DentalApi.addTreatmentPlanItem(plan.id, { procedure_id: entry.procedure_id,
+                            odontogram_entry_id: entry.id, quantity: 1, discount_amount: 0 });
+                        plan.items.push(item);
+                        plan.total = null;
+                        results.push(`${entry.condition_label}: agregada.`);
+                    } catch (error) { results.push(`${entry.condition_label}: no agregada (${error.message || "error de conexión"}).`); }
+                }
+                if (treatmentPlanState === state) {
+                    try { state.plan = await DentalApi.getTreatmentPlan(plan.id); }
+                    catch (error) { results.push("No se pudo actualizar el total. Abre el plan nuevamente para verificarlo."); }
+                }
+            } finally {
+                state.busy = false;
+                if (treatmentPlanState === state) {
+                    renderPlanPaciente();
+                    document.getElementById("treatmentPlanResults").innerHTML = results.map(result => `<p>${DentalRoles.escapeHtml(result)}</p>`).join("");
+                    await cargarPlanesPaciente();
+                }
             }
         }
 

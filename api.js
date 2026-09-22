@@ -448,6 +448,34 @@
         return request("/procedures" + query);
     }
 
+    function getPatientTreatmentPlans(patientId) {
+        return request(`/treatment-plans/patient/${encodeURIComponent(patientId)}`);
+    }
+
+    function getTreatmentPlan(planId) {
+        return request(`/treatment-plans/${encodeURIComponent(planId)}`);
+    }
+
+    function createTreatmentPlan(plan) {
+        return request("/treatment-plans", { method: "POST", body: JSON.stringify(plan) });
+    }
+
+    function addTreatmentPlanItem(planId, item) {
+        return request(`/treatment-plans/${encodeURIComponent(planId)}/items`, { method: "POST", body: JSON.stringify(item) });
+    }
+
+    function presentTreatmentPlan(planId) {
+        return request(`/treatment-plans/${encodeURIComponent(planId)}/status`, { method: "PATCH", body: JSON.stringify({ status: "PRESENTED" }) });
+    }
+
+    function createTreatmentPlanAcceptance(planId, acceptance) {
+        return request(`/treatment-plans/${encodeURIComponent(planId)}/acceptance`, { method: "POST", body: JSON.stringify(acceptance) });
+    }
+
+    function decideTreatmentPlanItem(planId, itemId, status) {
+        return request(`/treatment-plans/${encodeURIComponent(planId)}/items/${encodeURIComponent(itemId)}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+    }
+
     function createProcedure(procedure) {
         return request("/procedures", {
             method: "POST",
@@ -564,6 +592,13 @@
         updateOdontogramEntryStatus,
         correctOdontogramEntry,
         getProcedures,
+        getPatientTreatmentPlans,
+        getTreatmentPlan,
+        createTreatmentPlan,
+        addTreatmentPlanItem,
+        presentTreatmentPlan,
+        createTreatmentPlanAcceptance,
+        decideTreatmentPlanItem,
         createProcedure,
         updateProcedure,
         getBillingEstimates,
