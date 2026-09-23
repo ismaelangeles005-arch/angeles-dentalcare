@@ -1,8 +1,7 @@
 const { Pool } = require("pg");
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
+const { poolOptions } = require("./config/deployment");
+const pool = new Pool(poolOptions());
 
 async function query(text, params) {
   return pool.query(text, params);

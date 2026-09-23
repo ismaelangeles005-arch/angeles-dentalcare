@@ -8,9 +8,8 @@ const asyncHandler = require("../utils/asyncHandler");
 const { authenticate, allowRoles } = require("../middleware/auth");
 
 const router = express.Router({ mergeParams: true });
-const uploadDirectory = path.resolve(
-  process.env.PATIENT_FILES_DIR || path.join(__dirname, "../../storage/patient-files")
-);
+const { patientFilesDirectory } = require("../config/deployment");
+const uploadDirectory = patientFilesDirectory();
 const allowedTypes = new Set([
   "application/pdf",
   "image/jpeg",
@@ -19,8 +18,6 @@ const allowedTypes = new Set([
   "image/tiff",
   "application/dicom"
 ]);
-
-fs.mkdirSync(uploadDirectory, { recursive: true });
 
 const upload = multer({
   storage: multer.diskStorage({

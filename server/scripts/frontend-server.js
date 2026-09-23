@@ -60,6 +60,10 @@ const server = http.createServer((req, res) => {
       "Content-Type": contentTypes[extension] || contentTypes[fileName] || "application/octet-stream",
       "Cache-Control": "no-store"
     });
+    // This loopback-only server explicitly selects the local development API.
+    if (fileName === "api.js") {
+      res.write('window.MAELVEN_WEB_CONFIG = window.MAELVEN_WEB_CONFIG || { environment: "development" };\n');
+    }
     res.end(content);
   });
 });

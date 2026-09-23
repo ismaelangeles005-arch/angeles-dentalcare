@@ -1,5 +1,10 @@
 ﻿require("dotenv").config();
 
+if (process.env.NODE_ENV === "production") {
+  console.error("Seed de desarrollo bloqueado en produccion. Usa provision-review.js.");
+  process.exit(1);
+}
+
 const bcrypt = require("bcryptjs");
 const db = require("../src/db");
 

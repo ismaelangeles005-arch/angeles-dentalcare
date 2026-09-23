@@ -1,5 +1,19 @@
 ﻿const DentalApi = (() => {
-    const API_URL = localStorage.getItem("apiUrl") || "http://127.0.0.1:3001/api";
+    // Public configuration must precede this script and must never contain secrets.
+    const webConfig = window.MAELVEN_WEB_CONFIG || {};
+    const development = webConfig.environment === "development";
+    const configuredBase = webConfig.apiBase || (development
+        ? localStorage.getItem("apiUrl") || "http://127.0.0.1:3001/api" : "/api");
+    function resolveApiBase(value) {
+        if (value === "/api" || value === "/api/") return "/api";
+        const url = new URL(value);
+        if ((url.protocol !== "https:" && !(development && url.protocol === "http:")) ||
+            url.username || url.password || url.search || url.hash) {
+            throw new Error("Configuracion publica de API no valida");
+        }
+        return url.href.replace(/\/+$/, "");
+    }
+    const API_URL = resolveApiBase(configuredBase);
     let sessionVerified = false;
 
     function getToken() {

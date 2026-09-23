@@ -6,6 +6,7 @@ const helmet = require("helmet");
 const { rateLimit } = require("express-rate-limit");
 const path = require("path");
 const db = require("./db");
+const { frontendDirectory, trustProxy } = require("./config/deployment");
 
 const authRoutes = require("./routes/auth");
 const doctorRoutes = require("./routes/doctors");
@@ -25,7 +26,7 @@ const treatmentPlanRoutes = require("./routes/treatmentPlans");
 
 const app = express();
 const port = process.env.PORT || 3001;
-const frontendRoot = process.env.FRONTEND_ROOT || "";
+const frontendRoot = frontendDirectory();
 const requiredEnv = ["DATABASE_URL", "JWT_SECRET", "CLIENT_ORIGIN"];
 const missingEnv = requiredEnv.filter(name => !process.env[name]);
 
@@ -42,9 +43,12 @@ const allowedOrigins = process.env.CLIENT_ORIGIN
   .map(origin => origin.trim())
   .filter(Boolean);
 
-app.set("trust proxy", 1);
+app.set("trust proxy", trustProxy());
 app.use(helmet({
-  contentSecurityPolicy: frontendRoot ? false : undefined
+  // Inline handlers need a separate CSP review; production reports violations.
+  contentSecurityPolicy: frontendRoot
+    ? (process.env.NODE_ENV === "production" ? { reportOnly: true } : false)
+    : undefined
 }));
 app.use(cors({
   origin(origin, callback) {
