@@ -80,7 +80,7 @@ An enforced compatible CSP and third-party resource review remain release tasks.
 API-only mode retains Helmet's normal enforced baseline. Development retains its
 previous CSP behavior; no desktop files are changed.
 
-## Initialization and order (not run in this phase)
+## Initialization and order (fresh database certified)
 
 From the project root, with psql installed and DATABASE_URL exported:
 
@@ -112,15 +112,28 @@ The old alphabetical order was invalid on an empty DB because billing tables are
 not in schema.sql and were altered before procedures_billing created them.
 The manifest resolves dependencies without renaming or editing historical SQL.
 
-This is a **fresh initialization path**, statically checked, not a migration ledger.
+This is a certified **fresh initialization path**, not a migration ledger.
 Do not replay blindly over existing data. In particular short_patient_codes
 rewrites patient codes, head_admin temporarily narrows roles, and multiple files
 perform backfills. IF NOT EXISTS does not make all data operations idempotent.
 Failure stops subsequent files but does not undo previously committed statements.
-Certification against an isolated empty database and a versioned upgrade strategy
-remain pending. Legacy setup-db-docker.bat is not the deployment entry point.
+A versioned upgrade strategy for existing databases remains pending.
+Legacy setup-db-docker.bat is not the deployment entry point.
 
-## Provision review access (not run in this phase)
+### Fresh database certification
+
+Verdict: **FRESH DATABASE CERTIFIED**. Scope: **fresh initialization from an empty
+PostgreSQL database** only.
+
+The isolated PostgreSQL 18.4 certification applied schema.sql and all 24 migrations
+to an empty database, producing 21 tables and 70 indexes. Provisioning and its
+idempotency passed. The QA backend returned health 200, auth 200 and API smoke 200;
+QA storage was valid and cleanup completed.
+
+This does not certify upgrades of existing databases, cloud production, real HTTPS,
+the definitive enforced CSP, cloud backup/restore or complete multi-tenant isolation.
+
+## Provision review access (validated during fresh database certification)
 
 The development seed is blocked when NODE_ENV=production, without an override.
 Do not use it on shared review databases, even with NODE_ENV=development.
