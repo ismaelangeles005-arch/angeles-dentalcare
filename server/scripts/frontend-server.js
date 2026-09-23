@@ -6,27 +6,7 @@ const host = "127.0.0.1";
 const port = 5500;
 const root = path.resolve(__dirname, "../..");
 
-const publicFiles = new Set([
-  "index.html",
-  "dashboard.html",
-  "pacientes.html",
-  "citas.html",
-  "reportes.html",
-  "usuarios.html",
-  "auditoria.html",
-  "cambiar-password.html",
-  "facturacion.html",
-  "procedimientos.html",
-  "doctor.html",
-  "images/logo.svg",
-  "images/maelven-dental-logo.svg",
-  "images/maelven-dental-favicon.svg",
-  "images/logo_files/css2",
-  "styles.css",
-  "roles.js",
-  "dental-tooth-selector.js",
-  "api.js"
-]);
+const publicFiles = new Set(require("../src/config/public-web-files"));
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",

@@ -62,3 +62,7 @@ playwright-report/
 *~
 .DS_Store
 Thumbs.db
+
+# Generated public web artifact and build ownership receipt.
+/public-web/
+/.public-web-build.json

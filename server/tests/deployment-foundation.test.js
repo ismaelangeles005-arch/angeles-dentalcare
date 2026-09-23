@@ -36,7 +36,8 @@ test("local server supplies development config without changing public assets", 
   const source = fs.readFileSync(path.join(root, "server/scripts/frontend-server.js"), "utf8");
   assert.match(source, /const host = "127\.0\.0\.1"/);
   assert.match(source, /environment: "development"/);
-  const assets = vm.runInNewContext(source.match(/const publicFiles = (new Set\([\s\S]*?\));/)[1]);
+  assert.match(source, /require\("\.\.\/src\/config\/public-web-files"\)/);
+  const assets = new Set(require("../src/config/public-web-files"));
   assert(assets.has("dental-tooth-selector.js"));
   assert(!assets.has(".env"));
   assert(!assets.has("server/src/server.js"));

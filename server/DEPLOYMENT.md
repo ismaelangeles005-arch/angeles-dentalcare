@@ -68,6 +68,42 @@ until the pool is used. These settings do not edit the existing `.env`.
 
 ## Public artifact and CSP
 
+### Reproducible public web build
+
+From the repository root, Render's future build command is:
+
+```sh
+npm ci --prefix server && npm run build:web
+```
+
+`npm run build:web` uses only Node standard modules; `.node-version` selects Node
+24 LTS (locally validated with 24.18.0). No root dependency installation is needed.
+The backend dependency metadata requires at least Node 16, but that obsolete
+release line is not a deployment target. No dependency versions are changed.
+
+The single allowlist is `server/src/config/public-web-files.js`, shared by the
+builder, local frontend server and production validation. It preserves the 19
+previously authorized filenames, including legacy logo assets. Sources stay in
+place. The builder copies the current working files, so a dirty local build is
+not necessarily byte-identical to a future build from a committed checkout.
+
+The generated `public-web/` and `.public-web-build.json` ownership receipt are
+ignored by Git. The receipt stays OUTSIDE the served folder. A rebuild removes
+only this exact direct-child output, after validating the receipt, file hashes
+and absence of links/unexpected files. Unowned or manually changed output fails
+closed; investigate it rather than deleting files automatically. Do not run
+concurrent builds or allow other processes to modify build inputs/output.
+
+Every copied file is hash-checked. Static HTML/CSS asset references are checked
+without executing page scripts; external HTTPS resources are not downloaded.
+Dynamic runtime URLs still require browser QA. Unsupported base/srcset resource
+markup fails closed for review rather than silently escaping the check.
+
+Start with `npm --prefix server start` and `FRONTEND_ROOT` pointing to the absolute
+`public-web` path in the deployment checkout. Never point it at the repository.
+No local frontend-server switch is needed; local development keeps its existing
+allowlisted source serving and development API configuration.
+
 Do not publish the repository. Copy only the existing public frontend assets to a
 dedicated directory during a later deployment step. Production validates against
 the existing public filenames, rejects symlinks, internal directories, ancestors

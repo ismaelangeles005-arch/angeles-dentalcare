@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const net = require("net");
+const publicWebFiles = require("./public-web-files");
 
 function integer(env, key, fallback, min, max) {
   const value = env[key] === undefined || env[key] === "" ? fallback : Number(env[key]);
@@ -77,13 +78,7 @@ function frontendDirectory(env = process.env) {
   };
   if (contains(directory, repo)) throw new Error("FRONTEND_ROOT cannot be the repository or an ancestor");
   // Production artifacts may contain only existing public assets; dev list stays unchanged.
-  const allowed = new Set([
-    "index.html", "dashboard.html", "pacientes.html", "citas.html", "reportes.html",
-    "usuarios.html", "auditoria.html", "cambiar-password.html", "facturacion.html",
-    "procedimientos.html", "doctor.html", "styles.css", "roles.js", "api.js",
-    "dental-tooth-selector.js", "images/logo.svg", "images/logo_files/css2",
-    "images/maelven-dental-logo.svg", "images/maelven-dental-favicon.svg"
-  ]);
+  const allowed = new Set(publicWebFiles);
   if (directory.split(path.sep).some(part => /^(server|database|backups|qa-backups|logs|storage)$/i.test(part))) {
     throw new Error("FRONTEND_ROOT points to an internal directory");
   }

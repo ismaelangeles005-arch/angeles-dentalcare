@@ -6,6 +6,7 @@
   "type": "commonjs",
   "main": "apps/desktop/src/main.js",
   "scripts": {
+    "build:web": "node scripts/build-web.js",
     "backend": "npm --prefix server start",
     "backend:dev": "npm --prefix server run dev",
     "frontend": "npm --prefix server run frontend",
