@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { rateLimit } = require("express-rate-limit");
+const { clientIpRateLimitOptions } = require("../config/client-ip");
 const db = require("../db");
 const asyncHandler = require("../utils/asyncHandler");
 const { authenticate } = require("../middleware/auth");
@@ -11,6 +12,7 @@ const { validateStrongPassword } = require("../utils/passwordPolicy");
 
 const router = express.Router();
 const loginLimiter = rateLimit({
+  ...clientIpRateLimitOptions(),
   windowMs: 15 * 60 * 1000,
   limit: 10,
   standardHeaders: "draft-8",
@@ -19,6 +21,7 @@ const loginLimiter = rateLimit({
 });
 
 const pinLimiter = rateLimit({
+  ...clientIpRateLimitOptions(),
   windowMs: 5 * 60 * 1000,
   limit: 40,
   standardHeaders: "draft-8",

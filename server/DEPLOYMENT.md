@@ -132,6 +132,36 @@ a proof of all advisory variants or certification of real Render TLS connectivit
 
 ## Public artifact and CSP
 
+### Trusted client IP on Render
+
+For the Render public Web Service, after confirming all untrusted ingress goes
+through Render/Cloudflare, use NODE_ENV=production,
+TRUSTED_CLIENT_IP_SOURCE=cf-connecting-ip and TRUST_PROXY=false. Render supplies
+RENDER=true; do not set it to impersonate Render in another deployment.
+Unknown source names, use outside production/Render, or simultaneous proxy trust
+are rejected. Local development leaves TRUSTED_CLIENT_IP_SOURCE unset.
+
+The global, password-login and PIN limiters use the same key generator: one valid
+CF-Connecting-IP, otherwise the socket peer; invalid/multiple values never fall
+back to X-Forwarded-For. IPv6 subnet grouping uses express-rate-limit's existing
+ipKeyGenerator. req.ip, req.ips, req.protocol and cookie flags are not changed.
+No validation is globally disabled. A custom key generator replaces the default
+req.ip/X-Forwarded-For inspection that caused ERR_ERL_UNEXPECTED_X_FORWARDED_FOR;
+the other rate-limit validations remain enabled.
+
+This is a deployment trust boundary, not per-request cryptographic authentication.
+Do NOT enable it where untrusted clients/services can reach the process directly
+(including private-network bypasses). CF-Ray, Host and forwarded headers cannot
+prove trusted ingress. Verify Render ingress isolation and test client-supplied
+CF-Connecting-IP/X-Forwarded-For through the real edge before certifying deployment.
+If isolation cannot be guaranteed, leave this mode disabled and use an explicitly
+authenticated proxy boundary instead. Missing headers safely share the peer bucket.
+Cloudflare Worker/Pseudo IPv4 behavior can aggregate/change client identities;
+this IP is a rate-limit key, never an authorization or patient identity.
+
+References: https://render.com/docs/environment-variables and
+https://developers.cloudflare.com/fundamentals/reference/http-headers/
+
 ### Reproducible public web build
 
 From the repository root, Render's future build command is:

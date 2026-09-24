@@ -272,6 +272,7 @@ async function run() {
     require(name) {
       if (name === "express") return { Router: () => router };
       if (name === "express-rate-limit") return { rateLimit: () => (req, res, next) => next() };
+      if (name === "../config/client-ip") return require("../src/config/client-ip");
       if (name === "../db") return { query: async sql => ({ rows: /SELECT/.test(sql) ? [loginRow] : [] }) };
       if (name === "../utils/asyncHandler") return handler => handler;
       if (name === "../middleware/auth") return guarded;

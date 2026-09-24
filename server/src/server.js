@@ -7,6 +7,7 @@ const { rateLimit } = require("express-rate-limit");
 const path = require("path");
 const db = require("./db");
 const { frontendDirectory, trustProxy } = require("./config/deployment");
+const { clientIpRateLimitOptions } = require("./config/client-ip");
 
 const authRoutes = require("./routes/auth");
 const doctorRoutes = require("./routes/doctors");
@@ -67,6 +68,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: "1mb" }));
 app.use(rateLimit({
+  ...clientIpRateLimitOptions(),
   windowMs: 15 * 60 * 1000,
   limit: 500,
   standardHeaders: "draft-8",
