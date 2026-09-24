@@ -34,10 +34,10 @@ if ($env:DATABASE_URL) {
         throw "DATABASE_URL esta definida pero psql no esta disponible. No se usara Docker como fallback."
     }
     Write-Host "Usando psql local con DATABASE_URL."
-    psql -X --set=ON_ERROR_STOP=1 $env:DATABASE_URL -f $Schema
+    Get-Content -LiteralPath $Schema -Encoding UTF8 | psql -X --set=ON_ERROR_STOP=1 $env:DATABASE_URL
     Assert-SqlExit $LASTEXITCODE "schema.sql"
     foreach ($Migration in $Migrations) {
-        psql -X --set=ON_ERROR_STOP=1 $env:DATABASE_URL -f $Migration.FullName
+        Get-Content -LiteralPath $Migration.FullName -Encoding UTF8 | psql -X --set=ON_ERROR_STOP=1 $env:DATABASE_URL
         Assert-SqlExit $LASTEXITCODE $Migration.Name
     }
     Write-Host "Schema y migraciones finalizados correctamente."
