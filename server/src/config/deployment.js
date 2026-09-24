@@ -21,17 +21,17 @@ function poolOptions(env = process.env) {
       if (/^(ssl|uselibpqcompat)/i.test(key)) throw new Error("Use PG_TLS / PG_TLS_CA_FILE, not SSL options in DATABASE_URL");
     }
   }
-  // Preserve the existing local desktop database; remote production always verifies TLS.
+  // Remote production verifies TLS by default; require is an explicit private-network opt-in.
   const tls = env.PG_TLS || (env.NODE_ENV === "production" && !localDatabase ? "verify-full" : "disable");
-  if (!["verify-full", "disable"].includes(tls)) throw new Error("Invalid PG_TLS");
-  if (env.NODE_ENV === "production" && !localDatabase && tls !== "verify-full") {
-    throw new Error("Remote production requires PG_TLS=verify-full");
+  if (!["verify-full", "require", "disable"].includes(tls)) throw new Error("Invalid PG_TLS");
+  if (env.NODE_ENV === "production" && !localDatabase && tls === "disable") {
+    throw new Error("Remote production requires PG_TLS=require or verify-full");
   }
-  if (env.PG_TLS_CA_FILE && tls !== "verify-full") throw new Error("PG_TLS_CA_FILE requires TLS");
+  if (env.PG_TLS_CA_FILE && tls !== "verify-full") throw new Error("PG_TLS_CA_FILE requires PG_TLS=verify-full");
   return {
     connectionString: env.DATABASE_URL,
-    ssl: tls === "verify-full" ? {
-      rejectUnauthorized: true,
+    ssl: tls !== "disable" ? {
+      rejectUnauthorized: tls === "verify-full",
       ...(env.PG_TLS_CA_FILE ? { ca: fs.readFileSync(env.PG_TLS_CA_FILE, "utf8") } : {})
     } : false,
     max: integer(env, "PG_POOL_MAX", 10, 1, 100),

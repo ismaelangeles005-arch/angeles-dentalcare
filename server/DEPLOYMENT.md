@@ -5,7 +5,10 @@ patient information for an external review until access and backups are validate
 
 ## Recommended architecture
 
-Browser -> HTTPS -> MAELVEN Dental Web/API -> verified TLS -> PostgreSQL
+Browser -> HTTPS -> MAELVEN Dental Web/API -> TLS -> PostgreSQL
+
+Certificate verification is the default; Render internal TLS is an explicit
+private-network exception documented below.
 
 Web/API -> private persistent patient-file volume
 
@@ -46,7 +49,8 @@ Required for web production:
 - `JWT_SECRET`: independently generated secret of at least 32 characters.
 - `CLIENT_ORIGIN`: exact HTTPS frontend origin(s), comma-separated; never `*`.
 - `PATIENT_FILES_DIR`: absolute existing readable/writable private persistent directory.
-- `PG_TLS=verify-full`: explicitly recommended for remote production.
+- `PG_TLS=verify-full`: default for remote production with a verifiable certificate.
+  For Render INTERNAL connections only, explicitly use `PG_TLS=require` as below.
 
 Optional:
 
@@ -59,12 +63,72 @@ Optional:
   Hop counts and blanket `true` are rejected. Prevent bypass of the chosen proxy.
 - `FRONTEND_ROOT`: dedicated public artifact or empty for API-only deployment.
 
-Remote production verifies certificates and cannot set PG_TLS=disable. Local
+Remote production verifies certificates by default and cannot set PG_TLS=disable. Local
 loopback PostgreSQL keeps TLS disabled by default for compatibility with existing
 development/desktop use. TLS can also be enabled explicitly for local databases.
 SSL connection-string options are rejected to avoid overriding certificate
 verification: use PG_TLS and PG_TLS_CA_FILE instead. No DB connection is made
 until the pool is used. These settings do not edit the existing `.env`.
+
+### Render PostgreSQL TLS
+
+Place the Web Service and PostgreSQL in the same Render account/region. Supply
+the Internal Database URL as DATABASE_URL (without SSL query parameters) and
+explicitly set PG_TLS=require. This creates an SSL connection with
+rejectUnauthorized=false: traffic is encrypted, but CA and hostname are NOT
+verified. It relies on the private network boundary, not authenticated TLS.
+The pg client fails if the server refuses SSL; it does not retry in plaintext.
+Do not use this mode automatically for arbitrary remote databases.
+
+PG_TLS=verify-full retains rejectUnauthorized=true and Node's hostname check.
+System trust roots are used unless PG_TLS_CA_FILE supplies a trusted CA PEM.
+An explicitly configured missing CA file fails startup. PG_TLS_CA_FILE is rejected
+with require or disable to avoid implying verification that is not performed.
+Unknown PG_TLS values and SSL parameters in DATABASE_URL fail closed.
+Render's self-signed INTERNAL certificates do not support verify-ca/verify-full:
+https://render.com/docs/postgresql-creating-connecting
+
+### Initial migrations from an external Windows workstation
+
+Use the Render EXTERNAL Database URL, never its internal hostname. Temporarily
+allow only the workstation's public egress IP in Render's database access rules.
+Use a current psql/libpq with TLS support. These are operator-supplied placeholders,
+not commands to run during builds or every deployment:
+
+```powershell
+$env:DATABASE_URL = '<Render External Database URL without SSL query parameters>'
+$env:PGSSLMODE = 'verify-full'
+$env:PGSSLROOTCERT = '<absolute path to trusted CA PEM for the external certificate>'
+npm run database:migrate
+```
+
+Verify the external certificate chain and hostname with that client first; stop on
+verification failure, do not fall back to plaintext or disable verification. This
+is separate from backend PG_TLS=require: psql uses PGSSLMODE/PGSSLROOTCERT, not
+PG_TLS/PG_TLS_CA_FILE. Remove temporary external access and credentials afterwards.
+Initialize schema plus the manifest once on a fresh empty database, then provision
+review access separately. Never run the development seed.
+
+### Dependency security gate (Render 3.1)
+
+Baseline npm audit: two high and three moderate affected packages. Compatible
+updates only; no forced audit fix, major upgrade, overrides or upload API changes:
+
+| Dependency path | Baseline -> locked fix | Exposure / advisory |
+| --- | --- | --- |
+| multer (direct) | 2.2.0 -> 2.4.0 | Authenticated clinical multipart uploads: GHSA-wc9g-mqfw-jrwm, GHSA-qfvm-cv95-jqjf, GHSA-qvfw-j98x-7q72, GHSA-535w-7cp7-47q4. Fixed floor 2.3.0; current synchronous filter does not use the async-filter trigger. |
+| express-rate-limit -> ip-address | 10.2.0 -> 10.7.2 | IPv6 rate-limit keys, not a direct application SSRF/allowlist API. GHSA-mwp4-54f8-5fhr (affected through 10.3.0), GHSA-4xrf-jv44-h6hh, GHSA-22jq-vg5j-6vgg. Parent stays 8.5.2; existing compatible range permits the fix. |
+| express (direct) -> qs | 4.22.2 -> 4.22.3; qs 6.15.3 -> 6.16.0 | Production query parser: GHSA-x5fp-wj9c-mxmx, GHSA-4mjr-xmp4-gh2g. Advisory-specific parser option combinations are not all used by this application. |
+| express -> body-parser -> qs | 1.20.5 -> 1.20.8 | Production JSON parsing; invalid-limit trigger GHSA-v422-hmwv-36x6 is not used (fixed limit 1mb). 1.20.6 fixes that issue but still needs the qs fix; 1.20.8 includes it. |
+
+The updated lockfile audits clean. Run `npm ci --prefix server`, `npm run build:web`,
+then `node --test server/tests/*.test.js` and `node server/scripts/test-web-auth.js`.
+Build must precede the artifact HTTP tests. Added tests use a mock DB, temporary
+upload storage and loopback-only transports; no Render or real DB connections.
+They cover TLS configuration, SSL refusal without plaintext fallback, pg hostname
+forwarding, rate-limit compatibility, query parsing, normal PDF upload, MIME/size
+limits and malformed multipart names. They are targeted regression checks, not
+a proof of all advisory variants or certification of real Render TLS connectivity.
 
 ## Public artifact and CSP
 
