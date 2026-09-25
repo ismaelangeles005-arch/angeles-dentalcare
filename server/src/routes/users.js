@@ -13,7 +13,7 @@ function pinLookupHash(pin, organizationId) {
 }
 
 function validPin(pin) {
-  return typeof pin === "string" && /^\\d{4}$/.test(pin);
+  return typeof pin === "string" && /^\d{4}$/.test(pin);
 }
 
 const router = express.Router();
