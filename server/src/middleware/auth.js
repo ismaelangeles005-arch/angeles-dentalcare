@@ -118,7 +118,11 @@ async function authenticate(req, res, next) {
         message: "Debes cambiar tu contrasena antes de continuar"
       });
     }
-    if (req.user.scope === "PLATFORM" && req.baseUrl.toLowerCase() !== "/api/auth") {
+    const platformResourceAllowed = ["/api/auth", "/api/platform"].includes(
+      req.baseUrl.toLowerCase()
+    );
+
+    if (req.user.scope === "PLATFORM" && !platformResourceAllowed) {
       return res.status(403).json({
         code: "PLATFORM_TENANT_ACCESS_DENIED",
         message: "La cuenta de plataforma no tiene acceso operativo directo"

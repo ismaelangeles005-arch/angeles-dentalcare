@@ -24,6 +24,7 @@ const procedureRoutes = require("./routes/procedures");
 const billingRoutes = require("./routes/billing");
 const odontogramRoutes = require("./routes/odontogram");
 const treatmentPlanRoutes = require("./routes/treatmentPlans");
+const platformRoutes = require("./routes/platform");
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -102,6 +103,7 @@ app.get("/api", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/platform", platformRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/patients", patientRoutes);
 app.use("/api/patients/:patientId/files", patientFileRoutes);
