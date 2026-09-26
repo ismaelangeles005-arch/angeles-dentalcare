@@ -52,7 +52,7 @@
             user.organizationId === null;
 
         if (platformSession && !options.allowPasswordChange) {
-            window.location.href = "/api/platform/status";
+            window.location.href = "platform.html";
             return false;
         }
 

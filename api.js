@@ -573,6 +573,11 @@
 
     return {
         API_URL,
+        getPlatformStatus: () => request("/platform/status"),
+        getPlatformOrganizations: () => request("/platform/organizations"),
+        getPlatformOrganization: id => request(`/platform/organizations/${encodeURIComponent(id)}`),
+        createPlatformOrganization: payload => request("/platform/organizations", { method: "POST", body: JSON.stringify(payload) }),
+        setPlatformOrganizationStatus: (id, active) => request(`/platform/organizations/${encodeURIComponent(id)}/status`, { method: "PATCH", body: JSON.stringify({ active }) }),
         request,
         login,
         pinLogin,

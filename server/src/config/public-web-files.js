@@ -1,5 +1,6 @@
 // Shared by local serving, production artifact validation and the public build.
 module.exports = Object.freeze([
+  "platform.html", "platform-ui.js",
   "index.html", "dashboard.html", "pacientes.html", "citas.html", "reportes.html",
   "usuarios.html", "auditoria.html", "cambiar-password.html", "facturacion.html",
   "procedimientos.html", "doctor.html", "images/logo.svg",

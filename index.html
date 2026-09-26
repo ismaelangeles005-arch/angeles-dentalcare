@@ -315,7 +315,7 @@
                 const user = await DentalApi.login(usuario, password);
                 window.location.href = user.mustChangePassword
                     ? "cambiar-password.html"
-                    : (user.scope === "PLATFORM" ? "/api/platform/status" : "dashboard.html");
+                    : (user.scope === "PLATFORM" ? "platform.html" : "dashboard.html");
             }
             catch (error) {
                 document.getElementById("password").value = "";
