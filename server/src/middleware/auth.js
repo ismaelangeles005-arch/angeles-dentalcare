@@ -18,6 +18,14 @@ function hasAnyRole(userRole, allowedRoles) {
   return allowedRoles.some(role => roleMatches(userRole, role));
 }
 
+function deriveScope(role, organizationId) {
+  if (role === "PLATFORM_SUPER_ADMIN") {
+    return organizationId === null ? "PLATFORM" : null;
+  }
+
+  return organizationId ? "ORGANIZATION" : null;
+}
+
 function getCookie(req, name) {
   const cookies = (req.headers.cookie || "").split(";");
 
@@ -74,15 +82,25 @@ async function authenticate(req, res, next) {
     }
 
     const user = result.rows[0];
+    const scope = deriveScope(user.role, user.organization_id);
+
+    if (!scope) {
+      return res.status(401).json({
+        code: "INVALID_ACCOUNT_SCOPE",
+        message: "La cuenta tiene una configuracion de acceso invalida"
+      });
+    }
+
     req.user = {
       id: user.id,
       username: user.username,
       role: user.role,
+      scope,
       doctorId: user.doctor_id,
       doctor: user.doctor,
       organizationId: user.organization_id,
       organizationName: user.organization_name,
-      organizationType: user.organization_type || "CLINIC",
+      organizationType: scope === "PLATFORM" ? null : (user.organization_type || "CLINIC"),
       mustChangePassword: user.must_change_password === true,
       isDoctor: hasAnyRole(user.role, ["doctor"]),
       isAdmin: hasAnyRole(user.role, ["head_admin", "admin"]),
@@ -100,6 +118,13 @@ async function authenticate(req, res, next) {
         message: "Debes cambiar tu contrasena antes de continuar"
       });
     }
+    if (req.user.scope === "PLATFORM" && req.baseUrl.toLowerCase() !== "/api/auth") {
+      return res.status(403).json({
+        code: "PLATFORM_TENANT_ACCESS_DENIED",
+        message: "La cuenta de plataforma no tiene acceso operativo directo"
+      });
+    }
+
     return next();
   }
   catch (error) {
@@ -121,5 +146,6 @@ module.exports = {
   authenticate,
   allowRoles,
   hasAnyRole,
-  roleMatches
+  roleMatches,
+  deriveScope
 };

@@ -6,7 +6,7 @@ const { rateLimit } = require("express-rate-limit");
 const { clientIpRateLimitOptions } = require("../config/client-ip");
 const db = require("../db");
 const asyncHandler = require("../utils/asyncHandler");
-const { authenticate } = require("../middleware/auth");
+const { authenticate, deriveScope } = require("../middleware/auth");
 const { writeAuditLog } = require("../utils/audit");
 const { validateStrongPassword } = require("../utils/passwordPolicy");
 
@@ -34,24 +34,28 @@ const MAX_PIN_ATTEMPTS = Number(process.env.PIN_MAX_ATTEMPTS || 5);
 const PIN_LOCK_SECONDS = Number(process.env.PIN_LOCK_SECONDS || 30);
 
 function buildTokenPayload(user) {
+  const scope = deriveScope(user.role, user.organization_id);
   return {
     id: user.id,
     username: user.username,
     role: user.role,
+    scope,
     doctorId: user.doctor_id,
     doctor: user.doctor_name || user.doctor,
     organizationId: user.organization_id,
     organizationName: user.organization_name,
-    organizationType: user.organization_type || "CLINIC",
+    organizationType: scope === "PLATFORM" ? null : (user.organization_type || "CLINIC"),
     mustChangePassword: user.must_change_password
   };
 }
 
 function publicUser(user) {
+  const scope = deriveScope(user.role, user.organization_id);
   return {
     id: user.id,
     username: user.username,
     role: user.role,
+    scope,
     name: user.full_name,
     doctorId: user.doctor_id,
     doctor_id: user.doctor_id,
@@ -59,8 +63,8 @@ function publicUser(user) {
     organizationId: user.organization_id,
     organization_id: user.organization_id,
     organizationName: user.organization_name,
-    organizationType: user.organization_type || "CLINIC",
-    operating_mode: user.organization_type || "CLINIC",
+    organizationType: scope === "PLATFORM" ? null : (user.organization_type || "CLINIC"),
+    operating_mode: scope === "PLATFORM" ? null : (user.organization_type || "CLINIC"),
     permissions: [],
     mustChangePassword: user.must_change_password
   };
@@ -157,10 +161,12 @@ router.post("/login", loginLimiter, asyncHandler(async (req, res) => {
     return res.status(401).json({ message: "Credenciales invalidas" });
   }
 
-  if (user.role === "PLATFORM_SUPER_ADMIN") {
-    return res.status(403).json({
-      code: "PLATFORM_LOGIN_NOT_READY",
-      message: "El acceso de plataforma aun no esta habilitado"
+  const scope = deriveScope(user.role, user.organization_id);
+
+  if (!scope) {
+    return res.status(401).json({
+      code: "INVALID_ACCOUNT_SCOPE",
+      message: "La cuenta tiene una configuracion de acceso invalida"
     });
   }
 
@@ -295,6 +301,7 @@ router.post("/change-password", authenticate, asyncHandler(async (req, res) => {
     id: req.user.id,
     username: req.user.username,
     role: req.user.role,
+    scope: req.user.scope,
     doctorId: req.user.doctorId,
     doctor: req.user.doctor,
     organizationId: req.user.organizationId,
