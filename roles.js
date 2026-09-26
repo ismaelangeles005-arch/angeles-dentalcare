@@ -46,6 +46,16 @@
             return false;
         }
 
+        const platformSession =
+            user.role === "PLATFORM_SUPER_ADMIN" &&
+            user.scope === "PLATFORM" &&
+            user.organizationId === null;
+
+        if (platformSession && !options.allowPasswordChange) {
+            window.location.href = "/api/platform/status";
+            return false;
+        }
+
         if (options.adminOnly && !["head_admin", "admin"].includes(rol)) {
             window.location.href = "dashboard.html";
             return false;

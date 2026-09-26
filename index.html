@@ -313,7 +313,9 @@
                 legacyPending = true;
                 showMessage("Validando acceso...", "success");
                 const user = await DentalApi.login(usuario, password);
-                window.location.href = user.mustChangePassword ? "cambiar-password.html" : "dashboard.html";
+                window.location.href = user.mustChangePassword
+                    ? "cambiar-password.html"
+                    : (user.scope === "PLATFORM" ? "/api/platform/status" : "dashboard.html");
             }
             catch (error) {
                 document.getElementById("password").value = "";

@@ -34,18 +34,31 @@
     }
 
     function storeSession(user) {
-        if (!user || !user.id || !normalizeRole(user.role)) {
+        const tenantRole = user ? normalizeRole(user.role) : "";
+        const platformSession = Boolean(
+            user &&
+            user.role === "PLATFORM_SUPER_ADMIN" &&
+            user.scope === "PLATFORM" &&
+            user.organizationId === null
+        );
+
+        if (!user || !user.id || (!tenantRole && !platformSession)) {
             throw new Error("No fue posible validar el acceso de esta cuenta.");
         }
+
         clearSession();
         sessionVerified = true;
         localStorage.setItem("sessionActive", "true");
         localStorage.setItem("userRole", user.role);
-        localStorage.setItem("rol", normalizeRole(user.role));
+        localStorage.setItem("scope", user.scope || "ORGANIZATION");
+        localStorage.setItem("rol", tenantRole);
         localStorage.setItem("usuario", user.username || "");
         localStorage.setItem("organizationId", user.organizationId || "");
         localStorage.setItem("organizationName", user.organizationName || "");
-        localStorage.setItem("organizationType", user.organizationType || "CLINIC");
+        localStorage.setItem(
+            "organizationType",
+            platformSession ? "" : (user.organizationType || "CLINIC")
+        );
         localStorage.setItem("mustChangePassword", user.mustChangePassword ? "true" : "false");
         if (user.doctor) localStorage.setItem("doctor", user.doctor);
         return user;
@@ -161,6 +174,7 @@
         sessionVerified = false;
         localStorage.removeItem("token");
         localStorage.removeItem("userRole");
+        localStorage.removeItem("scope");
         localStorage.removeItem("mustChangePassword");
         localStorage.removeItem("sessionActive");
         localStorage.removeItem("rol");
