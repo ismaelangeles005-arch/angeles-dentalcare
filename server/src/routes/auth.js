@@ -157,6 +157,13 @@ router.post("/login", loginLimiter, asyncHandler(async (req, res) => {
     return res.status(401).json({ message: "Credenciales invalidas" });
   }
 
+  if (user.role === "PLATFORM_SUPER_ADMIN") {
+    return res.status(403).json({
+      code: "PLATFORM_LOGIN_NOT_READY",
+      message: "El acceso de plataforma aun no esta habilitado"
+    });
+  }
+
   await markLoginSuccess(user.id);
   setSessionCookie(res, user);
   return res.json({ user: publicUser(user) });

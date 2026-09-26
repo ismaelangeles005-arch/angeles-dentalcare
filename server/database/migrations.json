@@ -22,5 +22,6 @@
   "migration_clinical_odontology_phase.sql",
   "migration_odontogram_entries.sql",
   "migration_treatment_plans.sql",
-  "migration_treatment_plan_acceptances.sql"
+  "migration_treatment_plan_acceptances.sql",
+  "migration_platform_tenant_foundation.sql"
 ]

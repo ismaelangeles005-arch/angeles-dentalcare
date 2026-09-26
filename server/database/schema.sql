@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
   username TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   organization_id UUID REFERENCES organizations(id),
-  role TEXT NOT NULL CHECK (role IN ('head_admin', 'admin', 'doctor', 'recepcion', 'owner_doctor', 'clinic_admin', 'receptionist', 'independent_assistant', 'assistant', 'cashier')),
+  role TEXT NOT NULL CHECK (role IN ('head_admin', 'admin', 'doctor', 'recepcion', 'owner_doctor', 'clinic_admin', 'receptionist', 'independent_assistant', 'assistant', 'cashier', 'PLATFORM_SUPER_ADMIN')),
   full_name TEXT NOT NULL,
   national_id TEXT,
   patient_code TEXT,
@@ -48,7 +48,12 @@ CREATE TABLE IF NOT EXISTS users (
   active BOOLEAN NOT NULL DEFAULT true,
   deleted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT users_platform_tenant_scope_check CHECK (
+    (role = 'PLATFORM_SUPER_ADMIN' AND organization_id IS NULL)
+    OR
+    (role <> 'PLATFORM_SUPER_ADMIN' AND organization_id IS NOT NULL)
+  )
 );
 
 CREATE TABLE IF NOT EXISTS patients (
