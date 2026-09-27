@@ -94,10 +94,31 @@ router.param("id", (req, res, next, id) => {
 });
 
 router.get("/organizations/:id", asyncHandler(async (req, res) => {
-  const result = await db.query(`SELECT id, name, organization_type, active,
-    owner_user_id, created_at, updated_at FROM organizations WHERE id = $1`, [req.params.id]);
+  const result = await db.query(`SELECT o.id, o.name, o.organization_type, o.active,
+    o.owner_user_id, o.created_at, o.updated_at,
+    owner.id AS owner_id, owner.full_name AS owner_full_name,
+    owner.username AS owner_username, owner.role AS owner_role, owner.active AS owner_active,
+    counts.total_users, counts.active_users, counts.inactive_users
+    FROM organizations o
+    LEFT JOIN users owner ON owner.id = o.owner_user_id AND owner.organization_id = o.id
+      AND owner.role <> 'PLATFORM_SUPER_ADMIN' AND owner.deleted_at IS NULL
+    CROSS JOIN LATERAL (
+      SELECT COUNT(*)::int AS total_users,
+        COUNT(*) FILTER (WHERE u.active = true)::int AS active_users,
+        COUNT(*) FILTER (WHERE u.active = false)::int AS inactive_users
+      FROM users u WHERE u.organization_id = o.id
+        AND u.role <> 'PLATFORM_SUPER_ADMIN' AND u.deleted_at IS NULL
+    ) counts
+    WHERE o.id = $1`, [req.params.id]);
   if (!result.rows.length) return res.status(404).json({ message: "Organizacion no encontrada" });
-  res.json(organizationView(result.rows[0]));
+  const row = result.rows[0];
+  // Keep the existing flat structural contract; add only safe administrative detail.
+  res.json({ ...organizationView(row),
+    summary: { totalUsers: row.total_users, activeUsers: row.active_users, inactiveUsers: row.inactive_users },
+    owner: row.owner_id ? { id: row.owner_id, fullName: row.owner_full_name,
+      username: row.owner_username, role: row.owner_role, active: row.owner_active } : null,
+    ownerState: row.owner_id ? "AVAILABLE" : row.owner_user_id ? "UNAVAILABLE" : "UNASSIGNED"
+  });
 }));
 
 // Target tenant belongs to the event; the authenticated platform user remains the actor.

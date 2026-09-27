@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Organización | MAELVEN Dental</title>
+  <link rel="icon" href="images/maelven-dental-favicon.svg">
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#17212e;font:15px Arial,sans-serif;letter-spacing:0}
+    header{background:white;border-bottom:1px solid #dce3e9;padding:20px 4%;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+    header img{width:190px;height:auto}header div{flex:1;min-width:180px}h1{font-size:24px;overflow-wrap:anywhere}h2{font-size:19px}
+    main{max-width:1100px;margin:auto;padding:24px}button,a{font:inherit}button{min-height:44px;padding:10px 16px;border:1px solid #aebbc7;border-radius:6px;background:white;color:#17212e;cursor:pointer}
+    button:disabled{opacity:.6;cursor:wait}a{color:#1759b5}a.back{display:inline-block;padding:12px 0}:focus-visible{outline:3px solid #16816a;outline-offset:3px}
+    #sessionMessage{padding:24px}#message{min-height:24px;line-height:1.5}#message[data-error="true"]{color:#a32929}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.actions{display:flex;gap:12px;flex-wrap:wrap}
+    .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:24px 0}.metric{background:white;border:1px solid #dce3e9;border-radius:6px;padding:20px}
+    .metric strong{display:block;font-size:28px;margin-top:10px;color:#146854}section.summary{border-top:1px solid #dce3e9;padding-top:16px}
+    dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin:24px 0}dt{color:#526271;font-size:13px;margin-bottom:8px}dd{margin:0;overflow-wrap:anywhere;line-height:1.6}
+    #ownerWarning{color:#944126}.active{color:#146854}.inactive{color:#944126}#identity{display:block;margin-top:8px;overflow-wrap:anywhere}
+    @media(max-width:560px){main{padding:16px}.metrics{gap:8px}.metric{padding:12px;overflow-wrap:anywhere}dl{grid-template-columns:1fr}header{gap:12px}h1{font-size:22px}}
+  </style>
+</head>
+<body>
+  <p id="sessionMessage" role="status">Verificando sesión...</p>
+  <div id="detailApp" hidden>
+    <header><img src="images/maelven-dental-logo.svg" width="320" height="112" alt="MAELVEN Dental"><div><strong>Administración de plataforma</strong><span id="identity"></span></div><button id="logout" type="button">Cerrar sesión</button></header>
+    <main>
+      <a class="back" href="platform.html">Volver a organizaciones</a>
+      <div class="toolbar"><h1 id="organizationTitle">Organización</h1><div class="actions"><button id="refresh" type="button" hidden>Actualizar</button><button id="toggleStatus" type="button" hidden></button></div></div>
+      <p id="message" role="status" aria-live="polite"></p>
+      <div id="organizationContent" hidden>
+        <div class="metrics" aria-label="Usuarios de la organización">
+          <div class="metric">Usuarios totales<strong id="totalUsers"></strong></div>
+          <div class="metric">Activos<strong id="activeUsers"></strong></div>
+          <div class="metric">Inactivos<strong id="inactiveUsers"></strong></div>
+        </div>
+        <section class="summary" aria-labelledby="summaryTitle"><h2 id="summaryTitle">Resumen</h2>
+          <dl><div><dt>Nombre</dt><dd id="organizationName"></dd></div><div><dt>Tipo</dt><dd id="organizationType"></dd></div>
+            <div><dt>Estado</dt><dd id="organizationStatus"></dd></div><div><dt>ID de organización</dt><dd id="organizationId"></dd></div>
+            <div><dt>Creación</dt><dd id="createdAt"></dd></div><div><dt>Última actualización</dt><dd id="updatedAt"></dd></div></dl>
+        </section>
+        <section class="summary" aria-labelledby="ownerTitle"><h2 id="ownerTitle">Propietario</h2><p id="ownerWarning" hidden></p>
+          <dl id="ownerFields" hidden><div><dt>Nombre completo</dt><dd id="ownerName"></dd></div><div><dt>Usuario</dt><dd id="ownerUsername"></dd></div><div><dt>Rol</dt><dd id="ownerRole"></dd></div><div><dt>Estado</dt><dd id="ownerActive"></dd></div></dl>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="api.js?v=platform4"></script>
+  <script src="platform-organization.js?v=platform4-1"></script>
+</body>
+</html>

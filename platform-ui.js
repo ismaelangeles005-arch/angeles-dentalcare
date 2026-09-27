@@ -40,7 +40,6 @@ async function startPlatform() {
                 const number = document.createElement("strong"); number.textContent = value; item.append(number); el("metrics").append(item);
             }
             el("organizations").replaceChildren();
-            el("details").hidden = true;
             if (!result.organizations.length) {
                 const row = document.createElement("tr"); cell(row, "Sin organizaciones registradas").colSpan = 6; el("organizations").append(row);
             }
@@ -51,18 +50,7 @@ async function startPlatform() {
                 cell(row, date(org.createdAt)); cell(row, date(org.updatedAt));
                 const actions = cell(row, "");
                 const details = document.createElement("button"); details.textContent = "Ver detalle"; details.type = "button";
-                details.onclick = async () => {
-                    details.disabled = true;
-                    try {
-                        const data = await DentalApi.getPlatformOrganization(org.id);
-                        el("details").replaceChildren();
-                        const heading = document.createElement("h2"); heading.textContent = data.name; el("details").append(heading);
-                        for (const [key, value] of [["ID", data.id], ["Tipo", type(data.organizationType)], ["Propietario (ID)", data.ownerUserId || "Sin propietario"], ["Estado", data.active ? "Activa" : "Inactiva"]]) {
-                            const p = document.createElement("p"); p.textContent = `${key}: ${value}`; el("details").append(p);
-                        }
-                        el("details").hidden = false;
-                    } catch (error) { message(error.message, true); } finally { details.disabled = false; }
-                };
+                details.onclick = () => { window.location.href = `platform-organization.html?id=${encodeURIComponent(org.id)}`; };
                 const toggle = document.createElement("button"); toggle.type = "button"; toggle.textContent = org.active ? "Desactivar" : "Activar";
                 toggle.onclick = async () => {
                     if (!window.confirm(`${toggle.textContent} ${org.name}?${org.active ? " Sus usuarios perderán el acceso mientras esté inactiva." : ""}`)) return;
