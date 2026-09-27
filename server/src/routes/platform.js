@@ -226,7 +226,9 @@ router.get("/organizations/:id/users", asyncHandler(async (req, res) => {
   if (!org) return res.status(404).json({ message: "Organizacion no encontrada" });
   const result = await db.query(`SELECT u.id, u.username, u.full_name, u.role, u.active,
     u.doctor_id, d.name AS doctor_name, u.must_change_password,
-    (u.pin_hash IS NOT NULL) AS pin_configured, u.pin_enabled, u.last_login_at, u.created_at
+    (u.pin_hash IS NOT NULL) AS pin_configured, u.pin_enabled,
+    COALESCE(u.pin_locked_until > NOW(), false) AS pin_locked, u.failed_pin_attempts,
+    u.last_login_at, u.created_at
     FROM users u LEFT JOIN doctors d ON d.id = u.doctor_id AND d.organization_id = u.organization_id
     WHERE u.organization_id = $1 AND u.deleted_at IS NULL AND u.role <> 'PLATFORM_SUPER_ADMIN'
     ORDER BY u.active DESC, u.full_name, u.id`, [org.id]);
@@ -235,6 +237,7 @@ router.get("/organizations/:id/users", asyncHandler(async (req, res) => {
     users: result.rows.map(u => ({ id: u.id, username: u.username, fullName: u.full_name, role: u.role,
       active: u.active, doctorId: u.doctor_id, doctorName: u.doctor_name,
       mustChangePassword: u.must_change_password, pinConfigured: u.pin_configured, pinEnabled: u.pin_enabled,
+      pinLocked: u.pin_locked, failedPinAttempts: u.failed_pin_attempts,
       lastLoginAt: u.last_login_at, createdAt: u.created_at })) });
 }));
 
@@ -330,6 +333,75 @@ router.patch("/organizations/:id/users/:userId/password", asyncHandler(async (re
       WHERE id = $2 AND organization_id = $3`, [hash, user.id, org.id]);
     await audit(client, req, "platform_reset_user_password", org.id, { targetUserId: user.id, role: user.role });
     return { id: user.id, mustChangePassword: true };
+  });
+}));
+
+async function securityMutation(req, res, action, operation) {
+  await mutateOrganizationUser(req, res, async (client, org) => {
+    const user = await lockedTenantUser(client, org.id, req.params.userId);
+    const result = await operation(client, org, user);
+    await audit(client, req, action, org.id, { targetUserId: user.id, username: user.username,
+      ...(typeof result.pinEnabled === "boolean" ? { enabled: result.pinEnabled } : {}) });
+    return { id: user.id, ...result };
+  });
+}
+
+router.patch("/organizations/:id/users/:userId/pin", asyncHandler(async (req, res) => {
+  // Reuse the exact validation and organization-bound lookup used by tenant login.
+  const { validPin, pinLookupHash } = require("./auth");
+  const { pin, enabled = true } = req.body || {};
+  if (!validPin(pin) || typeof enabled !== "boolean") return res.status(400).json({ message: "El PIN debe tener cuatro digitos y el estado debe ser valido" });
+  await securityMutation(req, res, "platform_set_user_pin", async (client, org, user) => {
+    const lookup = pinLookupHash(pin, org.id);
+    const duplicate = await client.query(`SELECT id FROM users WHERE organization_id = $1
+      AND pin_lookup_hash = $2 AND id <> $3 AND active = true AND deleted_at IS NULL LIMIT 1`, [org.id, lookup, user.id]);
+    if (duplicate.rows.length) throw userError(409, "Ese PIN no esta disponible en esta organizacion");
+    const hash = await bcrypt.hash(pin, 12);
+    try {
+      await client.query(`UPDATE users SET pin_hash = $1, pin_lookup_hash = $2, pin_enabled = $3,
+        failed_pin_attempts = 0, pin_locked_until = NULL, updated_at = NOW()
+        WHERE id = $4 AND organization_id = $5`, [hash, lookup, enabled, user.id, org.id]);
+    } catch (error) {
+      if (error.code === "23505") throw userError(409, "Ese PIN no esta disponible en esta organizacion");
+      throw error;
+    }
+    return { pinConfigured: true, pinEnabled: enabled, pinLocked: false, failedPinAttempts: 0 };
+  });
+}));
+
+router.patch("/organizations/:id/users/:userId/pin/status", asyncHandler(async (req, res) => {
+  const enabled = req.body?.enabled;
+  if (typeof enabled !== "boolean") return res.status(400).json({ message: "Estado de PIN invalido" });
+  await securityMutation(req, res, enabled ? "platform_enable_user_pin" : "platform_disable_user_pin", async (client, org, user) => {
+    const current = (await client.query(`SELECT (pin_hash IS NOT NULL AND pin_lookup_hash IS NOT NULL) AS configured
+      FROM users WHERE id = $1 AND organization_id = $2`, [user.id, org.id])).rows[0];
+    if (enabled && !current?.configured) throw userError(409, "Primero asigna un PIN al usuario");
+    try {
+      // Preserve lock state: unlock is an explicit, separately audited action.
+      await client.query(`UPDATE users SET pin_enabled = $1, updated_at = NOW()
+        WHERE id = $2 AND organization_id = $3`, [enabled, user.id, org.id]);
+    } catch (error) {
+      if (error.code === "23505") throw userError(409, "Ese PIN no esta disponible en esta organizacion");
+      throw error;
+    }
+    return { pinEnabled: enabled };
+  });
+}));
+
+router.post("/organizations/:id/users/:userId/pin/unlock", asyncHandler(async (req, res) => {
+  await securityMutation(req, res, "platform_unlock_user_pin", async (client, org, user) => {
+    await client.query(`UPDATE users SET failed_pin_attempts = 0, pin_locked_until = NULL, updated_at = NOW()
+      WHERE id = $1 AND organization_id = $2`, [user.id, org.id]);
+    return { pinLocked: false, failedPinAttempts: 0 };
+  });
+}));
+
+router.patch("/organizations/:id/users/:userId/password/force-change", asyncHandler(async (req, res) => {
+  if (req.body?.required !== undefined && req.body.required !== true) return res.status(400).json({ message: "Solo se permite exigir el cambio de contrasena" });
+  await securityMutation(req, res, "platform_force_password_change", async (client, org, user) => {
+    await client.query(`UPDATE users SET must_change_password = true, updated_at = NOW()
+      WHERE id = $1 AND organization_id = $2`, [user.id, org.id]);
+    return { mustChangePassword: true };
   });
 }));
 

@@ -1,5 +1,5 @@
 const initializePlatformUsers = (() => {
-    let organization, initialized = false, loading = false, saving = false, resetUser = null;
+    let organization, initialized = false, loading = false, saving = false, resetUser = null, pinUser = null;
     const el = id => document.getElementById(id);
     const labels = { head_admin: "Administrador principal", admin: "Administrador", clinic_admin: "Administrador de clínica",
         doctor: "Doctor", owner_doctor: "Doctor administrador", recepcion: "Recepción", receptionist: "Recepcionista",
@@ -32,7 +32,8 @@ const initializePlatformUsers = (() => {
                 cell(row, `${user.fullName} (${user.username})${user.id === data.ownerUserId ? " · Propietario" : ""}`);
                 cell(row, labels[user.role] || user.role); cell(row, user.active ? "Activo" : "Inactivo");
                 cell(row, user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString("es-DO") : "Sin acceso registrado");
-                cell(row, user.mustChangePassword ? "Sí" : "No"); cell(row, `${user.pinConfigured ? "Sí" : "No"} / ${user.pinEnabled ? "Sí" : "No"}`);
+                cell(row, user.mustChangePassword ? "Cambio requerido" : "Normal");
+                cell(row, `${user.pinConfigured ? "Configurado" : "No configurado"} / ${user.pinEnabled ? "Activo" : "Inactivo"}${user.pinConfigured ? (user.pinLocked ? " / Bloqueado" : " / Disponible") : ""}`);
                 const actions = cell(row, "");
                 const status = document.createElement("button"); status.type = "button"; status.textContent = user.active ? "Desactivar" : "Activar";
                 status.disabled = user.active && user.id === data.ownerUserId;
@@ -46,7 +47,31 @@ const initializePlatformUsers = (() => {
                 };
                 const reset = document.createElement("button"); reset.type = "button"; reset.textContent = "Resetear contraseña";
                 reset.onclick = () => { if (saving) return; resetUser = user; el("resetForm").reset(); el("resetError").textContent = ""; el("resetIdentity").textContent = `${user.fullName} (${user.username})`; el("resetDialog").showModal(); };
-                actions.append(status, " ", reset); el("usersRows").append(row);
+                actions.append(status, " ", reset);
+                const pin = document.createElement("button"); pin.type = "button"; pin.textContent = user.pinConfigured ? "Cambiar PIN" : "Asignar PIN";
+                pin.onclick = () => {
+                    if (saving) return;
+                    pinUser = user; el("pinForm").reset(); el("pinError").textContent = "";
+                    el("pinTitle").textContent = pin.textContent; el("pinIdentity").textContent = `${user.fullName} (${user.username})`;
+                    el("pinDialog").showModal();
+                };
+                actions.append(" ", pin);
+                const securityAction = (label, operation) => {
+                    const button = document.createElement("button"); button.type = "button"; button.textContent = label;
+                    button.onclick = async () => {
+                        if (saving || !window.confirm(`${label}: ${user.fullName}?`)) return;
+                        saving = true; button.disabled = true;
+                        try { await operation(); await loadUsers("Seguridad del usuario actualizada."); }
+                        catch (error) { tell(error.message); }
+                        finally { saving = false; button.disabled = false; }
+                    };
+                    actions.append(" ", button);
+                };
+                if (user.pinConfigured) securityAction(user.pinEnabled ? "Desactivar PIN" : "Activar PIN",
+                    () => DentalApi.setPlatformOrganizationUserPinStatus(organization.id, user.id, !user.pinEnabled));
+                if (user.pinLocked) securityAction("Desbloquear PIN", () => DentalApi.unlockPlatformOrganizationUserPin(organization.id, user.id));
+                securityAction("Forzar cambio de contraseña", () => DentalApi.forcePlatformOrganizationUserPasswordChange(organization.id, user.id));
+                el("usersRows").append(row);
             }
             if (!data.users.length) { const row = document.createElement("tr"); cell(row, "Sin usuarios registrados").colSpan = 7; el("usersRows").append(row); }
             tell(success || (!data.organizationActive ? "Organización inactiva: la creación de usuarios está bloqueada." : ""));
@@ -67,11 +92,22 @@ const initializePlatformUsers = (() => {
         el("refreshUsers").onclick = () => loadUsers();
         el("newUser").onclick = () => { if (saving) return; form().reset(); doctorFields(); el("userError").textContent = ""; el("userDialog").showModal(); };
         field("role").onchange = doctorFields;
-        for (const [dialog, cancel, formId] of [["userDialog", "cancelUser", "userForm"], ["resetDialog", "cancelReset", "resetForm"]]) {
-            const close = () => { if (!saving) { el(formId).reset(); el(dialog).close(); resetUser = null; } };
+        for (const [dialog, cancel, formId] of [["userDialog", "cancelUser", "userForm"], ["resetDialog", "cancelReset", "resetForm"], ["pinDialog", "cancelPin", "pinForm"]]) {
+            const close = () => { if (!saving) { el(formId).reset(); el(dialog).close(); resetUser = null; pinUser = null; } };
             el(cancel).onclick = close;
             el(dialog).addEventListener("cancel", event => { event.preventDefault(); close(); });
         }
+        el("pinForm").onsubmit = async event => {
+            event.preventDefault(); if (saving || !pinUser || !el("pinForm").reportValidity()) return;
+            const pin = el("pinForm").elements.namedItem("pin"), confirmation = el("pinForm").elements.namedItem("confirmPin");
+            if (!/^[0-9]{4}$/.test(pin.value) || pin.value !== confirmation.value) { el("pinError").textContent = "El PIN debe tener cuatro dígitos y coincidir con la confirmación."; return; }
+            saving = true; el("savePin").disabled = true;
+            try {
+                await DentalApi.setPlatformOrganizationUserPin(organization.id, pinUser.id, pin.value, pinUser.pinConfigured ? pinUser.pinEnabled : true);
+                el("pinForm").reset(); pinUser = null; el("pinDialog").close(); await loadUsers("PIN guardado y bloqueo reiniciado.");
+            } catch (error) { el("pinError").textContent = error.message; }
+            finally { pin.value = ""; confirmation.value = ""; saving = false; el("savePin").disabled = false; }
+        };
         form().onsubmit = async event => {
             event.preventDefault(); if (saving || !form().reportValidity()) return;
             saving = true; el("saveUser").disabled = true;

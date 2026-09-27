@@ -573,6 +573,10 @@
 
     return {
         API_URL,
+        setPlatformOrganizationUserPin: (id, userId, pin, enabled = true) => request(`/platform/organizations/${encodeURIComponent(id)}/users/${encodeURIComponent(userId)}/pin`, { method: "PATCH", body: JSON.stringify({ pin, enabled }) }),
+        setPlatformOrganizationUserPinStatus: (id, userId, enabled) => request(`/platform/organizations/${encodeURIComponent(id)}/users/${encodeURIComponent(userId)}/pin/status`, { method: "PATCH", body: JSON.stringify({ enabled }) }),
+        unlockPlatformOrganizationUserPin: (id, userId) => request(`/platform/organizations/${encodeURIComponent(id)}/users/${encodeURIComponent(userId)}/pin/unlock`, { method: "POST", body: JSON.stringify({}) }),
+        forcePlatformOrganizationUserPasswordChange: (id, userId) => request(`/platform/organizations/${encodeURIComponent(id)}/users/${encodeURIComponent(userId)}/password/force-change`, { method: "PATCH", body: JSON.stringify({ required: true }) }),
         getPlatformStatus: () => request("/platform/status"),
         getPlatformOrganizations: () => request("/platform/organizations"),
         getPlatformOrganization: id => request(`/platform/organizations/${encodeURIComponent(id)}`),
