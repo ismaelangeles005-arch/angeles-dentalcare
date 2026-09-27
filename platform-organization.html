@@ -17,6 +17,11 @@
     .metric strong{display:block;font-size:28px;margin-top:10px;color:#146854}section.summary{border-top:1px solid #dce3e9;padding-top:16px}
     dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin:24px 0}dt{color:#526271;font-size:13px;margin-bottom:8px}dd{margin:0;overflow-wrap:anywhere;line-height:1.6}
     #ownerWarning{color:#944126}.active{color:#146854}.inactive{color:#944126}#identity{display:block;margin-top:8px;overflow-wrap:anywhere}
+    .tabs{display:flex;gap:8px;margin:12px 0}.tabs button[aria-selected="true"]{background:#2563eb;color:white}
+    .table-scroll{overflow:auto}table{width:100%;border-collapse:collapse;background:white}th,td{padding:12px;text-align:left;border-bottom:1px solid #dce3e9;vertical-align:top}th{font-size:13px}td{overflow-wrap:anywhere}
+    dialog{border:1px solid #aebbc7;border-radius:8px;padding:24px;width:min(520px,calc(100% - 32px));max-height:90vh;overflow:auto}dialog::backdrop{background:#17212e88}
+    form,label,#doctorFields{display:grid;gap:10px}form{gap:16px}input,select{font:inherit;min-height:44px;width:100%;min-width:0;padding:10px;border:1px solid #aebbc7;border-radius:6px}
+    [hidden]{display:none!important}.form-error{color:#a32929}#usersMessage{min-height:24px}
     @media(max-width:560px){main{padding:16px}.metrics{gap:8px}.metric{padding:12px;overflow-wrap:anywhere}dl{grid-template-columns:1fr}header{gap:12px}h1{font-size:22px}}
   </style>
 </head>
@@ -29,6 +34,8 @@
       <div class="toolbar"><h1 id="organizationTitle">Organización</h1><div class="actions"><button id="refresh" type="button" hidden>Actualizar</button><button id="toggleStatus" type="button" hidden></button></div></div>
       <p id="message" role="status" aria-live="polite"></p>
       <div id="organizationContent" hidden>
+        <div class="tabs" role="tablist" aria-label="Organización"><button id="summaryTab" role="tab" aria-selected="true" aria-controls="summaryPanel" type="button">Resumen</button><button id="usersTab" role="tab" aria-selected="false" aria-controls="usersPanel" type="button">Usuarios</button></div>
+        <div id="summaryPanel" role="tabpanel" aria-labelledby="summaryTab">
         <div class="metrics" aria-label="Usuarios de la organización">
           <div class="metric">Usuarios totales<strong id="totalUsers"></strong></div>
           <div class="metric">Activos<strong id="activeUsers"></strong></div>
@@ -42,10 +49,29 @@
         <section class="summary" aria-labelledby="ownerTitle"><h2 id="ownerTitle">Propietario</h2><p id="ownerWarning" hidden></p>
           <dl id="ownerFields" hidden><div><dt>Nombre completo</dt><dd id="ownerName"></dd></div><div><dt>Usuario</dt><dd id="ownerUsername"></dd></div><div><dt>Rol</dt><dd id="ownerRole"></dd></div><div><dt>Estado</dt><dd id="ownerActive"></dd></div></dl>
         </section>
+        </div>
+        <section id="usersPanel" role="tabpanel" aria-labelledby="usersTab" hidden>
+          <div class="toolbar"><h2>Usuarios</h2><div class="actions"><button id="refreshUsers" type="button">Actualizar usuarios</button><button id="newUser" type="button" disabled>Crear usuario</button></div></div>
+          <p id="usersMessage" role="status" aria-live="polite"></p>
+          <div class="table-scroll"><table><thead><tr><th>Nombre / Usuario</th><th>Rol</th><th>Estado</th><th>Último acceso</th><th>Cambio obligatorio</th><th>PIN configurado / habilitado</th><th>Acciones</th></tr></thead><tbody id="usersRows"></tbody></table></div>
+        </section>
       </div>
     </main>
   </div>
-  <script src="api.js?v=platform4"></script>
-  <script src="platform-organization.js?v=platform4-1"></script>
+  <dialog id="userDialog" aria-labelledby="userDialogTitle"><h2 id="userDialogTitle">Crear usuario</h2><form id="userForm">
+    <label>Nombre completo<input name="fullName" maxlength="160" required></label>
+    <label>Usuario<input name="username" pattern="[A-Za-z0-9._-]{3,40}" minlength="3" maxlength="40" required autocomplete="off" autocapitalize="none"></label>
+    <label>Contraseña temporal<input name="password" type="password" minlength="6" maxlength="200" required autocomplete="new-password"></label>
+    <label>Rol<select name="role" required></select></label>
+    <div id="doctorFields" hidden><label>Especialidad<input name="doctorSpecialty" maxlength="120"></label><label>Teléfono<input name="doctorPhone" type="tel" maxlength="40"></label><label>Correo profesional<input name="doctorEmail" type="email" maxlength="160"></label></div>
+    <p id="userError" class="form-error" role="alert"></p><div class="actions"><button id="cancelUser" type="button">Cancelar</button><button id="saveUser" type="submit">Crear usuario</button></div>
+  </form></dialog>
+  <dialog id="resetDialog" aria-labelledby="resetTitle"><h2 id="resetTitle">Resetear contraseña</h2><p id="resetIdentity"></p><form id="resetForm">
+    <label>Contraseña temporal<input name="password" type="password" minlength="6" maxlength="200" required autocomplete="new-password"></label>
+    <p id="resetError" class="form-error" role="alert"></p><div class="actions"><button id="cancelReset" type="button">Cancelar</button><button id="saveReset" type="submit">Guardar contraseña temporal</button></div>
+  </form></dialog>
+  <script src="api.js?v=platform4-2"></script>
+  <script src="platform-users.js?v=platform4-2"></script>
+  <script src="platform-organization.js?v=platform4-2"></script>
 </body>
 </html>

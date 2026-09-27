@@ -209,4 +209,128 @@ router.patch("/organizations/:id/status", asyncHandler(async (req, res) => {
   } finally { client.release(); }
 }));
 
+const ORGANIZATION_USER_ROLES = Object.freeze({
+  CLINIC: ["head_admin", "admin", "clinic_admin", "doctor", "recepcion", "receptionist", "assistant", "cashier"],
+  INDEPENDENT: ["owner_doctor", "independent_assistant", "assistant", "receptionist"]
+});
+
+router.param("userId", (req, res, next, id) => {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return res.status(400).json({ message: "Identificador no valido" });
+  }
+  next();
+});
+
+router.get("/organizations/:id/users", asyncHandler(async (req, res) => {
+  const org = (await db.query("SELECT id, organization_type, owner_user_id, active FROM organizations WHERE id = $1", [req.params.id])).rows[0];
+  if (!org) return res.status(404).json({ message: "Organizacion no encontrada" });
+  const result = await db.query(`SELECT u.id, u.username, u.full_name, u.role, u.active,
+    u.doctor_id, d.name AS doctor_name, u.must_change_password,
+    (u.pin_hash IS NOT NULL) AS pin_configured, u.pin_enabled, u.last_login_at, u.created_at
+    FROM users u LEFT JOIN doctors d ON d.id = u.doctor_id AND d.organization_id = u.organization_id
+    WHERE u.organization_id = $1 AND u.deleted_at IS NULL AND u.role <> 'PLATFORM_SUPER_ADMIN'
+    ORDER BY u.active DESC, u.full_name, u.id`, [org.id]);
+  res.json({ allowedRoles: ORGANIZATION_USER_ROLES[org.organization_type] || [], ownerUserId: org.owner_user_id,
+    organizationActive: org.active,
+    users: result.rows.map(u => ({ id: u.id, username: u.username, fullName: u.full_name, role: u.role,
+      active: u.active, doctorId: u.doctor_id, doctorName: u.doctor_name,
+      mustChangePassword: u.must_change_password, pinConfigured: u.pin_configured, pinEnabled: u.pin_enabled,
+      lastLoginAt: u.last_login_at, createdAt: u.created_at })) });
+}));
+
+function userError(status, message) { return Object.assign(new Error(message), { publicStatus: status }); }
+
+// All new platform user mutations share one dedicated connection, including their audit.
+async function mutateOrganizationUser(req, res, operation, successStatus = 200) {
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+    const org = (await client.query(`SELECT id, organization_type, owner_user_id, active
+      FROM organizations WHERE id = $1 FOR UPDATE`, [req.params.id])).rows[0];
+    if (!org) throw userError(404, "Organizacion no encontrada");
+    const result = await operation(client, org);
+    await client.query("COMMIT");
+    res.status(successStatus).json(result);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    res.status(error.publicStatus || (error.code === "23505" ? 409 : 500)).json({ message: error.publicStatus
+      ? error.message : error.code === "23505" ? "El usuario o perfil profesional ya existe"
+        : "No fue posible guardar los cambios" });
+  } finally { client.release(); }
+}
+
+async function lockedTenantUser(client, orgId, userId) {
+  const user = (await client.query(`SELECT id, username, role, active, doctor_id FROM users
+    WHERE id = $1 AND organization_id = $2 AND deleted_at IS NULL
+      AND role <> 'PLATFORM_SUPER_ADMIN' FOR UPDATE`, [userId, orgId])).rows[0];
+  if (!user) throw userError(404, "Usuario no encontrado");
+  return user;
+}
+
+router.post("/organizations/:id/users", asyncHandler(async (req, res) => {
+  const body = req.body || {};
+  const text = key => typeof body[key] === "string" ? body[key].trim() : "";
+  const username = text("username").toLowerCase(), fullName = text("fullName"), role = text("role");
+  const specialty = text("doctorSpecialty"), phone = text("doctorPhone"), email = text("doctorEmail").toLowerCase();
+  const doctorRole = ["doctor", "owner_doctor"].includes(role);
+  const passwordError = validateStrongPassword(body.password);
+  if (passwordError) return res.status(400).json({ message: passwordError });
+  if (!/^[a-z0-9._-]{3,40}$/.test(username) || !fullName || fullName.length > 160 ||
+      (doctorRole && (!specialty || specialty.length > 120 || phone.length > 40 || email.length > 160 ||
+        (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))))) {
+    return res.status(400).json({ message: "Revisa nombre, usuario y datos del doctor" });
+  }
+  const hash = await bcrypt.hash(body.password, 12);
+  await mutateOrganizationUser(req, res, async (client, org) => {
+    if (!org.active) throw userError(409, "Activa la organizacion antes de crear usuarios");
+    if (!(ORGANIZATION_USER_ROLES[org.organization_type] || []).includes(role)) throw userError(400, "Rol no permitido para esta organizacion");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", ["maelven-platform-create-organization"]);
+    if ((await client.query("SELECT id FROM users WHERE LOWER(username) = $1 LIMIT 1", [username])).rows.length) {
+      throw userError(409, "El nombre de usuario ya existe");
+    }
+    let doctorId = null;
+    if (doctorRole) doctorId = (await client.query(`INSERT INTO doctors (organization_id, name, specialty, phone, email)
+      VALUES ($1, $2, $3, $4, $5) RETURNING id`, [org.id, fullName, specialty, phone || null, email || null])).rows[0].id;
+    const user = (await client.query(`INSERT INTO users
+      (organization_id, username, full_name, password_hash, role, doctor_id, must_change_password)
+      VALUES ($1, $2, $3, $4, $5, $6, true) RETURNING id`, [org.id, username, fullName, hash, role, doctorId])).rows[0];
+    await audit(client, req, "platform_create_user", org.id, { targetUserId: user.id, username, role, doctorId });
+    return { id: user.id, username, fullName, role, doctorId, mustChangePassword: true };
+  }, 201);
+}));
+
+router.patch("/organizations/:id/users/:userId/status", asyncHandler(async (req, res) => {
+  const active = req.body?.active;
+  if (typeof active !== "boolean") return res.status(400).json({ message: "Estado no valido" });
+  await mutateOrganizationUser(req, res, async (client, org) => {
+    const user = await lockedTenantUser(client, org.id, req.params.userId);
+    if (!active && user.id === org.owner_user_id) throw userError(409, "No se puede desactivar al propietario actual");
+    if (user.active === active) return { id: user.id, active };
+    if (["doctor", "owner_doctor"].includes(user.role) && user.doctor_id) {
+      const doctor = await client.query("SELECT id FROM doctors WHERE id = $1 AND organization_id = $2 FOR UPDATE", [user.doctor_id, org.id]);
+      if (!doctor.rows.length) throw userError(409, "El vinculo del doctor requiere revision");
+      const shared = await client.query("SELECT id FROM users WHERE doctor_id = $1 AND id <> $2 AND deleted_at IS NULL LIMIT 1", [user.doctor_id, user.id]);
+      if (shared.rows.length) throw userError(409, "El perfil de doctor esta vinculado a otro usuario");
+      await client.query("UPDATE doctors SET active = $1, updated_at = NOW() WHERE id = $2 AND organization_id = $3", [active, user.doctor_id, org.id]);
+    }
+    await client.query("UPDATE users SET active = $1, updated_at = NOW() WHERE id = $2 AND organization_id = $3", [active, user.id, org.id]);
+    await audit(client, req, active ? "platform_activate_user" : "platform_deactivate_user", org.id,
+      { targetUserId: user.id, role: user.role, active });
+    return { id: user.id, active };
+  });
+}));
+
+router.patch("/organizations/:id/users/:userId/password", asyncHandler(async (req, res) => {
+  const passwordError = validateStrongPassword(req.body?.password);
+  if (passwordError) return res.status(400).json({ message: passwordError });
+  const hash = await bcrypt.hash(req.body.password, 12);
+  await mutateOrganizationUser(req, res, async (client, org) => {
+    const user = await lockedTenantUser(client, org.id, req.params.userId);
+    await client.query(`UPDATE users SET password_hash = $1, must_change_password = true, updated_at = NOW()
+      WHERE id = $2 AND organization_id = $3`, [hash, user.id, org.id]);
+    await audit(client, req, "platform_reset_user_password", org.id, { targetUserId: user.id, role: user.role });
+    return { id: user.id, mustChangePassword: true };
+  });
+}));
+
 module.exports = router;

@@ -38,6 +38,7 @@ async function startPlatformOrganization() {
         try {
             const data = await DentalApi.getPlatformOrganization(id);
             organization = data;
+            if (typeof initializePlatformUsers === "function") initializePlatformUsers(data);
             for (const [key, value] of Object.entries({ organizationTitle: data.name, organizationName: data.name,
                 organizationType: data.organizationType === "INDEPENDENT" ? "Independiente" : "Clínica",
                 organizationStatus: data.active ? "Activa" : "Inactiva", organizationId: data.id,
