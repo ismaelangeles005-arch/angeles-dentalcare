@@ -63,6 +63,7 @@ async function startPlatform() {
         } catch (error) { message(`No se pudo actualizar el panel: ${error.message}`, true); }
         finally { el("refresh").disabled = false; }
     }
+    el("audit").onclick = () => { window.location.href = "platform-audit.html"; };
     el("refresh").onclick = () => { message("Actualizando..."); refresh().then(() => { if (el("message").dataset.error !== "true") message(""); }); };
     el("logout").onclick = async () => { try { await DentalApi.logout(); window.location.replace("index.html"); } catch (error) { message(error.message, true); } };
     const form = el("createForm"), dialog = el("createDialog");

@@ -405,4 +405,132 @@ router.patch("/organizations/:id/users/:userId/password/force-change", asyncHand
   });
 }));
 
+
+router.get("/audit", asyncHandler(async (req, res) => {
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const organizationId = typeof req.query.organizationId === "string" ? req.query.organizationId.trim() : "";
+  const action = typeof req.query.action === "string" ? req.query.action.trim() : "";
+  const actor = typeof req.query.actor === "string" ? req.query.actor.trim() : "";
+  const targetUserId = typeof req.query.targetUserId === "string" ? req.query.targetUserId.trim() : "";
+  const from = typeof req.query.from === "string" ? req.query.from.trim() : "";
+  const to = typeof req.query.to === "string" ? req.query.to.trim() : "";
+
+  if (organizationId && !uuid.test(organizationId)) {
+    return res.status(400).json({ message: "Organizacion no valida" });
+  }
+  if (targetUserId && !uuid.test(targetUserId)) {
+    return res.status(400).json({ message: "Usuario objetivo no valido" });
+  }
+  if (action && !/^[a-z0-9_]{1,80}$/i.test(action)) {
+    return res.status(400).json({ message: "Accion no valida" });
+  }
+  if (actor.length > 160) {
+    return res.status(400).json({ message: "Filtro de actor no valido" });
+  }
+
+  const fromDate = from ? new Date(from) : null;
+  const toDate = to ? new Date(to) : null;
+  if ((fromDate && Number.isNaN(fromDate.getTime())) || (toDate && Number.isNaN(toDate.getTime()))) {
+    return res.status(400).json({ message: "Rango de fechas no valido" });
+  }
+  if (fromDate && toDate && fromDate > toDate) {
+    return res.status(400).json({ message: "Rango de fechas no valido" });
+  }
+
+  const requestedLimit = Number.parseInt(req.query.limit, 10);
+  const requestedOffset = Number.parseInt(req.query.offset, 10);
+  const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 100) : 50;
+  const offset = Number.isInteger(requestedOffset) ? Math.max(requestedOffset, 0) : 0;
+
+  const where = ["l.action LIKE 'platform_%'"];
+  const values = [];
+
+  const add = (sql, value) => {
+    values.push(value);
+    where.push(sql.replace("?", `$${values.length}`));
+  };
+
+  if (organizationId) add("l.organization_id = ?", organizationId);
+  if (action) add("l.action = ?", action);
+  if (targetUserId) add("l.payload ->> 'targetUserId' = ?", targetUserId);
+  if (actor) {
+    values.push(`%${actor}%`);
+    where.push(`(actor.username ILIKE $${values.length} OR actor.full_name ILIKE $${values.length})`);
+  }
+  if (fromDate) add("l.created_at >= ?", fromDate.toISOString());
+  if (toDate) add("l.created_at <= ?", toDate.toISOString());
+
+  values.push(limit + 1);
+  const limitParameter = `$${values.length}`;
+  values.push(offset);
+  const offsetParameter = `$${values.length}`;
+
+  const result = await db.query(`
+    SELECT
+      l.id,
+      l.action,
+      l.entity,
+      l.entity_id,
+      l.created_at,
+      o.id AS organization_id,
+      o.name AS organization_name,
+      o.organization_type,
+      actor.id AS actor_id,
+      actor.username AS actor_username,
+      actor.full_name AS actor_full_name,
+      actor.role AS actor_role,
+      target.id AS target_user_id,
+      target.username AS target_username,
+      target.full_name AS target_full_name,
+      target.role AS target_role
+    FROM audit_logs l
+    LEFT JOIN organizations o ON o.id = l.organization_id
+    LEFT JOIN users actor
+      ON actor.id = l.user_id
+      AND actor.role = 'PLATFORM_SUPER_ADMIN'
+      AND actor.organization_id IS NULL
+    LEFT JOIN users target
+      ON target.id::text = l.payload ->> 'targetUserId'
+      AND target.organization_id = l.organization_id
+    WHERE ${where.join(" AND ")}
+    ORDER BY l.created_at DESC, l.id DESC
+    LIMIT ${limitParameter}
+    OFFSET ${offsetParameter}
+  `, values);
+
+  const hasMore = result.rows.length > limit;
+  const rows = hasMore ? result.rows.slice(0, limit) : result.rows;
+
+  return res.json({
+    events: rows.map(row => ({
+      id: row.id,
+      action: row.action,
+      entity: row.entity,
+      entityId: row.entity_id,
+      createdAt: row.created_at,
+      organization: row.organization_id ? {
+        id: row.organization_id,
+        name: row.organization_name,
+        organizationType: row.organization_type
+      } : null,
+      actor: row.actor_id ? {
+        id: row.actor_id,
+        username: row.actor_username,
+        fullName: row.actor_full_name,
+        role: row.actor_role
+      } : null,
+      targetUser: row.target_user_id ? {
+        id: row.target_user_id,
+        username: row.target_username,
+        fullName: row.target_full_name,
+        role: row.target_role
+      } : null
+    })),
+    pagination: {
+      limit,
+      offset,
+      hasMore
+    }
+  });
+}));
 module.exports = router;

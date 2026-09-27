@@ -32,7 +32,7 @@ test("deterministic build, exact allowlist and production artifact acceptance", 
   const first = buildWeb(dir);
   const second = buildWeb(dir);
   assert.deepEqual(second, first);
-  assert.equal(first.count, 24);
+  assert.equal(first.count, 26);
   assert.equal(frontendDirectory({ NODE_ENV: "production", FRONTEND_ROOT: path.join(dir, "public-web") }), path.join(dir, "public-web"));
 });
 

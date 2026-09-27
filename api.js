@@ -577,6 +577,16 @@
         setPlatformOrganizationUserPinStatus: (id, userId, enabled) => request(`/platform/organizations/${encodeURIComponent(id)}/users/${encodeURIComponent(userId)}/pin/status`, { method: "PATCH", body: JSON.stringify({ enabled }) }),
         unlockPlatformOrganizationUserPin: (id, userId) => request(`/platform/organizations/${encodeURIComponent(id)}/users/${encodeURIComponent(userId)}/pin/unlock`, { method: "POST", body: JSON.stringify({}) }),
         forcePlatformOrganizationUserPasswordChange: (id, userId) => request(`/platform/organizations/${encodeURIComponent(id)}/users/${encodeURIComponent(userId)}/password/force-change`, { method: "PATCH", body: JSON.stringify({ required: true }) }),
+        getPlatformAudit: params => {
+            const query = new URLSearchParams();
+            for (const [key, value] of Object.entries(params || {})) {
+                if (value !== undefined && value !== null && value !== "") {
+                    query.set(key, String(value));
+                }
+            }
+            const suffix = query.toString();
+            return request(`/platform/audit${suffix ? `?${suffix}` : ""}`);
+        },
         getPlatformStatus: () => request("/platform/status"),
         getPlatformOrganizations: () => request("/platform/organizations"),
         getPlatformOrganization: id => request(`/platform/organizations/${encodeURIComponent(id)}`),

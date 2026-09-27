@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auditoría de plataforma | MAELVEN Dental</title>
+  <link rel="icon" href="images/maelven-dental-favicon.svg">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;background:#f4f6f8;color:#17212e;font:15px Arial,sans-serif}
+    header{background:white;border-bottom:1px solid #dce3e9;padding:20px 4%;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+    header img{width:190px;height:auto}
+    header div{flex:1}
+    h1{font-size:22px;margin:0 0 6px}
+    main{max-width:1400px;margin:auto;padding:24px}
+    button,input,select{font:inherit;min-height:42px;border:1px solid #aebbc7;border-radius:6px;padding:10px}
+    button{cursor:pointer;background:white}
+    button.primary{background:#2563eb;color:white;border-color:#2563eb}
+    button:disabled{opacity:.6;cursor:wait}
+    .toolbar,.filters,.pager{display:flex;gap:12px;align-items:end;flex-wrap:wrap}
+    .toolbar{justify-content:space-between;margin-bottom:20px}
+    .filters{background:white;border:1px solid #dce3e9;padding:16px;margin-bottom:20px}
+    label{display:grid;gap:6px;min-width:180px}
+    .table-scroll{overflow:auto;background:white;border:1px solid #dce3e9}
+    table{width:100%;border-collapse:collapse;min-width:950px}
+    th,td{text-align:left;padding:13px;border-bottom:1px solid #e0e5ea;vertical-align:top}
+    th{background:#edf2f6;font-size:13px}
+    #message{min-height:24px}
+    #message[data-error="true"]{color:#a32929}
+    .pager{justify-content:flex-end;margin-top:16px}
+    .muted{color:#66707a}
+    @media(max-width:640px){main{padding:14px}header{gap:12px}h1{font-size:19px}}
+  </style>
+</head>
+<body>
+  <p id="sessionError" role="status">Verificando sesión...</p>
+
+  <div id="platformAuditApp" hidden>
+    <header>
+      <img src="images/maelven-dental-logo.svg" alt="MAELVEN Dental">
+      <div>
+        <h1>Auditoría de plataforma</h1>
+        <span id="identity"></span>
+      </div>
+      <button id="back" type="button">Volver</button>
+      <button id="logout" type="button">Cerrar sesión</button>
+    </header>
+
+    <main>
+      <p id="message" role="status" aria-live="polite"></p>
+
+      <section class="filters" aria-label="Filtros de auditoría">
+        <label>Organización
+          <select id="organizationFilter">
+            <option value="">Todas</option>
+          </select>
+        </label>
+
+        <label>Acción
+          <select id="actionFilter">
+            <option value="">Todas</option>
+            <option value="platform_create_organization">Crear organización</option>
+            <option value="platform_activate_organization">Activar organización</option>
+            <option value="platform_deactivate_organization">Desactivar organización</option>
+            <option value="platform_create_user">Crear usuario</option>
+            <option value="platform_activate_user">Activar usuario</option>
+            <option value="platform_deactivate_user">Desactivar usuario</option>
+            <option value="platform_reset_user_password">Resetear contraseña</option>
+            <option value="platform_set_user_pin">Asignar/cambiar PIN</option>
+            <option value="platform_enable_user_pin">Activar PIN</option>
+            <option value="platform_disable_user_pin">Desactivar PIN</option>
+            <option value="platform_unlock_user_pin">Desbloquear PIN</option>
+            <option value="platform_force_password_change">Forzar cambio de contraseña</option>
+          </select>
+        </label>
+
+        <label>Actor
+          <input id="actorFilter" maxlength="160" placeholder="Usuario o nombre">
+        </label>
+
+        <label>Desde
+          <input id="fromFilter" type="date">
+        </label>
+
+        <label>Hasta
+          <input id="toFilter" type="date">
+        </label>
+
+        <button id="applyFilters" class="primary" type="button">Aplicar</button>
+        <button id="clearFilters" type="button">Limpiar</button>
+      </section>
+
+      <div class="toolbar">
+        <h2>Actividad administrativa</h2>
+        <button id="refresh" type="button">Actualizar</button>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Organización</th>
+              <th>Actor</th>
+              <th>Acción</th>
+              <th>Usuario afectado</th>
+            </tr>
+          </thead>
+          <tbody id="events"></tbody>
+        </table>
+      </div>
+
+      <div class="pager">
+        <button id="previous" type="button">Anterior</button>
+        <span id="pageInfo" class="muted"></span>
+        <button id="next" type="button">Siguiente</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="api.js?v=platform4-4"></script>
+  <script src="platform-audit.js?v=platform4-4"></script>
+</body>
+</html>
