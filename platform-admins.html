@@ -11,10 +11,29 @@
     main{max-width:1200px;margin:auto;padding:24px}h1{font-size:24px}h2{font-size:19px}a{color:#1759b5}nav,.actions,.toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.toolbar{justify-content:space-between}
     button{font:inherit;min-height:44px;padding:10px 16px;border:1px solid #aebbc7;border-radius:6px;background:white;color:#17212e;cursor:pointer}button:disabled{opacity:.6;cursor:default}:focus-visible{outline:3px solid #16816a;outline-offset:3px}
     #sessionMessage{padding:24px}#message{min-height:24px;line-height:1.5}[data-error="true"],#formError{color:#a32929}[hidden]{display:none!important}
-    .table-scroll{width:100%;max-width:100%;overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:960px;background:white}th,td{padding:12px;text-align:left;border-bottom:1px solid #dce3e9;overflow-wrap:anywhere}td:last-child{min-width:310px}td button{margin:2px}
+    .table-scroll{width:100%;max-width:100%;overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:1100px;background:white}th,td{padding:12px;text-align:left;border-bottom:1px solid #dce3e9;white-space:nowrap;word-break:normal;overflow-wrap:normal;vertical-align:top}th:first-child,td:first-child{min-width:180px;white-space:normal}th:nth-child(2),td:nth-child(2){min-width:160px}th:nth-child(3),td:nth-child(3){min-width:100px}td:last-child{min-width:310px;white-space:normal}td button{margin:2px;word-break:normal;overflow-wrap:normal}
     dialog{border:1px solid #aebbc7;border-radius:8px;padding:24px;width:min(520px,calc(100% - 24px));max-height:90vh;overflow:auto}dialog::backdrop{background:#17212e88}form,label{display:grid;gap:10px}form{gap:16px}input{font:inherit;width:100%;min-width:0;padding:10px;min-height:44px;border:1px solid #aebbc7;border-radius:6px}
     /* MAELVEN RESPONSIVE ADMINS V1 */
     @media(max-width:560px){main,header{padding:14px}header img{width:145px}h1{font-size:20px}.toolbar .actions{width:100%}.toolbar button{flex:1}dialog{padding:18px}dialog .actions{display:grid;grid-template-columns:1fr}dialog button{width:100%}}
+    /* MAELVEN RESPONSIVE ADMINS CARDS */
+    @media(max-width:560px){
+      .table-scroll{overflow-x:visible}
+      table{display:block;min-width:0;background:transparent}
+      thead{display:none}
+      #adminRows{display:grid;gap:16px;width:100%}
+      #adminRows tr{display:block;min-width:0;background:white;border:1px solid #dce3e9;border-radius:6px;padding:4px 14px}
+      #adminRows td{display:block;width:100%;min-width:0;padding:12px 0;white-space:normal;word-break:normal;overflow-wrap:anywhere}
+      #adminRows td::before{display:block;margin-bottom:6px;color:#526271;font-size:13px;font-weight:bold;overflow-wrap:normal}
+      #adminRows td:nth-child(1)::before{content:"Nombre"}
+      #adminRows td:nth-child(2)::before{content:"Usuario"}
+      #adminRows td:nth-child(3)::before{content:"Estado"}
+      #adminRows td:nth-child(4)::before{content:"Último acceso"}
+      #adminRows td:nth-child(5)::before{content:"Cambio obligatorio"}
+      #adminRows td:nth-child(6)::before{content:"Creado"}
+      #adminRows td:nth-child(7)::before{content:"Acciones"}
+      #adminRows td:last-child{border-bottom:0}
+      #adminRows td button{display:block;width:100%;margin:8px 0 0;white-space:normal;overflow-wrap:normal}
+    }
   </style>
 </head>
 <body>
