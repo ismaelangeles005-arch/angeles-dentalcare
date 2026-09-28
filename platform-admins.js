@@ -24,35 +24,51 @@ async function startPlatformAdmins() {
         for (const name of ['fullName', 'username']) el(name).disabled = Boolean(user);
         el('nameLabel').hidden = el('usernameLabel').hidden = Boolean(user); el('adminDialog').showModal();
     };
+    let admins = [];
+    const renderAdmins = () => {
+        const search = el('adminSearch').value.trim().toLowerCase();
+        const status = el('adminStatusFilter').value;
+        const visible = admins.filter(user => (user.fullName.toLowerCase().includes(search) || user.username.toLowerCase().includes(search))
+            && (!status || user.active === (status === 'ACTIVE')));
+        el('adminResults').textContent = `${visible.length} de ${admins.length} Super Admins`;
+        el('adminEmpty').textContent = visible.length ? '' : admins.length ? 'No hay Super Admins que coincidan con los filtros.' : 'Sin Super Admins registrados.';
+        el('adminEmpty').hidden = visible.length > 0;
+        el('adminRows').replaceChildren();
+        const date = value => value ? new Date(value).toLocaleString('es-DO') : '-';
+        for (const user of visible) {
+            const row = document.createElement('tr');
+            const cell = text => { const td = document.createElement('td'); td.textContent = text; row.append(td); return td; };
+            cell(`${user.fullName}${user.id === actor.id ? ' · Tú' : ''}`).className = user.id === actor.id ? 'admin-current' : '';
+            cell(user.username); cell(user.active ? 'Activo' : 'Inactivo').className = user.active ? 'admin-active' : 'admin-inactive';
+            cell(date(user.lastLoginAt)); cell(user.mustChangePassword ? 'Sí' : 'No'); cell(date(user.createdAt));
+            const actions = cell('');
+            const button = (label, action) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.onclick = action; actions.append(b); };
+            const mutate = async (label, operation, selfForce = false) => {
+                if (busy || saving || !window.confirm(`${label}: ${user.fullName}?`)) return;
+                saving = true;
+                try { await operation(); if (selfForce) window.location.replace('cambiar-password.html'); else await load('Cambio guardado.'); }
+                catch (error) { if (!authError(error)) message('No fue posible guardar el cambio. Actualiza antes de reintentar.', true); }
+                finally { saving = false; }
+            };
+            if (user.id !== actor.id) {
+                button(user.active ? 'Desactivar' : 'Activar', () => mutate(user.active ? 'Desactivar' : 'Activar', () => DentalApi.setPlatformAdminStatus(user.id, !user.active)));
+                button('Resetear contraseña', () => open(user));
+            }
+            button('Forzar cambio de contraseña', () => mutate('Forzar cambio de contraseña', () => DentalApi.forcePlatformAdminPasswordChange(user.id), user.id === actor.id));
+            el('adminRows').append(row);
+        }
+    };
+    el('adminSearch').oninput = renderAdmins;
+    el('adminStatusFilter').onchange = renderAdmins;
     const load = async success => {
         busy = true; el('refresh').disabled = true; el('createAdmin').disabled = true;
         message('Cargando Super Admins...'); el('adminRows').replaceChildren();
+        el('adminResults').textContent = ''; el('adminEmpty').hidden = true;
         try {
             const data = await DentalApi.getPlatformAdmins();
-            const date = value => value ? new Date(value).toLocaleString('es-DO') : '-';
-            for (const user of data.admins) {
-                const row = document.createElement('tr');
-                const cell = text => { const td = document.createElement('td'); td.textContent = text; row.append(td); return td; };
-                cell(`${user.fullName}${user.id === actor.id ? ' · Tú' : ''}`).className = user.id === actor.id ? 'admin-current' : '';
-                cell(user.username); cell(user.active ? 'Activo' : 'Inactivo').className = user.active ? 'admin-active' : 'admin-inactive';
-                cell(date(user.lastLoginAt)); cell(user.mustChangePassword ? 'Sí' : 'No'); cell(date(user.createdAt));
-                const actions = cell('');
-                const button = (label, action) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.onclick = action; actions.append(b); };
-                const mutate = async (label, operation, selfForce = false) => {
-                    if (busy || saving || !window.confirm(`${label}: ${user.fullName}?`)) return;
-                    saving = true;
-                    try { await operation(); if (selfForce) window.location.replace('cambiar-password.html'); else await load('Cambio guardado.'); }
-                    catch (error) { if (!authError(error)) message('No fue posible guardar el cambio. Actualiza antes de reintentar.', true); }
-                    finally { saving = false; }
-                };
-                if (user.id !== actor.id) {
-                    button(user.active ? 'Desactivar' : 'Activar', () => mutate(user.active ? 'Desactivar' : 'Activar', () => DentalApi.setPlatformAdminStatus(user.id, !user.active)));
-                    button('Resetear contraseña', () => open(user));
-                }
-                button('Forzar cambio de contraseña', () => mutate('Forzar cambio de contraseña', () => DentalApi.forcePlatformAdminPasswordChange(user.id), user.id === actor.id));
-                el('adminRows').append(row);
-            }
-            message(success || (data.admins.length ? '' : 'Sin Super Admins registrados.'));
+            admins = data.admins;
+            renderAdmins();
+            message(success || '');
         } catch (error) { if (!authError(error)) message('No fue posible cargar los Super Admins. Intenta nuevamente.', true); }
         finally { busy = false; el('refresh').disabled = false; el('createAdmin').disabled = false; }
     };

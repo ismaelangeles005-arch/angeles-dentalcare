@@ -27,6 +27,40 @@ async function startPlatform() {
         return;
     }
 
+    let organizations = [];
+    function renderOrganizations() {
+        const search = el("organizationSearch").value.trim().toLowerCase();
+        const selectedType = el("organizationTypeFilter").value;
+        const status = el("organizationStatusFilter").value;
+        const visible = organizations.filter(org => org.name.toLowerCase().includes(search)
+            && (!selectedType || org.organizationType === selectedType)
+            && (!status || org.active === (status === "ACTIVE")));
+        el("organizationResults").textContent = `${visible.length} de ${organizations.length} organizaciones`;
+        el("organizations").replaceChildren();
+        if (!visible.length) {
+            const row = document.createElement("tr"); cell(row, organizations.length ? "No hay organizaciones que coincidan con los filtros." : "Sin organizaciones registradas").colSpan = 6; el("organizations").append(row);
+        }
+        for (const org of visible) {
+            const row = document.createElement("tr");
+            cell(row, org.name); cell(row, type(org.organizationType));
+            cell(row, org.active ? "Activa" : "Inactiva").className = org.active ? "active" : "inactive";
+            cell(row, date(org.createdAt)); cell(row, date(org.updatedAt));
+            const actions = cell(row, "");
+            const details = document.createElement("button"); details.textContent = "Ver detalle"; details.type = "button";
+            details.onclick = () => { window.location.href = `platform-organization.html?id=${encodeURIComponent(org.id)}`; };
+            const toggle = document.createElement("button"); toggle.type = "button"; toggle.textContent = org.active ? "Desactivar" : "Activar";
+            toggle.onclick = async () => {
+                if (!window.confirm(`${toggle.textContent} ${org.name}?${org.active ? " Sus usuarios perderán el acceso mientras esté inactiva." : ""}`)) return;
+                toggle.disabled = true;
+                try { await DentalApi.setPlatformOrganizationStatus(org.id, !org.active); message("Estado actualizado."); await refresh(); }
+                catch (error) { message(error.message, true); } finally { toggle.disabled = false; }
+            };
+            actions.append(details, " ", toggle); el("organizations").append(row);
+        }
+    }
+    el("organizationSearch").oninput = renderOrganizations;
+    el("organizationTypeFilter").onchange = renderOrganizations;
+    el("organizationStatusFilter").onchange = renderOrganizations;
     async function refresh() {
         el("refresh").disabled = true;
         try {
@@ -39,27 +73,8 @@ async function startPlatform() {
                 const item = document.createElement("div"); item.className = "metric"; item.textContent = label;
                 const number = document.createElement("strong"); number.textContent = value; item.append(number); el("metrics").append(item);
             }
-            el("organizations").replaceChildren();
-            if (!result.organizations.length) {
-                const row = document.createElement("tr"); cell(row, "Sin organizaciones registradas").colSpan = 6; el("organizations").append(row);
-            }
-            for (const org of result.organizations) {
-                const row = document.createElement("tr");
-                cell(row, org.name); cell(row, type(org.organizationType));
-                cell(row, org.active ? "Activa" : "Inactiva").className = org.active ? "active" : "inactive";
-                cell(row, date(org.createdAt)); cell(row, date(org.updatedAt));
-                const actions = cell(row, "");
-                const details = document.createElement("button"); details.textContent = "Ver detalle"; details.type = "button";
-                details.onclick = () => { window.location.href = `platform-organization.html?id=${encodeURIComponent(org.id)}`; };
-                const toggle = document.createElement("button"); toggle.type = "button"; toggle.textContent = org.active ? "Desactivar" : "Activar";
-                toggle.onclick = async () => {
-                    if (!window.confirm(`${toggle.textContent} ${org.name}?${org.active ? " Sus usuarios perderán el acceso mientras esté inactiva." : ""}`)) return;
-                    toggle.disabled = true;
-                    try { await DentalApi.setPlatformOrganizationStatus(org.id, !org.active); message("Estado actualizado."); await refresh(); }
-                    catch (error) { message(error.message, true); } finally { toggle.disabled = false; }
-                };
-                actions.append(details, " ", toggle); el("organizations").append(row);
-            }
+            organizations = result.organizations;
+            renderOrganizations();
         } catch (error) { message(`No se pudo actualizar el panel: ${error.message}`, true); }
         finally { el("refresh").disabled = false; }
     }

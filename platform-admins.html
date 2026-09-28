@@ -47,6 +47,12 @@
       #adminRows td:nth-child(3){justify-self:start}
       #adminRows td:nth-child(7){grid-template-columns:minmax(0,1fr)}
     }
+    .list-filters{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0;align-items:end}
+    .list-filters label{flex:1 1 180px;min-width:0;font-size:14px}
+    .list-filters label:first-child{flex:2 1 260px}
+    .list-filters input,.list-filters select{font:inherit;width:100%;min-width:0;min-height:44px;padding:10px;border:1px solid #aebbc7;border-radius:6px;background:white;color:#17212e}
+    .result-count{color:#526271;font-size:14px;margin:12px 0}
+    @media(max-width:699px){.list-filters{flex-direction:column;align-items:stretch}.list-filters label,.list-filters label:first-child{flex:none;width:100%}}
   </style>
 </head>
 <body>
@@ -57,6 +63,12 @@
       <nav aria-label="Plataforma"><a href="platform.html">Organizaciones</a><a href="platform-audit.html">Auditoría</a></nav>
       <div class="toolbar"><h1>Super Admins</h1><div class="actions"><button id="refresh" type="button">Actualizar</button><button id="createAdmin" type="button">Crear Super Admin</button></div></div>
       <p id="message" role="status" aria-live="polite"></p>
+      <div class="list-filters" role="search" aria-label="Filtrar Super Admins">
+        <label for="adminSearch">Buscar Super Admin<input id="adminSearch" type="search" placeholder="Nombre o usuario"></label>
+        <label for="adminStatusFilter">Estado<select id="adminStatusFilter"><option value="">Todos</option><option value="ACTIVE">Activos</option><option value="INACTIVE">Inactivos</option></select></label>
+      </div>
+      <p id="adminResults" class="result-count" role="status" aria-live="polite"></p>
+      <p id="adminEmpty" role="status" hidden></p>
       <div class="table-scroll"><table><thead><tr><th>Nombre</th><th>Usuario</th><th>Estado</th><th>Último acceso</th><th>Cambio obligatorio</th><th>Creado</th><th>Acciones</th></tr></thead><tbody id="adminRows"></tbody></table></div>
     </main>
   </div>
