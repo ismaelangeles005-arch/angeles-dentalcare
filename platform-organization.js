@@ -30,10 +30,10 @@ async function startPlatformOrganization() {
     if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
         message("Selecciona una organización válida desde la lista de organizaciones.", true); return;
     }
-    let organization = null, busy = false;
+    let organization = null, busy = false, ownerSaving = false, ownerLoading = false, ownerCandidates = [];
     const date = value => value ? new Date(value).toLocaleString("es-DO") : "-";
     const load = async success => {
-        busy = true; el("refresh").disabled = true; el("toggleStatus").disabled = true;
+        busy = true; el("refresh").disabled = true; el("toggleStatus").disabled = true; el("changeOwner").disabled = true;
         message("Cargando organización...");
         try {
             const data = await DentalApi.getPlatformOrganization(id);
@@ -45,6 +45,7 @@ async function startPlatformOrganization() {
                 createdAt: date(data.createdAt), updatedAt: date(data.updatedAt),
                 totalUsers: data.summary.totalUsers, activeUsers: data.summary.activeUsers, inactiveUsers: data.summary.inactiveUsers })) el(key).textContent = value;
             el("organizationStatus").className = data.active ? "active" : "inactive";
+            el("changeOwner").textContent = data.owner ? "Cambiar propietario" : "Asignar propietario";
             el("ownerFields").hidden = !data.owner;
             el("ownerWarning").hidden = Boolean(data.owner);
             if (data.owner) {
@@ -63,7 +64,46 @@ async function startPlatformOrganization() {
             organization = null; el("organizationContent").hidden = true; el("toggleStatus").hidden = true;
             if (!redirectError(error)) message(error.status === 404 ? "Organización no encontrada."
                 : "No fue posible cargar la organización. Intenta nuevamente.", true);
-        } finally { busy = false; el("refresh").disabled = false; el("toggleStatus").disabled = false; }
+        } finally { busy = false; el("refresh").disabled = false; el("toggleStatus").disabled = false; el("changeOwner").disabled = !organization; }
+    };
+    el("changeOwner").onclick = async () => {
+        if (busy || ownerLoading || ownerSaving || !organization) return;
+        ownerLoading = true; ownerCandidates = [];
+        el("ownerCandidate").replaceChildren(); el("saveOwner").disabled = true;
+        el("ownerDialogMessage").textContent = "Cargando candidatos..."; el("ownerDialog").showModal();
+        try {
+            const data = await DentalApi.getPlatformOrganizationUsers(id);
+            const roles = organization.organizationType === "CLINIC" ? ["head_admin", "admin", "clinic_admin"]
+                : organization.organizationType === "INDEPENDENT" ? ["owner_doctor"] : [];
+            ownerCandidates = data.users.filter(user => user.active && roles.includes(user.role) && user.id !== data.ownerUserId);
+            for (const user of ownerCandidates) {
+                const option = document.createElement("option"); option.value = user.id;
+                option.textContent = `${user.fullName} (${user.username}) · ${user.role}`; el("ownerCandidate").append(option);
+            }
+            el("saveOwner").disabled = !ownerCandidates.length;
+            el("ownerDialogMessage").textContent = ownerCandidates.length ? "" : "No hay usuarios activos con un rol elegible para ser propietario.";
+        } catch (error) {
+            if (!redirectError(error)) el("ownerDialogMessage").textContent = "No fue posible cargar los candidatos. Cierra y vuelve a intentar.";
+        } finally { ownerLoading = false; }
+    };
+    const closeOwner = () => { if (!ownerSaving && !ownerLoading) { ownerCandidates = []; el("ownerDialog").close(); } };
+    el("cancelOwner").onclick = closeOwner;
+    el("ownerDialog").oncancel = event => { event.preventDefault(); closeOwner(); };
+    el("ownerForm").onsubmit = async event => {
+        event.preventDefault();
+        if (ownerSaving || ownerLoading || busy) return;
+        const candidate = ownerCandidates.find(user => user.id === el("ownerCandidate").value);
+        if (!candidate || !window.confirm(`Confirmar a ${candidate.fullName} (${candidate.username}) como propietario?`)) return;
+        ownerSaving = true; el("saveOwner").disabled = true;
+        try {
+            await DentalApi.setPlatformOrganizationOwner(id, candidate.id);
+            el("ownerDialog").close(); ownerCandidates = [];
+            await load("Propietario actualizado correctamente.");
+        } catch (error) {
+            if (!redirectError(error)) el("ownerDialogMessage").textContent = error.status === 404 || error.status === 409
+                ? "El usuario ya no está disponible o no cumple los requisitos. Cierra y actualiza los candidatos."
+                : "No fue posible confirmar el cambio. Actualiza la organización antes de reintentar.";
+        } finally { ownerSaving = false; el("saveOwner").disabled = !ownerCandidates.length; }
     };
     el("refresh").hidden = false;
     el("refresh").onclick = () => { if (!busy) return load(); };

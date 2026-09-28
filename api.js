@@ -587,6 +587,7 @@
             const suffix = query.toString();
             return request(`/platform/audit${suffix ? `?${suffix}` : ""}`);
         },
+        setPlatformOrganizationOwner: (id, userId) => request(`/platform/organizations/${encodeURIComponent(id)}/owner`, { method: "PATCH", body: JSON.stringify({ userId }) }),
         getPlatformStatus: () => request("/platform/status"),
         getPlatformOrganizations: () => request("/platform/organizations"),
         getPlatformOrganization: id => request(`/platform/organizations/${encodeURIComponent(id)}`),

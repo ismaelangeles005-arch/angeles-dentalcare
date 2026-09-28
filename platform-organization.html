@@ -140,7 +140,7 @@
             <div><dt>Estado</dt><dd id="organizationStatus"></dd></div><div><dt>ID de organización</dt><dd id="organizationId"></dd></div>
             <div><dt>Creación</dt><dd id="createdAt"></dd></div><div><dt>Última actualización</dt><dd id="updatedAt"></dd></div></dl>
         </section>
-        <section class="summary" aria-labelledby="ownerTitle"><h2 id="ownerTitle">Propietario</h2><p id="ownerWarning" hidden></p>
+        <section class="summary" aria-labelledby="ownerTitle"><div class="toolbar"><h2 id="ownerTitle">Propietario</h2><button id="changeOwner" type="button">Asignar propietario</button></div><p id="ownerWarning" hidden></p>
           <dl id="ownerFields" hidden><div><dt>Nombre completo</dt><dd id="ownerName"></dd></div><div><dt>Usuario</dt><dd id="ownerUsername"></dd></div><div><dt>Rol</dt><dd id="ownerRole"></dd></div><div><dt>Estado</dt><dd id="ownerActive"></dd></div></dl>
         </section>
         </div>
@@ -169,8 +169,13 @@
     <label>Confirmar PIN<input name="confirmPin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="new-password" required></label>
     <p id="pinError" class="form-error" role="alert"></p><div class="actions"><button id="cancelPin" type="button">Cancelar</button><button id="savePin" type="submit">Guardar PIN</button></div>
   </form></dialog>
-  <script src="api.js?v=platform4-3"></script>
+  <dialog id="ownerDialog" aria-labelledby="ownerDialogTitle"><h2 id="ownerDialogTitle">Seleccionar propietario</h2><form id="ownerForm">
+    <label>Nuevo propietario<select id="ownerCandidate" required></select></label>
+    <p id="ownerDialogMessage" role="status" aria-live="polite"></p>
+    <div class="actions"><button id="cancelOwner" type="button">Cancelar</button><button id="saveOwner" type="submit" disabled>Confirmar propietario</button></div>
+  </form></dialog>
+  <script src="api.js?v=platform4-5"></script>
   <script src="platform-users.js?v=platform4-3"></script>
-  <script src="platform-organization.js?v=platform4-2"></script>
+  <script src="platform-organization.js?v=platform4-5"></script>
 </body>
 </html>

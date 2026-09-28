@@ -406,6 +406,29 @@ router.patch("/organizations/:id/users/:userId/password/force-change", asyncHand
 }));
 
 
+router.patch("/organizations/:id/owner", asyncHandler(async (req, res) => {
+  const userId = req.body?.userId;
+  if (typeof userId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+    return res.status(400).json({ message: "Usuario objetivo no valido" });
+  }
+  await mutateOrganizationUser(req, res, async (client, org) => {
+    const user = (await client.query(`SELECT id, full_name, username, role, active FROM users
+      WHERE id = $1 AND organization_id = $2 AND deleted_at IS NULL AND active = true
+        AND role <> 'PLATFORM_SUPER_ADMIN' FOR UPDATE`, [userId, org.id])).rows[0];
+    if (!user) throw userError(404, "Usuario elegible no encontrado");
+    const roles = org.organization_type === "CLINIC" ? ["head_admin", "admin", "clinic_admin"]
+      : org.organization_type === "INDEPENDENT" ? ["owner_doctor"] : [];
+    if (!roles.includes(user.role)) throw userError(409, "El rol del usuario no permite asignarlo como propietario");
+    if (org.owner_user_id !== user.id) {
+      await client.query("UPDATE organizations SET owner_user_id = $2, updated_at = NOW() WHERE id = $1", [org.id, user.id]);
+      await audit(client, req, "platform_change_organization_owner", org.id,
+        { previousOwnerUserId: org.owner_user_id, targetUserId: user.id });
+    }
+    return { organizationId: org.id, owner: { id: user.id, fullName: user.full_name,
+      username: user.username, role: user.role, active: user.active } };
+  });
+}));
+
 router.get("/audit", asyncHandler(async (req, res) => {
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const organizationId = typeof req.query.organizationId === "string" ? req.query.organizationId.trim() : "";

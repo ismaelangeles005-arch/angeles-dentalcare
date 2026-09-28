@@ -33,6 +33,7 @@ async function startPlatformAudit() {
 
     const actionLabel = action => ({
         platform_create_organization: "Crear organización",
+        platform_change_organization_owner: "Cambiar propietario",
         platform_activate_organization: "Activar organización",
         platform_deactivate_organization: "Desactivar organización",
         platform_create_user: "Crear usuario",
