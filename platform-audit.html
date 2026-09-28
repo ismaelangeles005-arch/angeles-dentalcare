@@ -30,7 +30,84 @@
     .pager{justify-content:flex-end;margin-top:16px}
     .muted{color:#66707a}
     @media(max-width:640px){main{padding:14px}header{gap:12px}h1{font-size:19px}}
-  </style>
+
+    /* MAELVEN RESPONSIVE AUDIT V1 */
+    header img{max-width:190px;width:100%;height:auto}
+
+    .filters{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      align-items:end
+    }
+
+    .filters label{min-width:0}
+    .filters button{width:100%}
+
+    .table-scroll{
+      width:100%;
+      max-width:100%;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch
+    }
+
+    table{min-width:900px}
+
+    @media(max-width:800px){
+      main{padding:18px}
+      header{padding:16px}
+      header img{max-width:165px}
+
+      .filters{
+        grid-template-columns:repeat(2,minmax(0,1fr))
+      }
+
+      .toolbar{align-items:stretch}
+    }
+
+    @media(max-width:560px){
+      main{padding:14px}
+
+      header{
+        padding:14px;
+        align-items:flex-start
+      }
+
+      header img{max-width:145px}
+
+      header>div{
+        min-width:0;
+        flex:1 1 180px
+      }
+
+      header button{
+        flex:1 1 120px
+      }
+
+      .filters{
+        grid-template-columns:1fr;
+        padding:14px
+      }
+
+      .toolbar{
+        display:grid;
+        grid-template-columns:1fr
+      }
+
+      .toolbar button{width:100%}
+
+      .pager{
+        justify-content:center;
+        align-items:center
+      }
+
+      .pager button{flex:1 1 110px}
+      .pager .muted{
+        width:100%;
+        text-align:center;
+        order:-1
+      }
+    }
+</style>
 </head>
 <body>
   <p id="sessionError" role="status">Verificando sesión...</p>

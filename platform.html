@@ -21,7 +21,63 @@
     #formError{color:#a32929;margin:0}#sessionError{padding:24px}#details{margin-top:24px;border-top:1px solid #dce3e9;overflow-wrap:anywhere}
     @media(max-width:900px){#metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media(max-width:540px){main{padding:16px}#metrics{grid-template-columns:repeat(2,minmax(0,1fr))}header{gap:12px}h1{font-size:19px}}
-  </style>
+
+    /* MAELVEN RESPONSIVE PLATFORM V1 */
+    header img{max-width:190px;width:100%;flex:0 1 190px}
+    .toolbar>div{display:flex;gap:8px;flex-wrap:wrap}
+    .table-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    table{min-width:760px}
+    .metric{min-width:0}
+    .metric strong{word-break:normal;overflow-wrap:normal}
+
+    @media(max-width:900px){
+      main{padding:20px}
+      #metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+
+    @media(max-width:700px){
+      header{padding:16px;align-items:flex-start}
+      header img{max-width:160px}
+      header>div{min-width:0;flex:1 1 200px}
+      header>button{flex:0 0 auto}
+
+      #metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .toolbar{align-items:stretch}
+      .toolbar>div{width:100%}
+      .toolbar>div button{flex:1 1 150px}
+    }
+
+    @media(max-width:480px){
+      main{padding:14px}
+      header{padding:14px}
+      header img{max-width:145px}
+
+      #metrics{grid-template-columns:1fr}
+      .metric{padding:14px}
+
+      .toolbar>div{
+        display:grid;
+        grid-template-columns:1fr;
+        width:100%
+      }
+
+      .toolbar>div button{width:100%}
+
+      dialog{
+        width:calc(100% - 20px);
+        padding:18px;
+        margin:auto
+      }
+
+      .actions{
+        display:grid;
+        grid-template-columns:1fr;
+        width:100%
+      }
+
+      .actions button{width:100%}
+    }
+</style>
 </head>
 <body>
   <p id="sessionError" role="status">Verificando sesión...</p>

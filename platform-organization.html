@@ -23,7 +23,101 @@
     form,label,#doctorFields{display:grid;gap:10px}form{gap:16px}input,select{font:inherit;min-height:44px;width:100%;min-width:0;padding:10px;border:1px solid #aebbc7;border-radius:6px}
     [hidden]{display:none!important}.form-error{color:#a32929}#usersMessage{min-height:24px}
     @media(max-width:560px){main{padding:16px}.metrics{gap:8px}.metric{padding:12px;overflow-wrap:anywhere}dl{grid-template-columns:1fr}header{gap:12px}h1{font-size:22px}}
-  </style>
+
+    /* MAELVEN RESPONSIVE ORGANIZATION V1 */
+    .table-scroll{
+      width:100%;
+      max-width:100%;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch
+    }
+
+    #usersPanel table{min-width:1050px}
+    #usersRows td:last-child{min-width:360px}
+    #usersRows td:last-child button{margin:2px}
+
+    .tabs{flex-wrap:wrap}
+    .toolbar>.actions{align-items:center}
+
+    @media(max-width:800px){
+      main{padding:18px}
+      header{padding:16px}
+      header img{max-width:165px;width:100%;height:auto}
+
+      .metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+      dl{grid-template-columns:1fr}
+
+      .toolbar{
+        align-items:stretch;
+        gap:12px
+      }
+
+      .toolbar>.actions{
+        width:100%;
+        display:flex;
+        flex-wrap:wrap
+      }
+
+      .toolbar>.actions button{
+        flex:1 1 180px
+      }
+    }
+
+    @media(max-width:560px){
+      main{padding:14px}
+
+      header{
+        padding:14px;
+        align-items:flex-start
+      }
+
+      header img{max-width:145px}
+
+      header>div{
+        min-width:0;
+        flex:1 1 180px
+      }
+
+      h1{font-size:20px}
+
+      .metrics{grid-template-columns:1fr}
+      .metric{padding:14px}
+
+      .tabs{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        width:100%
+      }
+
+      .tabs button{width:100%}
+
+      .toolbar>.actions{
+        display:grid;
+        grid-template-columns:1fr;
+      }
+
+      .toolbar>.actions button{width:100%}
+
+      dialog{
+        width:calc(100% - 20px);
+        padding:18px;
+        margin:auto
+      }
+
+      dialog .actions{
+        display:grid;
+        grid-template-columns:1fr
+      }
+
+      dialog .actions button{width:100%}
+
+      #usersPanel .table-scroll{
+        margin-left:-14px;
+        margin-right:-14px;
+        width:calc(100% + 28px)
+      }
+    }
+</style>
 </head>
 <body>
   <p id="sessionMessage" role="status">Verificando sesión...</p>
