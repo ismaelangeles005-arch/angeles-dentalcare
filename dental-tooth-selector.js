@@ -1,40 +1,8 @@
 (function () {
     "use strict";
 
-    const TOOTH_MAP = [
-        ["PERMANENT_UPPER_RIGHT_THIRD_MOLAR", "1.8", "1"],
-        ["PERMANENT_UPPER_RIGHT_SECOND_MOLAR", "1.7", "2"],
-        ["PERMANENT_UPPER_RIGHT_FIRST_MOLAR", "1.6", "3"],
-        ["PERMANENT_UPPER_RIGHT_SECOND_PREMOLAR", "1.5", "4"],
-        ["PERMANENT_UPPER_RIGHT_FIRST_PREMOLAR", "1.4", "5"],
-        ["PERMANENT_UPPER_RIGHT_CANINE", "1.3", "6"],
-        ["PERMANENT_UPPER_RIGHT_LATERAL_INCISOR", "1.2", "7"],
-        ["PERMANENT_UPPER_RIGHT_CENTRAL_INCISOR", "1.1", "8"],
-        ["PERMANENT_UPPER_LEFT_CENTRAL_INCISOR", "2.1", "9"],
-        ["PERMANENT_UPPER_LEFT_LATERAL_INCISOR", "2.2", "10"],
-        ["PERMANENT_UPPER_LEFT_CANINE", "2.3", "11"],
-        ["PERMANENT_UPPER_LEFT_FIRST_PREMOLAR", "2.4", "12"],
-        ["PERMANENT_UPPER_LEFT_SECOND_PREMOLAR", "2.5", "13"],
-        ["PERMANENT_UPPER_LEFT_FIRST_MOLAR", "2.6", "14"],
-        ["PERMANENT_UPPER_LEFT_SECOND_MOLAR", "2.7", "15"],
-        ["PERMANENT_UPPER_LEFT_THIRD_MOLAR", "2.8", "16"],
-        ["PERMANENT_LOWER_LEFT_THIRD_MOLAR", "3.8", "17"],
-        ["PERMANENT_LOWER_LEFT_SECOND_MOLAR", "3.7", "18"],
-        ["PERMANENT_LOWER_LEFT_FIRST_MOLAR", "3.6", "19"],
-        ["PERMANENT_LOWER_LEFT_SECOND_PREMOLAR", "3.5", "20"],
-        ["PERMANENT_LOWER_LEFT_FIRST_PREMOLAR", "3.4", "21"],
-        ["PERMANENT_LOWER_LEFT_CANINE", "3.3", "22"],
-        ["PERMANENT_LOWER_LEFT_LATERAL_INCISOR", "3.2", "23"],
-        ["PERMANENT_LOWER_LEFT_CENTRAL_INCISOR", "3.1", "24"],
-        ["PERMANENT_LOWER_RIGHT_CENTRAL_INCISOR", "4.1", "25"],
-        ["PERMANENT_LOWER_RIGHT_LATERAL_INCISOR", "4.2", "26"],
-        ["PERMANENT_LOWER_RIGHT_CANINE", "4.3", "27"],
-        ["PERMANENT_LOWER_RIGHT_FIRST_PREMOLAR", "4.4", "28"],
-        ["PERMANENT_LOWER_RIGHT_SECOND_PREMOLAR", "4.5", "29"],
-        ["PERMANENT_LOWER_RIGHT_FIRST_MOLAR", "4.6", "30"],
-        ["PERMANENT_LOWER_RIGHT_SECOND_MOLAR", "4.7", "31"],
-        ["PERMANENT_LOWER_RIGHT_THIRD_MOLAR", "4.8", "32"]
-    ].map(([toothId, FDI, UNIVERSAL]) => ({ toothId, FDI, UNIVERSAL }));
+    const catalog = window.DentalToothCatalog;
+    const TOOTH_MAP = catalog.TOOTH_MAP;
 
     function escapeHtml(value) {
         if (window.DentalRoles?.escapeHtml) return window.DentalRoles.escapeHtml(value);
@@ -48,7 +16,9 @@
     }
 
     function createSelector(options) {
-        const selected = Array.isArray(options.initialSelected) ? [...options.initialSelected] : [];
+        const selected = Array.isArray(options.initialSelected) ? [...new Set(options.initialSelected.filter(catalog.isValidToothId))] : [];
+        let mode = "PERMANENT";
+        function dentitionMode() { return (options.dentitionModeId && document.getElementById(options.dentitionModeId)?.value) || mode; }
 
         function countMode() {
             return document.getElementById(options.countModeId)?.value || "";
@@ -75,10 +45,16 @@
             const grid = document.getElementById(options.gridId);
             if (!grid) return;
             const system = numberingSystem();
-            grid.innerHTML = TOOTH_MAP.map(tooth => `
+            let group = "";
+            grid.innerHTML = catalog.getTeethByDentition(dentitionMode()).map(tooth => {
+                const key = tooth.dentition + tooth.arch;
+                const heading = dentitionMode() === "MIXED" && key !== group
+                    ? '<strong style="grid-column:1/-1">' + (tooth.dentition === "PRIMARY" ? "Temporal" : "Permanente") + (tooth.arch === "UPPER" ? " superior" : " inferior") + '</strong>' : "";
+                group = key;
+                return heading + `
                 <button type="button" class="tooth-button ${selected.includes(tooth.toothId) ? "selected" : ""}"
                         onclick="${options.toggleFunctionName}('${tooth.toothId}')">${escapeHtml(tooth[system])}</button>
-            `).join("");
+            `; }).join("");
             syncHiddenInput();
         }
 
@@ -95,10 +71,16 @@
                     selected.push(toothId);
                 }
             });
+            if (selected.some(id => !catalog.getTeethByDentition(dentitionMode()).some(tooth => tooth.toothId === id))) {
+                mode = selected.every(id => catalog.getTooth(id).dentition === "PRIMARY") ? "PRIMARY" : "MIXED";
+                const control = options.dentitionModeId && document.getElementById(options.dentitionModeId);
+                if (control) control.value = mode;
+            }
             render();
         }
 
         function toggle(toothId) {
+            if (!catalog.isValidToothId(toothId) || !catalog.getTeethByDentition(dentitionMode()).some(tooth => tooth.toothId === toothId)) return;
             const mode = countMode();
             if (!mode) {
                 reset();
@@ -124,6 +106,13 @@
         }
 
         return {
+            setDentitionMode: value => {
+                if (!["PERMANENT", "PRIMARY", "MIXED"].includes(value)) return;
+                mode = value;
+                const control = options.dentitionModeId && document.getElementById(options.dentitionModeId);
+                if (control) control.value = value;
+                render();
+            },
             render,
             toggle,
             isValid,
@@ -136,6 +125,10 @@
     }
 
     window.DentalToothSelector = {
+        getTooth: catalog.getTooth,
+        getLabel: catalog.getLabel,
+        getTeethByDentition: catalog.getTeethByDentition,
+        validSurfaces: catalog.validSurfaces,
         toothMap: TOOTH_MAP,
         createSelector
     };

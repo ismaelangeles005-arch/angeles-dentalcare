@@ -3,7 +3,7 @@ const db = require("../db");
 const { writeAuditLog } = require("../utils/audit");
 const asyncHandler = require("../utils/asyncHandler");
 const { authenticate, allowRoles } = require("../middleware/auth");
-const { isValidToothId } = require("../utils/dentalTeeth");
+const { isValidToothId, isValidSurfaceForTooth, isValidCorrectionSurface } = require("../utils/dentalTeeth");
 
 const router = express.Router();
 
@@ -252,6 +252,10 @@ router.post(["/", "/:entryId/correct"], allowRoles("head_admin", "admin", "docto
       await client.query("ROLLBACK");
       return res.status(409).json({ message: "El original ya fue invalidado o tiene dependencias clínicas que requieren revisión" });
     }
+  }
+  if (!(original ? isValidCorrectionSurface(toothId, surface, original) : isValidSurfaceForTooth(toothId, surface))) {
+    await client.query("ROLLBACK");
+    return res.status(400).json({ message: "La superficie no corresponde a la pieza. Conserva la superficie historica o selecciona una superficie anatomica valida." });
   }
   const patient = await findPatient(req, patientId, client);
   if (!patient) {

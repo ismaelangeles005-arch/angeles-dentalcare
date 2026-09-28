@@ -3,7 +3,7 @@ const db = require("../db");
 const asyncHandler = require("../utils/asyncHandler");
 const { authenticate, allowRoles } = require("../middleware/auth");
 const { writeAuditLog } = require("../utils/audit");
-const { isValidToothId } = require("../utils/dentalTeeth");
+const { isValidToothId, isValidSurfaceForTooth } = require("../utils/dentalTeeth");
 
 const router = express.Router();
 router.use(authenticate, allowRoles("head_admin", "admin", "doctor"));
@@ -158,7 +158,7 @@ router.post("/:planId/items", asyncHandler(async (req, res) => {
     }
     if (toothId !== null && !isValidToothId(toothId)) reject("Pieza dental invalida");
     if (toothId !== null) toothId = toothId.trim();
-    if (surface !== null && (!surfaces.has(surface) || toothId === null)) reject("Superficie dental invalida o sin pieza");
+    if (surface !== null && (!surfaces.has(surface) || !isValidSurfaceForTooth(toothId, surface))) reject("Superficie dental invalida o sin pieza");
     const procedures = await client.query(`
       SELECT id, name, category_name, base_price FROM procedure_catalog
       WHERE id = $1 AND organization_id = $2 AND active = true AND deleted_at IS NULL

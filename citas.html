@@ -613,6 +613,9 @@
                                 <option value="FDI">FDI</option>
                                 <option value="UNIVERSAL">Universal</option>
                             </select>
+                            <select id="toothDentition" aria-label="Dentición" onchange="renderToothSelector()">
+                                <option value="PERMANENT">Permanente</option><option value="PRIMARY">Temporal</option><option value="MIXED">Mixta</option>
+                            </select>
                         </div>
                         <input type="hidden" id="piezaDental">
                         <div class="tooth-grid" id="toothGrid"></div>
@@ -759,7 +762,8 @@
 
     <script src="api.js?v=20260626e"></script>
     <script src="roles.js?v=20260626e"></script>
-    <script src="dental-tooth-selector.js?v=20260903a"></script>
+    <script src="dental-tooth-catalog.js?v=odontogram-v2"></script>
+    <script src="dental-tooth-selector.js?v=odontogram-v2"></script>
 
     <script type="text/plain" data-dental-page='{"active":"citas"}'>
 
@@ -776,6 +780,7 @@
         let quickFilter = "todas";
         const appointmentToothSelector = DentalToothSelector.createSelector({
             gridId: "toothGrid",
+            dentitionModeId: "toothDentition",
             countModeId: "toothCountMode",
             numberingSystemId: "toothNumberingSystem",
             hiddenInputId: "piezaDental",

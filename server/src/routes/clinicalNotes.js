@@ -3,6 +3,7 @@ const db = require("../db");
 const asyncHandler = require("../utils/asyncHandler");
 const { authenticate, allowRoles } = require("../middleware/auth");
 const { writeAuditLog } = require("../utils/audit");
+const { cleanToothSelections } = require("../utils/dentalTeeth");
 
 const router = express.Router();
 
@@ -34,15 +35,6 @@ const AREA_ALIASES = new Map([
 function normalizeDentalArea(value) {
   const clean = typeof value === "string" ? value.trim() : "";
   return AREA_ALIASES.get(clean) || clean;
-}
-
-function cleanToothSelections(value) {
-  const selections = Array.isArray(value) ? value : [];
-  return selections.map(item => ({
-    toothId: String(item?.toothId || "").trim(),
-    numberingSystem: String(item?.numberingSystem || "FDI") === "UNIVERSAL" ? "UNIVERSAL" : "FDI",
-    displayCode: String(item?.displayCode || "").trim()
-  })).filter(item => item.toothId && item.displayCode).slice(0, 32);
 }
 
 function cleanPharmacotherapy(value) {
@@ -230,7 +222,7 @@ router.post("/", allowRoles("head_admin", "admin", "doctor"), asyncHandler(async
     return res.status(400).json({ message: "Selecciona un area odontologica valida" });
   }
 
-  if (cleanTooth && !TOOTH_PATTERN.test(cleanTooth)) {
+  if (!cleanSelections.length && cleanTooth && !TOOTH_PATTERN.test(cleanTooth)) {
     return res.status(400).json({ message: "La pieza dental no es valida" });
   }
 

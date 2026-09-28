@@ -7,5 +7,5 @@ module.exports = Object.freeze([
   "usuarios.html", "auditoria.html", "cambiar-password.html", "facturacion.html",
   "procedimientos.html", "doctor.html", "images/logo.svg",
   "images/maelven-dental-logo.svg", "images/maelven-dental-favicon.svg",
-  "images/logo_files/css2", "styles.css", "roles.js", "dental-tooth-selector.js", "api.js"
+  "images/logo_files/css2", "styles.css", "roles.js", "dental-tooth-catalog.js", "dental-tooth-selector.js", "api.js"
 ]);

@@ -469,7 +469,7 @@
 
         .patients-page .odontogram-tooth-grid {
             display: grid;
-            grid-template-columns: repeat(16, minmax(32px, 1fr));
+            grid-template-columns: repeat(16, minmax(0, 1fr));
             gap: 6px;
         }
 
@@ -552,7 +552,10 @@
 
         @media (max-width: 900px) {
             .patients-page .odontogram-layout { grid-template-columns: 1fr; }
-            .patients-page .odontogram-tooth-grid { grid-template-columns: repeat(8, minmax(34px, 1fr)); }
+            .patients-page .odontogram-tooth-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+        }
+        @media(max-width:480px) {
+            .patients-page .odontogram-tooth-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
         }
 
         .patients-page .upload-panel {
@@ -856,6 +859,11 @@
                 <section class="clinical-panel" data-clinical-panel="odontograma" hidden>
                     <div class="odontogram-toolbar">
                         <strong>Odontograma clínico</strong>
+                        <label>Dentición
+                            <select id="odontogramDentition" onchange="renderOdontogramView()">
+                                <option value="PERMANENT">Permanente</option><option value="PRIMARY">Temporal</option><option value="MIXED">Mixta</option>
+                            </select>
+                        </label>
                         <label>
                             Sistema dental
                             <select id="odontogramNumberingSystem" onchange="renderOdontogramView()">
@@ -867,12 +875,18 @@
                     <div class="odontogram-layout">
                         <div>
                             <section class="odontogram-arch">
-                                <span class="odontogram-arch-title">Superior</span>
+                                <span class="odontogram-arch-title">Permanente superior</span>
                                 <div class="odontogram-tooth-grid" id="odontogramUpperGrid"></div>
                             </section>
                             <section class="odontogram-arch">
-                                <span class="odontogram-arch-title">Inferior</span>
+                                <span class="odontogram-arch-title">Permanente inferior</span>
                                 <div class="odontogram-tooth-grid" id="odontogramLowerGrid"></div>
+                            </section>
+                            <section class="odontogram-arch" hidden>
+                                <span class="odontogram-arch-title">Temporal superior</span><div class="odontogram-tooth-grid" id="odontogramPrimaryUpperGrid"></div>
+                            </section>
+                            <section class="odontogram-arch" hidden>
+                                <span class="odontogram-arch-title">Temporal inferior</span><div class="odontogram-tooth-grid" id="odontogramPrimaryLowerGrid"></div>
                             </section>
                         </div>
                         <aside class="odontogram-detail" id="odontogramDetail">
@@ -931,6 +945,9 @@
                                 <select id="clinicalToothNumberingSystem" onchange="renderClinicalToothSelector()">
                                     <option value="FDI">FDI</option>
                                     <option value="UNIVERSAL">Universal</option>
+                                </select>
+                                <select id="clinicalDentition" aria-label="Dentición" onchange="renderClinicalToothSelector()">
+                                    <option value="PERMANENT">Permanente</option><option value="PRIMARY">Temporal</option><option value="MIXED">Mixta</option>
                                 </select>
                             </div>
                             <input type="hidden" id="clinicalToothNumber">
@@ -999,7 +1016,8 @@
 
     <script src="api.js?v=20260626e"></script>
     <script src="roles.js?v=20260626e"></script>
-    <script src="dental-tooth-selector.js?v=20260903a"></script>
+    <script src="dental-tooth-catalog.js?v=odontogram-v2"></script>
+    <script src="dental-tooth-selector.js?v=odontogram-v2"></script>
 
     <script type="text/plain" data-dental-page='{"active":"pacientes"}'>
 
@@ -1026,6 +1044,7 @@
         let previewObjectUrl = "";
         const clinicalToothSelector = DentalToothSelector.createSelector({
             gridId: "clinicalToothGrid",
+            dentitionModeId: "clinicalDentition",
             countModeId: "clinicalToothCountMode",
             numberingSystemId: "clinicalToothNumberingSystem",
             hiddenInputId: "clinicalToothNumber",
@@ -1642,6 +1661,9 @@
             document.getElementById("clinicalHistoryList").innerHTML = "";
             document.getElementById("odontogramUpperGrid").innerHTML = "";
             document.getElementById("odontogramLowerGrid").innerHTML = "";
+            document.getElementById("odontogramPrimaryUpperGrid").innerHTML = "";
+            document.getElementById("odontogramPrimaryLowerGrid").innerHTML = "";
+            document.getElementById("odontogramDentition").value = "PERMANENT";
             document.getElementById("odontogramDetail").innerHTML = '<div class="empty-state">Selecciona una pieza para ver su información clínica.</div>';
             document.getElementById("clinicalUploadForm").reset();
             document.getElementById("clinicalNoteForm").reset();
@@ -1687,10 +1709,34 @@
         }
 
         function renderOdontogramView() {
-            const teeth = DentalToothSelector.toothMap || [];
-            renderOdontogramArch("odontogramUpperGrid", teeth.slice(0, 16));
-            renderOdontogramArch("odontogramLowerGrid", teeth.slice(16));
+            const mode = document.getElementById("odontogramDentition").value;
+            const teeth = DentalToothSelector.getTeethByDentition(mode);
+            if (!teeth.some(tooth => tooth.toothId === selectedOdontogramToothId)) selectedOdontogramToothId = null;
+            for (const [id, dentition, arch] of [
+                ["odontogramUpperGrid", "PERMANENT", "UPPER"], ["odontogramLowerGrid", "PERMANENT", "LOWER"],
+                ["odontogramPrimaryUpperGrid", "PRIMARY", "UPPER"], ["odontogramPrimaryLowerGrid", "PRIMARY", "LOWER"]
+            ]) {
+                const group = teeth.filter(tooth => tooth.dentition === dentition && tooth.arch === arch);
+                document.getElementById(id).closest("section").hidden = !group.length;
+                renderOdontogramArch(id, group);
+            }
             renderOdontogramDetail();
+        }
+
+        function superficiesPiezaOdontograma() {
+            const valid = DentalToothSelector.validSurfaces(selectedOdontogramToothId);
+            return ODONTOGRAM_SURFACES.filter(surface => !surface.value || valid.includes(surface.value));
+        }
+
+        function preservarSuperficieHistorica(select, entry) {
+            if (!entry.surface || DentalToothSelector.validSurfaces(entry.tooth_id).includes(entry.surface)) return;
+            const option = document.createElement("option");
+            option.value = entry.surface;
+            option.textContent = (ODONTOGRAM_SURFACES.find(item => item.value === entry.surface)?.label || entry.surface) + " (histórica)";
+            select.append(option);
+            select.dataset.historicalSurface = entry.surface;
+            select.value = entry.surface;
+            select.onchange = () => { if (select.value !== entry.surface) { option.remove(); delete select.dataset.historicalSurface; } };
         }
 
         function seleccionarPiezaOdontograma(toothId) {
@@ -1769,7 +1815,7 @@
                         <label>
                             Superficie
                             <select name="surface">
-                                ${ODONTOGRAM_SURFACES.map(surface => `
+                                ${superficiesPiezaOdontograma().map(surface => `
                                     <option value="${DentalRoles.escapeHtml(surface.value)}">${DentalRoles.escapeHtml(surface.label)}</option>
                                 `).join("")}
                             </select>
@@ -1813,7 +1859,7 @@
                         <label>
                             Superficie
                             <select name="surface">
-                                ${ODONTOGRAM_SURFACES.map(surface => `
+                                ${superficiesPiezaOdontograma().map(surface => `
                                     <option value="${DentalRoles.escapeHtml(surface.value)}">${DentalRoles.escapeHtml(surface.label)}</option>
                                 `).join("")}
                             </select>
@@ -1839,7 +1885,7 @@
                     <label>
                         Superficie
                         <select id="odontogramSurface">
-                            ${ODONTOGRAM_SURFACES.map(surface => `
+                            ${superficiesPiezaOdontograma().map(surface => `
                                 <option value="${DentalRoles.escapeHtml(surface.value)}">${DentalRoles.escapeHtml(surface.label)}</option>
                             `).join("")}
                         </select>
@@ -1868,7 +1914,7 @@
                     <label>
                         Superficie
                         <select id="odontogramDiagnosisSurface">
-                            ${ODONTOGRAM_SURFACES.map(surface => `
+                            ${superficiesPiezaOdontograma().map(surface => `
                                 <option value="${DentalRoles.escapeHtml(surface.value)}">${DentalRoles.escapeHtml(surface.label)}</option>
                             `).join("")}
                         </select>
@@ -1989,7 +2035,11 @@
         }
 
         async function precargarCorreccionOdontograma(entry, reason) {
-            const set = (id, value) => { document.getElementById(id).value = value || ""; };
+            const set = (id, value) => {
+                const input = document.getElementById(id);
+                if (id === "odontogramSurface" || id === "odontogramDiagnosisSurface") preservarSuperficieHistorica(input, entry);
+                input.value = value || "";
+            };
             let form;
             if (entry.entry_type === "EXISTING_CONDITION") {
                 form = document.getElementById("odontogramConditionForm");
@@ -2010,6 +2060,7 @@
                 details.open = true;
                 await cargarProcedimientosOdontograma(details);
                 if (!form.isConnected) return;
+                preservarSuperficieHistorica(form.elements.namedItem("surface"), entry);
                 form.elements.namedItem("surface").value = entry.surface || "";
                 form.elements.namedItem("notes").value = entry.notes || "";
                 const procedure = form.elements.namedItem("procedure_id");
@@ -2051,7 +2102,7 @@
             const surface = document.getElementById("odontogramSurface");
             if (!surface) return;
 
-            if (ODONTOGRAM_FULL_TOOTH_CONDITIONS.has(conditionCode)) {
+            if (ODONTOGRAM_FULL_TOOTH_CONDITIONS.has(conditionCode) && !surface.dataset.historicalSurface) {
                 surface.value = "";
                 surface.disabled = true;
             } else {

@@ -159,17 +159,17 @@ test("provision transaction creates, repeats without reset, conflicts/failures r
   assert(fresh.calls.includes("COMMIT"));
 });
 
-test("all 24 migrations appear once in dependency order", () => {
+test("all 26 migrations appear once in dependency order", () => {
   const dir = path.join(root, "server/database");
   const names = JSON.parse(fs.readFileSync(path.join(dir, "migrations.json"), "utf8"));
   const actual = fs.readdirSync(dir).filter(name => /^migration_.*\.sql$/.test(name));
-  assert.equal(names.length, 25); assert.deepEqual([...names].sort(), actual.sort());
+  assert.equal(names.length, 26); assert.deepEqual([...names].sort(), actual.sort());
   for (const [first, second] of [
     ["procedures_billing", "billing_payments_discounts"], ["procedures_billing", "billing_statuses"],
     ["billing_payments_discounts", "organizations_multi_mode"], ["head_admin_users", "organizations_multi_mode"],
     ["organizations_multi_mode", "pin_login"], ["clinical_evolution", "clinical_record_upgrade"],
     ["patient_profiles", "dominican_timezone"], ["odontogram_entries", "treatment_plans"],
-    ["treatment_plans", "treatment_plan_acceptances"]
+    ["treatment_plans", "treatment_plan_acceptances"], ["treatment_plan_acceptances", "odontogram_primary_teeth"]
   ]) assert(names.indexOf(`migration_${first}.sql`) < names.indexOf(`migration_${second}.sql`));
 });
 
@@ -179,7 +179,7 @@ test("migration runner fail-fast simulated; NO psql/Docker execution", { skip: p
     const result = spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", wrapper,
       "-FailAt", String(failAt), ...(docker ? ["-DockerPath"] : [])], { encoding: "utf8" });
     const calls = (result.stdout.match(/MOCK_SQL/g) || []).length;
-    assert.equal(calls, failAt || 26, result.stderr);
+    assert.equal(calls, failAt || 27, result.stderr);
     assert.equal(result.status === 0, failAt === 0, result.stderr);
     if (failAt) assert.match(result.stderr, /Fallo SQL/);
   }

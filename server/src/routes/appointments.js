@@ -3,6 +3,7 @@ const db = require("../db");
 const asyncHandler = require("../utils/asyncHandler");
 const { authenticate, allowRoles } = require("../middleware/auth");
 const { writeAuditLog } = require("../utils/audit");
+const { cleanToothSelections } = require("../utils/dentalTeeth");
 
 const router = express.Router();
 
@@ -28,19 +29,6 @@ const AREA_ALIASES = new Map([
 function normalizeDentalArea(value) {
   const clean = typeof value === "string" ? value.trim() : "";
   return AREA_ALIASES.get(clean) || clean;
-}
-
-function cleanToothSelections(value) {
-  const selections = Array.isArray(value) ? value : [];
-  return selections
-    .filter(item => item && typeof item === "object")
-    .map(item => ({
-      toothId: String(item.toothId || "").trim(),
-      numberingSystem: String(item.numberingSystem || "FDI").trim() === "UNIVERSAL" ? "UNIVERSAL" : "FDI",
-      displayCode: String(item.displayCode || "").trim()
-    }))
-    .filter(item => item.toothId && item.displayCode)
-    .slice(0, 32);
 }
 
 function validToothCount(mode, selections) {
@@ -169,7 +157,7 @@ router.post("/", allowRoles("head_admin", "admin", "recepcion", "doctor"), async
   if (cleanProcedure.length > 160 || cleanDetail.length > 500) {
     return res.status(400).json({ message: "Los datos clínicos superan el tamaño permitido" });
   }
-  if (cleanTooth && !/^([1-4]\.[1-8]|[1-4][1-8]|[1-9]|[12][0-9]|3[0-2])$/.test(cleanTooth)) {
+  if (!cleanSelections.length && cleanTooth && !/^([1-4]\.[1-8]|[1-4][1-8]|[1-9]|[12][0-9]|3[0-2])$/.test(cleanTooth)) {
     return res.status(400).json({ message: "La pieza dental no es valida" });
   }
 
