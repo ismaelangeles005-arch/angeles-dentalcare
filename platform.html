@@ -10,7 +10,7 @@
     header{background:white;border-bottom:1px solid #dce3e9;padding:20px 4%;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
     header img{width:190px;height:auto}header div{flex:1}h1{font-size:22px;margin:0 0 8px}h2{font-size:19px}p{line-height:1.5}
     main{max-width:1280px;margin:auto;padding:24px}button,input,select{font:inherit;min-height:42px;border:1px solid #aebbc7;border-radius:6px;padding:10px}
-    button{cursor:pointer;background:white;color:#17212e}button.primary{background:#2563eb;color:white;border-color:#2563eb}button:disabled{opacity:.6;cursor:wait}
+    button{cursor:pointer;background:white;color:#17212e}button.primary{background:#2563eb;color:white;border-color:#2563eb}.button-link{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px;border:1px solid #aebbc7;border-radius:6px;background:white;color:#17212e;text-decoration:none}.button-link:hover{background:#f8fafc}.button-link:focus-visible{outline:3px solid #16816a;outline-offset:3px}button:disabled{opacity:.6;cursor:wait}
     :focus-visible{outline:3px solid #16816a;outline-offset:3px}#metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:20px 0}
     .metric{background:white;border:1px solid #dce3e9;border-radius:6px;padding:16px;overflow-wrap:anywhere}.metric strong{display:block;font-size:26px;margin-top:10px;color:#146854}
     .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.table-scroll{overflow:auto;background:white;border:1px solid #dce3e9}
@@ -86,7 +86,7 @@
     <main>
       <p id="message" role="status" aria-live="polite"></p>
       <section id="metrics" aria-label="Resumen de organizaciones"></section>
-      <section aria-labelledby="organizationsTitle"><div class="toolbar"><h2 id="organizationsTitle">Organizaciones</h2><div><a href="platform-admins.html">Super Admins</a> <button id="audit" type="button">Auditoría</button> <button id="refresh" type="button">Actualizar</button> <button id="newOrganization" class="primary" type="button">Nueva organización</button></div></div>
+      <section aria-labelledby="organizationsTitle"><div class="toolbar"><h2 id="organizationsTitle">Organizaciones</h2><div><a class="button-link" href="platform-admins.html">Super Admins</a> <button id="audit" type="button">Auditoría</button> <button id="refresh" type="button">Actualizar</button> <button id="newOrganization" class="primary" type="button">Nueva organización</button></div></div>
         <div class="table-scroll"><table><thead><tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th>Creación</th><th>Actualización</th><th>Acciones</th></tr></thead><tbody id="organizations"></tbody></table></div>
       </section>
     </main>
