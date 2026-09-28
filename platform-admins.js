@@ -33,7 +33,8 @@ async function startPlatformAdmins() {
             for (const user of data.admins) {
                 const row = document.createElement('tr');
                 const cell = text => { const td = document.createElement('td'); td.textContent = text; row.append(td); return td; };
-                cell(`${user.fullName}${user.id === actor.id ? ' · Tú' : ''}`); cell(user.username); cell(user.active ? 'Activo' : 'Inactivo');
+                cell(`${user.fullName}${user.id === actor.id ? ' · Tú' : ''}`).className = user.id === actor.id ? 'admin-current' : '';
+                cell(user.username); cell(user.active ? 'Activo' : 'Inactivo').className = user.active ? 'admin-active' : 'admin-inactive';
                 cell(date(user.lastLoginAt)); cell(user.mustChangePassword ? 'Sí' : 'No'); cell(date(user.createdAt));
                 const actions = cell('');
                 const button = (label, action) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.onclick = action; actions.append(b); };

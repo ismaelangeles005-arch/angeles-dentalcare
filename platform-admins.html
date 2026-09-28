@@ -11,19 +11,28 @@
     main{max-width:1200px;margin:auto;padding:24px}h1{font-size:24px}h2{font-size:19px}a{color:#1759b5}nav,.actions,.toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.toolbar{justify-content:space-between}
     button{font:inherit;min-height:44px;padding:10px 16px;border:1px solid #aebbc7;border-radius:6px;background:white;color:#17212e;cursor:pointer}button:disabled{opacity:.6;cursor:default}:focus-visible{outline:3px solid #16816a;outline-offset:3px}
     #sessionMessage{padding:24px}#message{min-height:24px;line-height:1.5}[data-error="true"],#formError{color:#a32929}[hidden]{display:none!important}
-    .table-scroll{width:100%;max-width:100%;overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:1100px;background:white}th,td{padding:12px;text-align:left;border-bottom:1px solid #dce3e9;white-space:nowrap;word-break:normal;overflow-wrap:normal;vertical-align:top}th:first-child,td:first-child{min-width:180px;white-space:normal}th:nth-child(2),td:nth-child(2){min-width:160px}th:nth-child(3),td:nth-child(3){min-width:100px}td:last-child{min-width:310px;white-space:normal}td button{margin:2px;word-break:normal;overflow-wrap:normal}
+    .table-scroll{width:100%;max-width:100%;overflow:visible}table{border-collapse:collapse;table-layout:fixed;width:100%;background:white}th,td{padding:12px;text-align:left;border-bottom:1px solid #dce3e9;white-space:normal;word-break:normal;overflow-wrap:break-word;vertical-align:top;line-height:1.5}th{font-size:13px;overflow-wrap:normal}th:nth-child(1){width:17%}th:nth-child(2){width:14%}th:nth-child(3){width:9%}th:nth-child(4){width:13%}th:nth-child(5){width:12%}th:nth-child(6){width:12%}th:nth-child(7){width:23%}td button{display:block;width:100%;margin:0 0 8px;white-space:normal;word-break:normal;overflow-wrap:normal}td button:last-child{margin-bottom:0}.admin-current{font-weight:bold;color:#1759b5}.admin-active{color:#146854}.admin-inactive{color:#87351e}
     dialog{border:1px solid #aebbc7;border-radius:8px;padding:24px;width:min(520px,calc(100% - 24px));max-height:90vh;overflow:auto}dialog::backdrop{background:#17212e88}form,label{display:grid;gap:10px}form{gap:16px}input{font:inherit;width:100%;min-width:0;padding:10px;min-height:44px;border:1px solid #aebbc7;border-radius:6px}
     /* MAELVEN RESPONSIVE ADMINS V1 */
     @media(max-width:560px){main,header{padding:14px}header img{width:145px}h1{font-size:20px}.toolbar .actions{width:100%}.toolbar button{flex:1}dialog{padding:18px}dialog .actions{display:grid;grid-template-columns:1fr}dialog button{width:100%}}
     /* MAELVEN RESPONSIVE ADMINS CARDS */
-    @media(max-width:560px){
-      .table-scroll{overflow-x:visible}
+    @media(max-width:1099px){
       table{display:block;min-width:0;background:transparent}
       thead{display:none}
       #adminRows{display:grid;gap:16px;width:100%}
-      #adminRows tr{display:block;min-width:0;background:white;border:1px solid #dce3e9;border-radius:6px;padding:4px 14px}
-      #adminRows td{display:block;width:100%;min-width:0;padding:12px 0;white-space:normal;word-break:normal;overflow-wrap:anywhere}
-      #adminRows td::before{display:block;margin-bottom:6px;color:#526271;font-size:13px;font-weight:bold;overflow-wrap:normal}
+      #adminRows tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:"name name status" "username username username" "login change created" "actions actions actions";gap:16px 24px;min-width:0;background:white;border:1px solid #dce3e9;border-radius:6px;padding:24px}
+      #adminRows td{display:block;min-width:0;padding:0;border:0;white-space:normal;word-break:normal;overflow-wrap:break-word}
+      #adminRows td::before{display:block;margin-bottom:6px;color:#526271;font-size:13px;font-weight:normal;overflow-wrap:normal}
+      #adminRows td:nth-child(1){grid-area:name;font-size:18px;font-weight:bold}
+      #adminRows td:nth-child(2){grid-area:username;margin-top:-8px}
+      #adminRows td:nth-child(3){grid-area:status;justify-self:end;align-self:start;border:1px solid currentColor;border-radius:6px;padding:8px 14px;white-space:nowrap;font-weight:bold}
+      #adminRows .admin-active{background:#edf8f2}
+      #adminRows .admin-inactive{background:#fff2ea}
+      #adminRows td:nth-child(4){grid-area:login}
+      #adminRows td:nth-child(5){grid-area:change}
+      #adminRows td:nth-child(6){grid-area:created}
+      #adminRows td:nth-child(7){grid-area:actions;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;border-top:1px solid #dce3e9;padding-top:16px}
+      #adminRows td:nth-child(7)::before{grid-column:1/-1;margin:0}
       #adminRows td:nth-child(1)::before{content:"Nombre"}
       #adminRows td:nth-child(2)::before{content:"Usuario"}
       #adminRows td:nth-child(3)::before{content:"Estado"}
@@ -31,8 +40,12 @@
       #adminRows td:nth-child(5)::before{content:"Cambio obligatorio"}
       #adminRows td:nth-child(6)::before{content:"Creado"}
       #adminRows td:nth-child(7)::before{content:"Acciones"}
-      #adminRows td:last-child{border-bottom:0}
-      #adminRows td button{display:block;width:100%;margin:8px 0 0;white-space:normal;overflow-wrap:normal}
+      #adminRows td button{width:100%;margin:0;min-width:0;white-space:normal;overflow-wrap:normal}
+    }
+    @media(max-width:699px){
+      #adminRows tr{grid-template-columns:minmax(0,1fr);grid-template-areas:"name" "username" "status" "login" "change" "created" "actions";gap:16px;padding:18px}
+      #adminRows td:nth-child(3){justify-self:start}
+      #adminRows td:nth-child(7){grid-template-columns:minmax(0,1fr)}
     }
   </style>
 </head>
