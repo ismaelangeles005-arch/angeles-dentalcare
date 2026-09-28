@@ -42,6 +42,12 @@
 
     .filters label{min-width:0}
     .filters button{width:100%}
+    .filters input,.filters select{width:100%;min-width:0}
+    .filter-actions{display:flex;gap:12px;flex-wrap:wrap;grid-column:1/-1}
+    .filter-actions button{width:auto;flex:0 1 auto}
+    .toolbar-actions{display:flex;gap:12px;flex-wrap:wrap}
+    :focus-visible{outline:3px solid #16816a;outline-offset:3px}
+    @media(max-width:560px){.filter-actions,.toolbar-actions{display:grid;grid-template-columns:minmax(0,1fr);width:100%}.filter-actions button{width:100%}}
 
     .table-scroll{
       width:100%;
@@ -161,6 +167,10 @@
           <input id="actorFilter" maxlength="160" placeholder="Usuario o nombre">
         </label>
 
+        <label>Usuario objetivo
+          <input id="targetUserFilter" maxlength="36" placeholder="ID de usuario (UUID)">
+        </label>
+
         <label>Desde
           <input id="fromFilter" type="date">
         </label>
@@ -169,13 +179,18 @@
           <input id="toFilter" type="date">
         </label>
 
-        <button id="applyFilters" class="primary" type="button">Aplicar</button>
-        <button id="clearFilters" type="button">Limpiar</button>
+        <div class="filter-actions">
+          <button id="applyFilters" class="primary" type="button">Aplicar filtros</button>
+          <button id="clearFilters" type="button">Limpiar filtros</button>
+        </div>
       </section>
 
       <div class="toolbar">
         <h2>Actividad administrativa</h2>
-        <button id="refresh" type="button">Actualizar</button>
+        <div class="toolbar-actions">
+          <button id="refresh" type="button">Actualizar</button>
+          <button id="exportCsv" type="button" disabled>Exportar CSV</button>
+        </div>
       </div>
 
       <div class="table-scroll">
@@ -186,7 +201,7 @@
               <th>Organización</th>
               <th>Actor</th>
               <th>Acción</th>
-              <th>Usuario afectado</th>
+              <th>Usuario objetivo</th>
             </tr>
           </thead>
           <tbody id="events"></tbody>
@@ -194,9 +209,9 @@
       </div>
 
       <div class="pager">
-        <button id="previous" type="button">Anterior</button>
-        <span id="pageInfo" class="muted"></span>
-        <button id="next" type="button">Siguiente</button>
+        <button id="previous" type="button" disabled>Anterior</button>
+        <span id="pageInfo" class="muted" role="status" aria-live="polite"></span>
+        <button id="next" type="button" disabled>Siguiente</button>
       </div>
     </main>
   </div>

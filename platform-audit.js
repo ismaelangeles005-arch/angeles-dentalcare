@@ -22,6 +22,17 @@ async function startPlatformAudit() {
     const pageSize = 50;
     let offset = 0;
     let loading = false;
+    let exporting = false;
+    let loaded = false;
+    let hasMore = false;
+    let appliedFilters = {};
+
+    const updateControls = () => {
+        for (const id of ["refresh", "applyFilters", "clearFilters"]) el(id).disabled = loading || exporting;
+        el("exportCsv").disabled = loading || exporting || !loaded;
+        el("previous").disabled = loading || exporting || offset === 0;
+        el("next").disabled = loading || exporting || !hasMore;
+    };
 
     const message = (text, error = false) => {
         el("message").textContent = text;
@@ -104,21 +115,24 @@ async function startPlatformAudit() {
             organizationId: el("organizationFilter").value,
             action: el("actionFilter").value,
             actor: el("actorFilter").value.trim(),
+            targetUserId: el("targetUserFilter").value.trim(),
             from: from ? `${from}T00:00:00` : "",
-            to: to ? `${to}T23:59:59.999` : "",
-            limit: pageSize,
-            offset
+            to: to ? `${to}T23:59:59.999` : ""
         };
     }
 
-    async function refresh() {
-        if (loading) return;
+    async function refresh(filters = appliedFilters, nextOffset = offset) {
+        if (loading || exporting) return;
         loading = true;
-        el("refresh").disabled = true;
-        el("applyFilters").disabled = true;
+        updateControls();
+        message("Cargando auditoría...");
 
         try {
-            const result = await DentalApi.getPlatformAudit(buildFilters());
+            const result = await DentalApi.getPlatformAudit({ ...filters, limit: pageSize, offset: nextOffset });
+            appliedFilters = { ...filters };
+            offset = nextOffset;
+            loaded = true;
+            hasMore = result.events.length === pageSize && result.pagination.hasMore;
             el("events").replaceChildren();
 
             if (!result.events.length) {
@@ -152,46 +166,91 @@ async function startPlatformAudit() {
                 el("events").append(row);
             }
 
-            el("previous").disabled = offset === 0;
-            el("next").disabled = !result.pagination.hasMore;
             el("pageInfo").textContent =
-                `Registros ${result.events.length ? offset + 1 : 0}-${offset + result.events.length}`;
+                result.events.length ? `Mostrando ${offset + 1}–${offset + result.events.length}` : "Sin resultados";
 
             message("");
         } catch (error) {
             message("No fue posible cargar la auditoría.", true);
         } finally {
             loading = false;
-            el("refresh").disabled = false;
-            el("applyFilters").disabled = false;
+            updateControls();
         }
     }
 
     el("applyFilters").onclick = async () => {
-        offset = 0;
-        await refresh();
+        await refresh(buildFilters(), 0);
     };
 
     el("clearFilters").onclick = async () => {
+        if (loading || exporting) return;
         el("organizationFilter").value = "";
         el("actionFilter").value = "";
         el("actorFilter").value = "";
+        el("targetUserFilter").value = "";
         el("fromFilter").value = "";
         el("toFilter").value = "";
-        offset = 0;
-        await refresh();
+        await refresh(buildFilters(), 0);
     };
 
-    el("refresh").onclick = refresh;
+    el("refresh").onclick = () => refresh();
 
     el("previous").onclick = async () => {
-        offset = Math.max(0, offset - pageSize);
-        await refresh();
+        if (el("previous").disabled) return;
+        await refresh(appliedFilters, Math.max(0, offset - pageSize));
     };
 
     el("next").onclick = async () => {
-        offset += pageSize;
-        await refresh();
+        if (el("next").disabled) return;
+        await refresh(appliedFilters, offset + pageSize);
+    };
+
+    const csvCell = value => {
+        let text = String(value ?? "");
+        // Quoting alone does not prevent spreadsheet formula execution.
+        if (/^[\s\uFEFF]*[=+@-]/u.test(text) || /^[\t\r\n]/.test(text)) text = "'" + text;
+        return '"' + text.replace(/"/g, '""') + '"';
+    };
+    el("exportCsv").onclick = async () => {
+        if (loading || exporting || !loaded) return;
+        exporting = true;
+        updateControls();
+        message("Exportando auditoría...");
+        const filters = { ...appliedFilters };
+        const lines = [["Fecha", "Acción", "Organización", "Actor", "Usuario objetivo", "Entidad", "ID entidad"].map(csvCell).join(",")];
+        const seen = new Set();
+        const batchSize = 100;
+        try {
+            for (let exportOffset = 0; ; exportOffset += batchSize) {
+                // Fail without downloading a partial export if the browser safety bound is exceeded.
+                if (exportOffset >= 100000) throw new Error("Export limit exceeded");
+                const result = await DentalApi.getPlatformAudit({ ...filters, limit: batchSize, offset: exportOffset });
+                for (const event of result.events) {
+                    // Offset pages can overlap when the live audit grows during export.
+                    if (seen.has(event.id)) throw new Error("Audit changed during export");
+                    seen.add(event.id);
+                    const person = user => user ? `${user.fullName || user.username} (${user.username})` : "-";
+                    lines.push([date(event.createdAt), actionLabel(event.action),
+                        event.organization?.name || "-", person(event.actor), person(event.targetUser),
+                        event.entity, event.entityId].map(csvCell).join(","));
+                }
+                if (result.events.length < batchSize) break;
+            }
+            const blob = new Blob(["\uFEFF", lines.join("\r\n") + "\r\n"], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            const now = new Date(), pad = value => String(value).padStart(2, "0");
+            link.href = url;
+            link.download = `maelven-platform-audit-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.csv`;
+            try { document.body.append(link); link.click(); }
+            finally { link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+            message("CSV exportado correctamente.");
+        } catch (error) {
+            message("No fue posible exportar la auditoría.", true);
+        } finally {
+            exporting = false;
+            updateControls();
+        }
     };
 
     el("back").onclick = () => {
@@ -208,6 +267,7 @@ async function startPlatformAudit() {
     };
 
     try {
+        updateControls();
         await loadOrganizations();
         await refresh();
     } catch (error) {
