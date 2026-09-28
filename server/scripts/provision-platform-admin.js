@@ -92,11 +92,11 @@ async function provision(config, pool, hashPassword) {
         user.active === true &&
         user.deleted_at === null;
 
-      const conflictingPlatformAdmin = platformAdmins.some(
-        platformUser => platformUser.id !== user.id
+      const malformedPlatformAdmin = platformAdmins.some(
+        platformUser => platformUser.organization_id !== null
       );
 
-      if (!validExisting || conflictingPlatformAdmin) {
+      if (!validExisting || malformedPlatformAdmin) {
         throw new Error(
           "Existing account conflicts with platform bootstrap requirements; no changes made"
         );

@@ -429,6 +429,113 @@ router.patch("/organizations/:id/owner", asyncHandler(async (req, res) => {
   });
 }));
 
+function adminView(user) {
+  return { id: user.id, username: user.username, fullName: user.full_name, active: user.active,
+    mustChangePassword: user.must_change_password, lastLoginAt: user.last_login_at,
+    lastActivityAt: user.last_activity_at, createdAt: user.created_at, updatedAt: user.updated_at };
+}
+
+router.get("/admins", asyncHandler(async (req, res) => {
+  const result = await db.query(`SELECT id, username, full_name, active, must_change_password,
+    last_login_at, last_activity_at, created_at, updated_at FROM users
+    WHERE role = 'PLATFORM_SUPER_ADMIN' AND organization_id IS NULL AND deleted_at IS NULL
+    ORDER BY active DESC, full_name, username, id`);
+  res.json({ admins: result.rows.map(adminView) });
+}));
+
+async function adminMutation(req, res, operation, status = 200) {
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+    // Serialize with bootstrap and other admin mutations before locking any user.
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", ["maelven-platform-admin-provision"]);
+    const actor = await client.query(`SELECT id FROM users WHERE id = $1 AND role = 'PLATFORM_SUPER_ADMIN'
+      AND organization_id IS NULL AND deleted_at IS NULL AND active = true FOR UPDATE`, [req.user.id]);
+    if (!actor.rows.length) throw userError(403, "La cuenta de plataforma ya no esta activa");
+    const result = await operation(client);
+    await client.query("COMMIT");
+    res.status(status).json(result);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    res.status(error.publicStatus || (error.code === "23505" ? 409 : 500)).json({ message: error.publicStatus ? error.message
+      : error.code === "23505" ? "El nombre de usuario ya existe" : "No fue posible guardar el cambio de Super Admin" });
+  } finally { client.release(); }
+}
+
+async function lockedAdmin(client, id) {
+  const user = (await client.query(`SELECT id, active FROM users WHERE id = $1
+    AND role = 'PLATFORM_SUPER_ADMIN' AND organization_id IS NULL AND deleted_at IS NULL FOR UPDATE`, [id])).rows[0];
+  if (!user) throw userError(404, "Super Admin no encontrado");
+  return user;
+}
+
+async function auditAdmin(client, req, action, targetUserId) {
+  await client.query(`INSERT INTO audit_logs (organization_id, user_id, action, entity, entity_id, payload)
+    VALUES (NULL, $1, $2, 'users', $3, $4)`, [req.user.id, action, targetUserId, { targetUserId }]);
+}
+
+router.post("/admins", asyncHandler(async (req, res) => {
+  const body = req.body || {};
+  const username = typeof body.username === "string" ? body.username.trim().toLowerCase() : "";
+  const fullName = typeof body.fullName === "string" ? body.fullName.trim() : "";
+  const error = validateStrongPassword(body.password);
+  if (error || !/^[a-z0-9._-]{3,40}$/.test(username) || !fullName || fullName.length > 160) {
+    return res.status(400).json({ message: error || "Nombre o usuario no valido" });
+  }
+  const hash = await bcrypt.hash(body.password, 12);
+  await adminMutation(req, res, async client => {
+    // Same global username serialization as organization/user creation.
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", ["maelven-platform-create-organization"]);
+    if ((await client.query("SELECT id FROM users WHERE LOWER(username) = $1 LIMIT 1", [username])).rows.length) throw userError(409, "El nombre de usuario ya existe");
+    const user = (await client.query(`INSERT INTO users (organization_id, role, username, full_name, password_hash, active, must_change_password)
+      VALUES (NULL, 'PLATFORM_SUPER_ADMIN', $1, $2, $3, true, true)
+      RETURNING id, username, full_name, active, must_change_password, created_at, updated_at`, [username, fullName, hash])).rows[0];
+    await auditAdmin(client, req, "platform_create_admin", user.id);
+    return adminView(user);
+  }, 201);
+}));
+
+router.patch("/admins/:userId/status", asyncHandler(async (req, res) => {
+  const active = req.body?.active;
+  if (typeof active !== "boolean") return res.status(400).json({ message: "Estado no valido" });
+  if (!active && req.params.userId.toLowerCase() === req.user.id.toLowerCase()) return res.status(409).json({ message: "No puedes desactivar tu propia cuenta" });
+  await adminMutation(req, res, async client => {
+    const target = await lockedAdmin(client, req.params.userId);
+    if (target.active === active) return { id: target.id, active };
+    if (!active) {
+      const count = (await client.query(`SELECT COUNT(*)::int AS total FROM users WHERE role = 'PLATFORM_SUPER_ADMIN'
+        AND organization_id IS NULL AND active = true AND deleted_at IS NULL`)).rows[0].total;
+      if (count <= 1) throw userError(409, "Debe permanecer al menos un Super Admin activo");
+    }
+    await client.query("UPDATE users SET active = $2, updated_at = NOW() WHERE id = $1", [target.id, active]);
+    await auditAdmin(client, req, active ? "platform_activate_admin" : "platform_deactivate_admin", target.id);
+    return { id: target.id, active };
+  });
+}));
+
+router.patch("/admins/:userId/password", asyncHandler(async (req, res) => {
+  if (req.params.userId.toLowerCase() === req.user.id.toLowerCase()) return res.status(409).json({ message: "Usa el cambio de contrasena autenticado para tu cuenta" });
+  const error = validateStrongPassword(req.body?.password);
+  if (error) return res.status(400).json({ message: error });
+  const hash = await bcrypt.hash(req.body.password, 12);
+  await adminMutation(req, res, async client => {
+    const target = await lockedAdmin(client, req.params.userId);
+    await client.query("UPDATE users SET password_hash = $2, must_change_password = true, updated_at = NOW() WHERE id = $1", [target.id, hash]);
+    await auditAdmin(client, req, "platform_reset_admin_password", target.id);
+    return { id: target.id, mustChangePassword: true };
+  });
+}));
+
+router.patch("/admins/:userId/password/force-change", asyncHandler(async (req, res) => {
+  if (req.body?.required !== true) return res.status(400).json({ message: "Solo se permite exigir el cambio de contrasena" });
+  await adminMutation(req, res, async client => {
+    const target = await lockedAdmin(client, req.params.userId);
+    await client.query("UPDATE users SET must_change_password = true, updated_at = NOW() WHERE id = $1", [target.id]);
+    await auditAdmin(client, req, "platform_force_admin_password_change", target.id);
+    return { id: target.id, mustChangePassword: true };
+  });
+}));
+
 router.get("/audit", asyncHandler(async (req, res) => {
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const organizationId = typeof req.query.organizationId === "string" ? req.query.organizationId.trim() : "";
@@ -514,7 +621,8 @@ router.get("/audit", asyncHandler(async (req, res) => {
       AND actor.organization_id IS NULL
     LEFT JOIN users target
       ON target.id::text = l.payload ->> 'targetUserId'
-      AND target.organization_id = l.organization_id
+      AND (target.organization_id = l.organization_id
+        OR (l.organization_id IS NULL AND target.organization_id IS NULL AND target.role = 'PLATFORM_SUPER_ADMIN'))
     WHERE ${where.join(" AND ")}
     ORDER BY l.created_at DESC, l.id DESC
     LIMIT ${limitParameter}

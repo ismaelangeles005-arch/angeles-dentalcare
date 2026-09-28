@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Super Admins | MAELVEN Dental</title>
+  <link rel="icon" href="images/maelven-dental-favicon.svg">
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#17212e;font:15px Arial,sans-serif;letter-spacing:0}
+    header{background:white;border-bottom:1px solid #dce3e9;padding:20px 4%;display:flex;align-items:center;gap:24px;flex-wrap:wrap}header img{width:190px;max-width:100%;height:auto}header div{flex:1;min-width:0;overflow-wrap:anywhere}
+    main{max-width:1200px;margin:auto;padding:24px}h1{font-size:24px}h2{font-size:19px}a{color:#1759b5}nav,.actions,.toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.toolbar{justify-content:space-between}
+    button{font:inherit;min-height:44px;padding:10px 16px;border:1px solid #aebbc7;border-radius:6px;background:white;color:#17212e;cursor:pointer}button:disabled{opacity:.6;cursor:default}:focus-visible{outline:3px solid #16816a;outline-offset:3px}
+    #sessionMessage{padding:24px}#message{min-height:24px;line-height:1.5}[data-error="true"],#formError{color:#a32929}[hidden]{display:none!important}
+    .table-scroll{width:100%;max-width:100%;overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:960px;background:white}th,td{padding:12px;text-align:left;border-bottom:1px solid #dce3e9;overflow-wrap:anywhere}td:last-child{min-width:310px}td button{margin:2px}
+    dialog{border:1px solid #aebbc7;border-radius:8px;padding:24px;width:min(520px,calc(100% - 24px));max-height:90vh;overflow:auto}dialog::backdrop{background:#17212e88}form,label{display:grid;gap:10px}form{gap:16px}input{font:inherit;width:100%;min-width:0;padding:10px;min-height:44px;border:1px solid #aebbc7;border-radius:6px}
+    /* MAELVEN RESPONSIVE ADMINS V1 */
+    @media(max-width:560px){main,header{padding:14px}header img{width:145px}h1{font-size:20px}.toolbar .actions{width:100%}.toolbar button{flex:1}dialog{padding:18px}dialog .actions{display:grid;grid-template-columns:1fr}dialog button{width:100%}}
+  </style>
+</head>
+<body>
+  <p id="sessionMessage" role="status">Verificando sesión...</p>
+  <div id="adminsApp" hidden>
+    <header><img src="images/maelven-dental-logo.svg" alt="MAELVEN Dental"><div><strong>Administración de plataforma</strong><p id="identity"></p></div><button id="logout" type="button">Cerrar sesión</button></header>
+    <main>
+      <nav aria-label="Plataforma"><a href="platform.html">Organizaciones</a><a href="platform-audit.html">Auditoría</a></nav>
+      <div class="toolbar"><h1>Super Admins</h1><div class="actions"><button id="refresh" type="button">Actualizar</button><button id="createAdmin" type="button">Crear Super Admin</button></div></div>
+      <p id="message" role="status" aria-live="polite"></p>
+      <div class="table-scroll"><table><thead><tr><th>Nombre</th><th>Usuario</th><th>Estado</th><th>Último acceso</th><th>Cambio obligatorio</th><th>Creado</th><th>Acciones</th></tr></thead><tbody id="adminRows"></tbody></table></div>
+    </main>
+  </div>
+  <dialog id="adminDialog" aria-labelledby="dialogTitle"><h2 id="dialogTitle">Crear Super Admin</h2><form id="adminForm">
+    <label id="nameLabel">Nombre completo<input id="fullName" maxlength="160" required></label>
+    <label id="usernameLabel">Usuario<input id="username" pattern="[A-Za-z0-9._-]{3,40}" minlength="3" maxlength="40" autocomplete="off" autocapitalize="none" required></label>
+    <label>Contraseña temporal<input id="password" type="password" minlength="6" maxlength="200" autocomplete="new-password" required></label>
+    <p id="formError" role="alert"></p><div class="actions"><button id="cancelAdmin" type="button">Cancelar</button><button id="saveAdmin" type="submit">Guardar</button></div>
+  </form></dialog>
+  <script src="api.js?v=platform4-6"></script><script src="platform-admins.js?v=platform4-6"></script>
+</body>
+</html>

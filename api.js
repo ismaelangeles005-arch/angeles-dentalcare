@@ -588,6 +588,11 @@
             return request(`/platform/audit${suffix ? `?${suffix}` : ""}`);
         },
         setPlatformOrganizationOwner: (id, userId) => request(`/platform/organizations/${encodeURIComponent(id)}/owner`, { method: "PATCH", body: JSON.stringify({ userId }) }),
+        getPlatformAdmins: () => request("/platform/admins"),
+        createPlatformAdmin: payload => request("/platform/admins", { method: "POST", body: JSON.stringify(payload) }),
+        setPlatformAdminStatus: (id, active) => request(`/platform/admins/${encodeURIComponent(id)}/status`, { method: "PATCH", body: JSON.stringify({ active }) }),
+        resetPlatformAdminPassword: (id, password) => request(`/platform/admins/${encodeURIComponent(id)}/password`, { method: "PATCH", body: JSON.stringify({ password }) }),
+        forcePlatformAdminPasswordChange: id => request(`/platform/admins/${encodeURIComponent(id)}/password/force-change`, { method: "PATCH", body: JSON.stringify({ required: true }) }),
         getPlatformStatus: () => request("/platform/status"),
         getPlatformOrganizations: () => request("/platform/organizations"),
         getPlatformOrganization: id => request(`/platform/organizations/${encodeURIComponent(id)}`),

@@ -32,6 +32,11 @@ async function startPlatformAudit() {
         value ? new Date(value).toLocaleString("es-DO") : "-";
 
     const actionLabel = action => ({
+        platform_create_admin: "Crear Super Admin",
+        platform_activate_admin: "Activar Super Admin",
+        platform_deactivate_admin: "Desactivar Super Admin",
+        platform_reset_admin_password: "Resetear contraseña de Super Admin",
+        platform_force_admin_password_change: "Forzar cambio de contraseña de Super Admin",
         platform_create_organization: "Crear organización",
         platform_change_organization_owner: "Cambiar propietario",
         platform_activate_organization: "Activar organización",
@@ -129,7 +134,7 @@ async function startPlatformAudit() {
                 const row = document.createElement("tr");
 
                 appendCell(row, date(event.createdAt));
-                appendCell(row, event.organization?.name || "-");
+                appendCell(row, event.organization?.name || (['platform_create_admin', 'platform_activate_admin', 'platform_deactivate_admin', 'platform_reset_admin_password', 'platform_force_admin_password_change'].includes(event.action) ? "Plataforma MAELVEN" : "-"));
                 appendCell(
                     row,
                     event.actor
