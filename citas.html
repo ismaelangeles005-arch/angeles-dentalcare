@@ -13,6 +13,9 @@
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
         <style>
+        .appointments-page #piezaDentalGroup .tooth-toolbar { align-items: end; }
+        .appointments-page #piezaDentalGroup .tooth-toolbar label { display: grid; gap: 5px; flex: 1 1 130px; min-width: 0; }
+        .appointments-page #piezaDentalGroup .tooth-toolbar select { width: 100%; min-width: 0; }
         .appointments-page .main {
             flex: 1;
             min-width: 0;
@@ -600,8 +603,9 @@
                     </div>
 
                     <div class="field-group span-2" id="piezaDentalGroup" hidden>
-                        <label>Número de piezas</label>
+                        <span>Piezas dentales</span>
                         <div class="tooth-toolbar">
+                            <label for="toothCountMode">Cantidad de piezas
                             <select id="toothCountMode" onchange="renderToothSelector()">
                                 <option value="1">1</option>
                                 <option value="2">2</option>
@@ -609,13 +613,18 @@
                                 <option value="4">4</option>
                                 <option value="multiple">Múltiples</option>
                             </select>
+                            </label>
+                            <label for="toothNumberingSystem">Sistema dental
                             <select id="toothNumberingSystem" onchange="renderToothSelector()">
                                 <option value="FDI">FDI</option>
                                 <option value="UNIVERSAL">Universal</option>
                             </select>
+                            </label>
+                            <label for="toothDentition">Dentición
                             <select id="toothDentition" aria-label="Dentición" onchange="renderToothSelector()">
                                 <option value="PERMANENT">Permanente</option><option value="PRIMARY">Temporal</option><option value="MIXED">Mixta</option>
                             </select>
+                            </label>
                         </div>
                         <input type="hidden" id="piezaDental">
                         <div class="tooth-grid" id="toothGrid"></div>

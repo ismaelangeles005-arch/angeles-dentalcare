@@ -415,6 +415,12 @@
 
         .patients-page .clinical-note-form textarea { min-height: 82px; }
         .patients-page .clinical-note-form .span-2 { grid-column: 1 / -1; }
+        .patients-page .clinical-note-form > label { display: grid; gap: 5px; min-width: 0; font-size: 13px; font-weight: 700; }
+        .patients-page .clinical-dental-fields { min-width: 0; margin: 0; padding: 12px 0; border: 0; border-top: 1px solid var(--color-border); }
+        .patients-page .clinical-dental-fields legend { padding-right: 10px; font-weight: 700; }
+        .patients-page .clinical-dental-fields .tooth-toolbar { align-items: end; margin-bottom: 10px; }
+        .patients-page .clinical-dental-fields .tooth-toolbar label { display: grid; gap: 5px; flex: 1 1 130px; min-width: 0; font-size: 13px; font-weight: 700; }
+        .patients-page .clinical-dental-fields .tooth-grid { grid-template-columns: repeat(auto-fit, minmax(38px, 1fr)); }
 
         .patients-page .clinical-timeline {
             display: grid;
@@ -871,27 +877,36 @@
                 </section>
                 <section class="clinical-panel" data-clinical-panel="evolucion" hidden>
                     <form class="clinical-note-form" id="clinicalNoteForm">
+                        <label for="clinicalNoteType">Tipo de registro clínico
                         <select id="clinicalNoteType" aria-label="Tipo de registro clínico">
                             <option value="consulta_ambulatoria">Consulta ambulatoria</option>
                             <option value="evolucion">Hoja de evolución</option>
-                            <option value="procedimiento">Procedimiento realizado</option>
+                            <option value="procedimiento">Procedimiento</option>
                         </select>
+                        </label>
+                        <label for="consultationStatus">Estado de consulta
                         <select id="consultationStatus" aria-label="Estado de consulta">
                             <option value="en_espera">En espera</option>
                             <option value="en_consulta">En consulta</option>
                             <option value="atendido">Atendido</option>
                             <option value="finalizado">Finalizado</option>
                         </select>
-                        <input type="text" id="clinicalProcedureName" placeholder="Procedimiento realizado">
+                        </label>
+                        <label for="clinicalProcedureName">Detalle del procedimiento
+                            <input type="text" id="clinicalProcedureName" placeholder="Detalle del procedimiento">
+                        </label>
+                        <label for="procedureStatus">Estado del procedimiento
                         <select id="procedureStatus" aria-label="Estado del procedimiento">
-                            <option value="realizado">Procedimiento realizado</option>
-                            <option value="programado">Procedimiento programado</option>
-                            <option value="pendiente">Procedimiento pendiente</option>
-                            <option value="cancelado">Procedimiento cancelado</option>
+                            <option value="realizado">Realizado</option>
+                            <option value="programado">Programado</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="cancelado">Cancelado</option>
                         </select>
-                        <div class="span-2">
-                            <label>Número de piezas</label>
+                        </label>
+                        <fieldset class="span-2 clinical-dental-fields">
+                            <legend>Piezas dentales</legend>
                             <div class="tooth-toolbar">
+                                <label for="clinicalToothCountMode">Cantidad de piezas
                                 <select id="clinicalToothCountMode" onchange="renderClinicalToothSelector()">
                                     <option value="">Sin piezas</option>
                                     <option value="1">1</option>
@@ -900,17 +915,22 @@
                                     <option value="4">4</option>
                                     <option value="multiple">Múltiples</option>
                                 </select>
-                                <select id="clinicalToothNumberingSystem" onchange="renderClinicalToothSelector()">
-                                    <option value="FDI">FDI</option>
-                                    <option value="UNIVERSAL">Universal</option>
-                                </select>
+                                </label>
+                                <label for="clinicalDentition">Dentición
                                 <select id="clinicalDentition" aria-label="Dentición" onchange="renderClinicalToothSelector()">
                                     <option value="PERMANENT">Permanente</option><option value="PRIMARY">Temporal</option><option value="MIXED">Mixta</option>
                                 </select>
+                                </label>
+                                <label for="clinicalToothNumberingSystem">Sistema dental
+                                <select id="clinicalToothNumberingSystem" onchange="conservarSistemaDentalEvolucion(this)">
+                                    <option value="UNIVERSAL" selected>Universal</option>
+                                    <option value="FDI">FDI</option>
+                                </select>
+                                </label>
                             </div>
                             <input type="hidden" id="clinicalToothNumber">
-                            <div class="tooth-grid" id="clinicalToothGrid"></div>
-                        </div>
+                            <div class="tooth-grid" id="clinicalToothGrid" role="group" aria-label="Selector de piezas"></div>
+                        </fieldset>
                         <input type="date" id="nextReviewDate" aria-label="Proxima revision">
                         <textarea class="span-2" id="chiefComplaint" placeholder="Motivo de consulta"></textarea>
                         <textarea class="span-2" id="clinicalEvaluation" placeholder="Evaluación clínica"></textarea>
@@ -1400,6 +1420,13 @@
 
         function renderClinicalToothSelector() {
             clinicalToothSelector.render();
+        }
+
+        function conservarSistemaDentalEvolucion(select) {
+            // Keep the explicit form choice on reset; no stored preferences or records are rewritten.
+            const system = select.value;
+            for (const option of select.options) option.defaultSelected = option.value === system;
+            renderClinicalToothSelector();
         }
 
         function toggleClinicalTooth(toothId) {
