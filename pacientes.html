@@ -425,95 +425,45 @@
             border-left: 4px solid var(--color-primary);
         }
 
-        .patients-page .odontogram-layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
-            gap: 14px;
-            align-items: start;
-        }
-
-        .patients-page .odontogram-toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .patients-page .odontogram-toolbar label {
-            color: var(--color-text-muted);
-            font-size: 12px;
-            font-weight: 800;
-        }
-
-        .patients-page .odontogram-toolbar select {
-            min-width: 140px;
-        }
-
-        .patients-page .odontogram-arch {
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
-            background: rgba(244, 248, 251, 0.72);
-            padding: 12px;
-            margin-bottom: 10px;
-        }
-
-        .patients-page .odontogram-arch-title {
-            color: var(--color-text-muted);
-            display: block;
-            font-size: 12px;
-            font-weight: 800;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-
-        .patients-page .odontogram-tooth-grid {
-            display: grid;
-            grid-template-columns: repeat(16, minmax(0, 1fr));
-            gap: 6px;
-        }
-
-        .patients-page .odontogram-tooth {
-            position: relative;
-        }
-
-        .patients-page .odontogram-tooth.has-record::after {
-            content: "";
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            width: 7px;
-            height: 7px;
-            border-radius: 999px;
-            background: var(--color-primary);
-        }
-
-        .patients-page .odontogram-detail {
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
-            background: #fff;
-            padding: 14px;
-        }
-
-        .patients-page .odontogram-detail h3 {
-            color: var(--color-primary-dark);
-            margin: 0 0 8px;
-        }
-
-        .patients-page .odontogram-entry {
-            border-top: 1px solid var(--color-border);
-            padding-top: 10px;
-            margin-top: 10px;
-        }
-
-        .patients-page .odontogram-entry span {
-            color: var(--color-text-muted);
-            display: block;
-            font-size: 12px;
-            font-weight: 800;
-            margin-bottom: 3px;
-        }
-
+        .patients-page .odontogram-layout { display: grid; gap: 20px; min-width: 0; }
+        .patients-page .odontogram-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 20px; margin-bottom: 16px; }
+        .patients-page .odontogram-toolbar strong { margin-right: auto; }
+        .patients-page .odontogram-toolbar label { display: grid; gap: 5px; color: var(--color-text-muted); font-size: 12px; font-weight: 800; }
+        .patients-page .odontogram-toolbar select { min-width: 140px; }
+        .patients-page .odontogram-legend { display: flex; flex-wrap: wrap; gap: 10px 18px; padding: 0; margin: 0 0 18px; list-style: none; font-size: 12px; }
+        .patients-page .odontogram-legend li { display: flex; align-items: center; gap: 6px; }
+        .patients-page .odontogram-kind { display: inline-block; width: 7px; height: 7px; border: 1px solid currentColor; border-radius: 50%; background: currentColor; }
+        .patients-page [data-kind="EXISTING_CONDITION"] { --entry-color: #556473; color: #556473; }
+        .patients-page [data-kind="DIAGNOSIS"] { --entry-color: #a44331; color: #a44331; }
+        .patients-page [data-kind="PROPOSED_TREATMENT"] { --entry-color: #2b62a3; color: #2b62a3; }
+        .patients-page [data-kind="COMPLETED_TREATMENT"] { --entry-color: #227559; color: #227559; }
+        .patients-page .odontogram-arch { padding: 14px 0 18px; border-bottom: 1px solid var(--color-border); }
+        .patients-page .odontogram-arch-title { display: block; font-size: 14px; font-weight: 800; margin-bottom: 12px; }
+        .patients-page .odontogram-tooth-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+        .patients-page .odontogram-quadrant { min-width: 0; }
+        .patients-page .odontogram-quadrant-label { display: block; color: var(--color-text-muted); font-size: 12px; margin-bottom: 8px; }
+        .patients-page .odontogram-quadrant-teeth { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; }
+        .patients-page .odontogram-quadrant-teeth.primary { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+        .patients-page .odontogram-tooth { display: grid; justify-items: center; align-content: center; gap: 4px; width: 100%; min-width: 0; min-height: 112px; padding: 6px 1px; color: #344550; border-color: transparent; background: #f6f8fa; touch-action: manipulation; }
+        .patients-page .odontogram-tooth:hover { background: #eaf2f5; border-color: #859dac; }
+        .patients-page .odontogram-tooth.selected { color: #154b67; border: 2px solid #256387; background: #e9f4fa; padding: 5px 0; }
+        .patients-page .odontogram-tooth:focus-visible, .patients-page .odontogram-surface-button:focus-visible { outline: 3px solid #256387; outline-offset: 2px; }
+        .patients-page .odontogram-anatomy { width: 100%; max-width: 46px; height: 66px; }
+        .patients-page .tooth-outline { fill: #fff; stroke: #687f8e; stroke-width: 1.6; stroke-linejoin: round; }
+        .patients-page .tooth-detail { fill: none; stroke: #9aadb7; stroke-width: 1.3; stroke-linecap: round; }
+        .patients-page .selected .tooth-outline { fill: #deeff8; stroke: #256387; stroke-width: 2; }
+        .patients-page .odontogram-markers { display: flex; justify-content: center; gap: 2px; min-height: 7px; }
+        .patients-page .odontogram-code { font-size: 13px; line-height: 18px; white-space: nowrap; }
+        .patients-page .odontogram-detail { min-width: 0; padding: 16px 0; }
+        .patients-page .odontogram-detail h3 { color: var(--color-primary-dark); margin: 0 0 5px; }
+        .patients-page .odontogram-clinical-name { margin: 0 0 16px; color: var(--color-text-muted); }
+        .patients-page .odontogram-entry { border-left: 3px solid var(--entry-color, #718096); padding: 8px 12px; margin: 10px 0; color: var(--color-text); background: #f8fafb; overflow-wrap: anywhere; }
+        .patients-page .odontogram-entry > span { display: block; font-size: 12px; font-weight: 800; margin-bottom: 4px; color: var(--entry-color); }
+        .patients-page .odontogram-entry p { margin: 6px 0; }
+        .patients-page .odontogram-entry-group { border-top: 1px solid var(--color-border); padding-top: 14px; margin-top: 16px; }
+        .patients-page .odontogram-entry-group h4 { margin: 0 0 8px; color: var(--color-primary-dark); }
+        .patients-page .odontogram-detail details { margin: 12px 0; }
+        .patients-page .odontogram-detail summary { cursor: pointer; padding: 10px 0; font-weight: 700; }
         .patients-page .odontogram-condition-form {
             border-top: 1px solid var(--color-border);
             display: grid;
@@ -535,27 +485,29 @@
             resize: vertical;
         }
 
-        .patients-page .odontogram-entry-group {
-            border-top: 1px solid var(--color-border);
-            margin-top: 10px;
-            padding-top: 10px;
+        .patients-page [data-clinical-panel="odontograma"] .odontogram-condition-form { border-top: 1px solid var(--color-border); display: grid; gap: 12px; margin-top: 12px; padding-top: 12px; }
+        .patients-page [data-clinical-panel="odontograma"] .odontogram-condition-form label { display: grid; gap: 5px; font-size: 12px; font-weight: 800; color: var(--color-text-muted); min-width: 0; }
+        .patients-page [data-clinical-panel="odontograma"] .odontogram-condition-form textarea { min-height: 72px; resize: vertical; }
+        .patients-page [data-clinical-panel="odontograma"] .odontogram-condition-form select { max-width: 100%; min-width: 0; }
+        .patients-page .odontogram-custom-diagnosis[hidden] { display: none; }
+        .patients-page .odontogram-surface-map { display: grid; grid-template: repeat(3, minmax(44px, auto)) auto / repeat(3, minmax(0, 1fr)); gap: 4px; width: min(100%, 330px); margin: 6px 0; }
+        .patients-page .odontogram-surface-button { min-width: 0; min-height: 44px; padding: 6px; border: 1px solid #9eadb7; background: #fff; color: #344550; font-size: 12px; font-weight: 600; white-space: normal; overflow-wrap: anywhere; cursor: pointer; border-radius: 6px; touch-action: manipulation; }
+        .patients-page .odontogram-surface-button[aria-pressed="true"] { background: #e0f0f7; border: 2px solid #256387; color: #154b67; }
+        .patients-page .odontogram-surface-button:disabled { opacity: .55; cursor: not-allowed; }
+        .patients-page .odontogram-surface-button[data-position="top"] { grid-area: 1 / 2; }
+        .patients-page .odontogram-surface-button[data-position="left"] { grid-area: 2 / 1; }
+        .patients-page .odontogram-surface-button[data-position="center"] { grid-area: 2 / 2; }
+        .patients-page .odontogram-surface-button[data-position="right"] { grid-area: 2 / 3; }
+        .patients-page .odontogram-surface-button[data-position="bottom"] { grid-area: 3 / 2; }
+        .patients-page .odontogram-surface-button[data-position="whole"] { grid-area: 4 / 1 / 5 / 4; }
+        @media (max-width: 760px) {
+            .patients-page .odontogram-tooth-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
         }
-
-        .patients-page .odontogram-entry-group h4 {
-            color: var(--color-primary-dark);
-            margin: 0 0 8px;
-        }
-
-        .patients-page .odontogram-custom-diagnosis[hidden] {
-            display: none;
-        }
-
-        @media (max-width: 900px) {
-            .patients-page .odontogram-layout { grid-template-columns: 1fr; }
-            .patients-page .odontogram-tooth-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
-        }
-        @media(max-width:480px) {
-            .patients-page .odontogram-tooth-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        @media (max-width: 480px) {
+            .patients-page .odontogram-quadrant-teeth { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+            .patients-page .odontogram-toolbar label { flex: 1 1 120px; }
+            .patients-page .odontogram-toolbar select { min-width: 0; width: 100%; }
+            .patients-page .odontogram-detail .confirm-actions { flex-wrap: wrap; }
         }
 
         .patients-page .upload-panel {
@@ -866,12 +818,18 @@
                         </label>
                         <label>
                             Sistema dental
-                            <select id="odontogramNumberingSystem" onchange="renderOdontogramView()">
+                            <select id="odontogramNumberingSystem" onchange="cambiarNumeracionOdontograma()">
                                 <option value="FDI">FDI</option>
                                 <option value="UNIVERSAL">Universal</option>
                             </select>
                         </label>
                     </div>
+                    <ul class="odontogram-legend" aria-label="Tipos de registros clínicos">
+                        <li><i class="odontogram-kind" data-kind="EXISTING_CONDITION" aria-hidden="true"></i>Condición existente</li>
+                        <li><i class="odontogram-kind" data-kind="DIAGNOSIS" aria-hidden="true"></i>Diagnóstico</li>
+                        <li><i class="odontogram-kind" data-kind="PROPOSED_TREATMENT" aria-hidden="true"></i>Tratamiento propuesto</li>
+                        <li><i class="odontogram-kind" data-kind="COMPLETED_TREATMENT" aria-hidden="true"></i>Tratamiento realizado</li>
+                    </ul>
                     <div class="odontogram-layout">
                         <div>
                             <section class="odontogram-arch">
@@ -1017,7 +975,7 @@
     <script src="api.js?v=20260626e"></script>
     <script src="roles.js?v=20260626e"></script>
     <script src="dental-tooth-catalog.js?v=odontogram-v2"></script>
-    <script src="dental-tooth-selector.js?v=odontogram-v2"></script>
+    <script src="dental-tooth-selector.js?v=odontogram-v2-1"></script>
 
     <script type="text/plain" data-dental-page='{"active":"pacientes"}'>
 
@@ -1694,18 +1652,37 @@
         function renderOdontogramArch(containerId, teeth) {
             const container = document.getElementById(containerId);
             if (!container) return;
-            container.innerHTML = teeth.map(tooth => {
+            // Frontal view: patient's right stays on the left for both arches; catalog order is untouched.
+            if (teeth[0]?.arch === "LOWER") teeth = [...teeth].reverse();
+            const sides = [...new Set(teeth.map(tooth => tooth.side))];
+            container.innerHTML = sides.map(side => `<div class="odontogram-quadrant"><span class="odontogram-quadrant-label">${side === "RIGHT" ? "Derecha" : "Izquierda"} del paciente</span><div class="odontogram-quadrant-teeth ${teeth[0]?.dentition === "PRIMARY" ? "primary" : ""}">${teeth.filter(tooth => tooth.side === side).map(tooth => {
                 const entries = entradasOdontograma(tooth.toothId);
                 const selected = selectedOdontogramToothId === tooth.toothId;
+                const kinds = ["EXISTING_CONDITION", "DIAGNOSIS", "PROPOSED_TREATMENT", "COMPLETED_TREATMENT"].filter(kind => entries.some(entry => entry.entry_type === kind));
+                const description = `Pieza ${codigoOdontograma(tooth)} · ${DentalToothSelector.clinicalName(tooth.toothId)}${kinds.length ? " · " + kinds.map(etiquetaEntradaOdontograma).join(", ") : " · Sin registros"}`;
                 return `
                     <button type="button"
                             class="tooth-button odontogram-tooth ${selected ? "selected" : ""} ${entries.length ? "has-record" : ""}"
                             onclick="seleccionarPiezaOdontograma('${tooth.toothId}')"
-                            title="${DentalRoles.escapeHtml(tooth.toothId)}">
-                        ${DentalRoles.escapeHtml(codigoOdontograma(tooth))}
+                            aria-pressed="${selected}" aria-label="${DentalRoles.escapeHtml(description)}"
+                            title="${DentalRoles.escapeHtml(description)}">
+                        ${DentalToothSelector.clinicalIllustration(tooth.toothId)}
+                        <span class="odontogram-code">${DentalRoles.escapeHtml(codigoOdontograma(tooth))}</span>
+                        <span class="odontogram-markers" aria-hidden="true">${kinds.map(kind => `<i class="odontogram-kind" data-kind="${kind}"></i>`).join("")}</span>
                     </button>
                 `;
-            }).join("");
+            }).join("")}</div></div>`).join("");
+        }
+
+        function cambiarNumeracionOdontograma() {
+            // Only labels/teeth change: retain the form DOM, drafts and historical correction context.
+            const teeth = DentalToothSelector.getTeethByDentition(document.getElementById("odontogramDentition").value);
+            for (const [id, dentition, arch] of [
+                ["odontogramUpperGrid", "PERMANENT", "UPPER"], ["odontogramLowerGrid", "PERMANENT", "LOWER"],
+                ["odontogramPrimaryUpperGrid", "PRIMARY", "UPPER"], ["odontogramPrimaryLowerGrid", "PRIMARY", "LOWER"]
+            ]) renderOdontogramArch(id, teeth.filter(tooth => tooth.dentition === dentition && tooth.arch === arch));
+            const heading = document.getElementById("odontogramPieceTitle");
+            if (heading) heading.textContent = `Pieza ${codigoOdontograma(DentalToothSelector.getTooth(selectedOdontogramToothId))}`;
         }
 
         function renderOdontogramView() {
@@ -1740,6 +1717,7 @@
         }
 
         function seleccionarPiezaOdontograma(toothId) {
+            if (selectedOdontogramToothId === toothId) return;
             selectedOdontogramToothId = toothId;
             renderOdontogramView();
         }
@@ -1774,21 +1752,16 @@
             const code = codigoOdontograma(tooth);
 
             detail.innerHTML = `
-                <h3>Pieza ${DentalRoles.escapeHtml(code)}</h3>
-                <div class="clinical-info-item">
-                    <span>toothId</span>
-                    <strong>${DentalRoles.escapeHtml(selectedOdontogramToothId)}</strong>
-                </div>
-                ${entries.length ? `
+                <h3 id="odontogramPieceTitle">Pieza ${DentalRoles.escapeHtml(code)}</h3>
+                <p class="odontogram-clinical-name">${DentalRoles.escapeHtml(DentalToothSelector.clinicalName(selectedOdontogramToothId))}</p>
                     <section class="odontogram-entry-group">
                         <h4>Condiciones existentes</h4>
-                        ${existingConditions.length ? existingConditions.map(entry => renderOdontogramEntry(entry)).join("") : '<div class="empty-state">Sin condiciones existentes</div>'}
+                        ${existingConditions.length ? existingConditions.map(entry => renderOdontogramEntry(entry)).join("") : '<div class="empty-state">Sin condiciones registradas</div>'}
                     </section>
                     <section class="odontogram-entry-group">
                         <h4>Diagnósticos</h4>
                         ${diagnoses.length ? diagnoses.map(entry => renderOdontogramEntry(entry)).join("") : '<div class="empty-state">Sin diagnósticos registrados</div>'}
                     </section>
-                ` : '<div class="empty-state">Sin condiciones registradas</div>'}
                 <section class="odontogram-entry-group">
                     <h4>Tratamientos propuestos</h4>
                     ${proposedTreatments.length ? proposedTreatments.map(entry => renderOdontogramEntry(entry) + (!entry.surface ? '<p>Superficie: Pieza completa</p>' : '')).join("") : '<div class="empty-state">Sin tratamientos propuestos</div>'}
@@ -1928,6 +1901,47 @@
             `;
             actualizarSuperficieOdontograma();
             actualizarDiagnosticoOdontograma();
+            instalarSuperficiesVisualesOdontograma(detail);
+        }
+
+        function instalarSuperficiesVisualesOdontograma(detail) {
+            const tooth = DentalToothSelector.getTooth(selectedOdontogramToothId);
+            const mesialLeft = tooth.side === "LEFT";
+            detail.querySelectorAll('select[name="surface"], #odontogramSurface, #odontogramDiagnosisSurface').forEach(select => {
+                const map = document.createElement("div");
+                map.className = "odontogram-surface-map";
+                map.setAttribute("role", "group");
+                map.setAttribute("aria-label", "Superficies de la pieza");
+                superficiesPiezaOdontograma().forEach(surface => {
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "odontogram-surface-button";
+                    button.textContent = surface.label.replace("/", " / ");
+                    button.dataset.surface = surface.value;
+                    button.dataset.position = !surface.value ? "whole" : surface.value === "BUCCAL" ? "top"
+                        : ["PALATAL", "LINGUAL"].includes(surface.value) ? "bottom"
+                        : surface.value === "MESIAL" ? (mesialLeft ? "left" : "right")
+                        : surface.value === "DISTAL" ? (mesialLeft ? "right" : "left") : "center";
+                    button.onclick = () => {
+                        if (select.disabled) return;
+                        select.value = surface.value;
+                        select.dispatchEvent(new Event("change", { bubbles: true }));
+                    };
+                    map.appendChild(button);
+                });
+                // Keep the original select as the sole form value, including historical-only options.
+                select.parentElement.insertAdjacentElement("afterend", map);
+                select.odontogramSurfaceMap = map;
+                select.addEventListener("change", () => sincronizarSuperficiesVisualesOdontograma(select));
+                sincronizarSuperficiesVisualesOdontograma(select);
+            });
+        }
+
+        function sincronizarSuperficiesVisualesOdontograma(select) {
+            select?.odontogramSurfaceMap?.querySelectorAll("button").forEach(button => {
+                button.disabled = select.disabled;
+                button.setAttribute("aria-pressed", String(button.dataset.surface === select.value));
+            });
         }
 
         function etiquetaRelacionOdontograma(entry) {
@@ -1946,12 +1960,12 @@
                 if (reference?.id === entry.related_entry_id && reference.entry_type === relatedType) related = reference;
             }
             return `
-                <article class="odontogram-entry">
+                <article class="odontogram-entry" data-kind="${DentalRoles.escapeHtml(entry.entry_type)}">
                     <span>${DentalRoles.escapeHtml(etiquetaEntradaOdontograma(entry.entry_type))}</span>
                     <strong>${DentalRoles.escapeHtml(entry.condition_label || "Sin condición")}</strong>
                     ${related ? `<p>${entry.entry_type === "PROPOSED_TREATMENT" ? "Relacionado con" : "Basado en propuesta"}: ${DentalRoles.escapeHtml(etiquetaRelacionOdontograma(related))}</p>` : ""}
-                    ${entry.surface ? `<p><strong>Superficie:</strong> ${DentalRoles.escapeHtml(entry.surface)}</p>` : ""}
-                    ${entry.status ? `<p><strong>Estado:</strong> ${DentalRoles.escapeHtml(entry.status)}</p>` : ""}
+                    ${entry.surface ? `<p><strong>Superficie:</strong> ${DentalRoles.escapeHtml(ODONTOGRAM_SURFACES.find(surface => surface.value === entry.surface)?.label || entry.surface)}</p>` : ""}
+                    ${entry.status ? `<p><strong>Estado:</strong> ${DentalRoles.escapeHtml(({ ACTIVE: "Activo", RESOLVED: "Resuelto", SUPERSEDED: "Corregido", VOIDED: "Anulado" })[entry.status] || entry.status)}</p>` : ""}
                     ${entry.notes ? `<p><strong>Notas:</strong> ${DentalRoles.escapeHtml(entry.notes)}</p>` : ""}
                     ${entry.created_at ? `<p><strong>Fecha:</strong> ${DentalRoles.escapeHtml(new Date(entry.created_at).toLocaleString("es-DO"))}</p>` : ""}
                     ${entry.id && !["VOIDED", "SUPERSEDED"].includes(entry.status) ? `
@@ -2070,6 +2084,7 @@
                 if (relation) relation.value = entry.related_entry_id || "";
             }
             form.odontogramCorrection = { original_entry_id: entry.id, reason };
+            form.querySelectorAll('select[name="surface"], #odontogramSurface, #odontogramDiagnosisSurface').forEach(sincronizarSuperficiesVisualesOdontograma);
             const cancel = document.createElement("button");
             cancel.type = "button";
             cancel.className = "confirm-secondary";
@@ -2108,6 +2123,7 @@
             } else {
                 surface.disabled = false;
             }
+            sincronizarSuperficiesVisualesOdontograma(surface);
         }
 
         function actualizarDiagnosticoOdontograma() {

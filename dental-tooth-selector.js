@@ -124,7 +124,36 @@
         };
     }
 
+    function clinicalName(toothId) {
+        const tooth = catalog.getTooth(toothId);
+        if (!tooth) return "Pieza dental";
+        const names = {
+            CENTRAL_INCISOR: "Incisivo central", LATERAL_INCISOR: "Incisivo lateral",
+            CANINE: "Canino", FIRST_PREMOLAR: "Primer premolar", SECOND_PREMOLAR: "Segundo premolar",
+            FIRST_MOLAR: "Primer molar", SECOND_MOLAR: "Segundo molar", THIRD_MOLAR: "Tercer molar"
+        };
+        return `${names[tooth.type] || "Pieza"} ${tooth.arch === "UPPER" ? "superior" : "inferior"} ${tooth.side === "RIGHT" ? "derecho" : "izquierdo"}${tooth.dentition === "PRIMARY" ? " temporal" : " permanente"}`;
+    }
+
+    // Schematic crowns/roots only; identity and anatomy come from the canonical catalog.
+    function clinicalIllustration(toothId) {
+        const tooth = catalog.getTooth(toothId);
+        if (!tooth) return "";
+        const family = tooth.type.includes("INCISOR") ? "incisor" : tooth.type === "CANINE" ? "canine"
+            : tooth.type.includes("PREMOLAR") ? "premolar" : "molar";
+        const shapes = {
+            incisor: ['M19 10 Q30 7 41 10 L39 33 Q35 44 32 66 Q30 73 28 66 L22 34 Z', 'M20 15 L40 15 M23 32 Q30 35 37 32'],
+            canine: ['M17 20 L30 6 L43 20 L39 36 L33 68 Q30 76 27 68 L21 36 Z', 'M30 7 L30 31 M21 34 Q30 39 39 34'],
+            premolar: ['M13 15 Q18 5 29 12 Q41 4 47 17 L43 36 L37 65 Q34 70 31 44 Q28 70 24 65 L17 36 Z', 'M15 20 L25 25 L31 17 L39 25 L45 20 M19 34 Q30 39 42 34'],
+            molar: ['M8 17 Q10 6 21 11 Q30 5 38 11 Q51 5 52 19 L48 37 L46 65 Q43 72 38 46 L33 63 Q30 71 27 62 L22 46 Q17 73 14 65 L11 37 Z', 'M10 22 L21 26 L30 18 L40 26 L51 21 M30 18 L30 34 M13 35 Q30 42 47 35']
+        };
+        const [outline, detail] = shapes[family];
+        return `<svg class="odontogram-anatomy" data-family="${family}" viewBox="0 0 60 80" aria-hidden="true" focusable="false"><g${tooth.arch === "UPPER" ? ' transform="rotate(180 30 40)"' : ""}><path class="tooth-outline" d="${outline}"/><path class="tooth-detail" d="${detail}"/></g></svg>`;
+    }
+
     window.DentalToothSelector = {
+        clinicalName,
+        clinicalIllustration,
         getTooth: catalog.getTooth,
         getLabel: catalog.getLabel,
         getTeethByDentition: catalog.getTeethByDentition,
