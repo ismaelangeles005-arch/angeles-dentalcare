@@ -15,6 +15,31 @@
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
         <style>
+        .patients-page .patient-overview { min-width: 0; }
+        .patients-page .overview-heading h3 { font-size: 22px; line-height: 1.3; margin: 0 0 10px; overflow-wrap: anywhere; }
+        .patients-page .overview-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 28px; margin-top: 20px; }
+        .patients-page .overview-section { min-width: 0; border-top: 1px solid var(--color-border); padding-top: 14px; }
+        .patients-page .overview-section h4 { color: var(--color-text-muted); font-size: 12px; text-transform: uppercase; margin: 0 0 12px; }
+        .patients-page .overview-section dl { display: grid; gap: 12px; margin: 0; }
+        .patients-page .overview-section dt { font-size: 12px; color: var(--color-text-muted); margin-bottom: 3px; }
+        .patients-page .overview-section dd { font-size: 14px; line-height: 1.45; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .patients-page .overview-section .overview-missing { font-size: 12px; color: var(--color-text-muted); }
+        .patients-page .overview-alerts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-top: 14px; font-size: 12px; }
+        .patients-page .overview-alert-chip { padding: 4px 8px; border: 1px solid #dfc59c; border-radius: 6px; color: #765120; background: #fffaf0; overflow-wrap: anywhere; }
+        .patients-page .clinical-alert-dialog { width: min(620px, 100%); max-height: calc(100dvh - 40px); overflow-y: auto; }
+        .patients-page .clinical-alert-dialog > p { color: var(--color-text-muted); overflow-wrap: anywhere; margin: 6px 0 18px; }
+        .patients-page .clinical-alert-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .patients-page .clinical-alert-option { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 52px; padding: 10px 12px; border: 1px solid #aebbc5; border-radius: 8px; background: #fff; cursor: pointer; font-size: 14px; line-height: 1.35; }
+        .patients-page .clinical-alert-option span { overflow-wrap: anywhere; }
+        .patients-page .clinical-alert-option input { flex: 0 0 18px; width: 18px; height: 18px; margin: 0; accent-color: var(--color-primary); }
+        .patients-page .clinical-alert-option:has(input:checked) { border-color: var(--color-primary); background: #edf5fb; font-weight: 700; box-shadow: inset 3px 0 var(--color-primary); }
+        .patients-page .clinical-alert-option:focus-within { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+        .patients-page .clinical-alert-dialog .confirm-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .patients-page .clinical-alert-dialog button:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+        @media (max-width: 600px) {
+            .patients-page .overview-columns, .patients-page .clinical-alert-options { grid-template-columns: minmax(0, 1fr); }
+            .patients-page .clinical-alert-dialog .confirm-actions button { flex: 1 1 100px; }
+        }
         .patients-page .patient-detail-dialog { width: min(780px, 100%); max-height: calc(100dvh - 40px); overflow-y: auto; padding: 0; }
         .patients-page .patient-detail-header { display: flex; align-items: start; justify-content: space-between; gap: 16px; padding: 20px 24px 16px; border-bottom: 1px solid var(--color-border); background: #fff; }
         .patients-page .patient-detail-identity { min-width: 0; }
@@ -827,7 +852,7 @@
                 </div>
 
                 <section class="clinical-panel" data-clinical-panel="general">
-                    <div class="clinical-info-grid" id="clinicalGeneralSummary"></div>
+                    <div class="patient-overview" id="clinicalGeneralSummary"></div>
                 </section>
 
                 <section class="clinical-panel" data-clinical-panel="historia" hidden>
@@ -1514,23 +1539,36 @@
         function abrirCondicionesMedicas(index) {
             const paciente = pacientes[index];
             if (!paciente?.id) return;
+            const previousFocus = document.activeElement;
             const keys = [["alzheimer","Alzheimer"],["diabetes","Diabetes"],["hipertension","Hipertensión"],["anticoagulacion","Anticoagulación"],["alergias","Alergias"],["discapacidad_cognitiva","Discapacidad cognitiva"],["necesita_acompanante","Necesita acompañante"],["riesgo_medico_especial","Riesgo médico especial"],["otro","Otro"]];
             const active = new Set((paciente.medical_conditions || []).map(item => item.condition_key));
             const backdrop = document.createElement("div");
             backdrop.className = "confirm-backdrop";
             backdrop.innerHTML = `
-                <div class="confirm-dialog" role="dialog" aria-modal="true">
-                    <h3>Alertas clínicas</h3>
-                    <div class="conditions-grid">${keys.map(([key,label]) => `<label><input type="checkbox" value="${key}" ${active.has(key) ? "checked" : ""}> ${label}</label>`).join("")}</div>
+                <div class="confirm-dialog clinical-alert-dialog" role="dialog" aria-modal="true" aria-labelledby="clinicalAlertsTitle">
+                    <h3 id="clinicalAlertsTitle">Alertas clínicas</h3>
+                    <p>${DentalRoles.escapeHtml(paciente.nombre || "Paciente")}</p>
+                    <div class="clinical-alert-options">${keys.map(([key,label]) => `<label class="clinical-alert-option"><input type="checkbox" value="${key}" ${active.has(key) ? "checked" : ""}><span>${label}</span></label>`).join("")}</div>
                     <div class="confirm-actions"><button type="button" class="confirm-secondary" data-cancel>Cancelar</button><button type="button" class="confirm-danger success" data-save>Guardar</button></div>
                 </div>`;
             document.body.appendChild(backdrop);
-            backdrop.querySelector("[data-cancel]").onclick = () => backdrop.remove();
+            const close = () => { backdrop.remove(); if (previousFocus?.isConnected) previousFocus.focus(); };
+            backdrop.querySelector("[data-cancel]").onclick = close;
+            backdrop.addEventListener("keydown", event => {
+                if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(); }
+                if (event.key === "Tab") {
+                    const controls = [...backdrop.querySelectorAll("input, button")];
+                    const first = controls[0], last = controls[controls.length - 1];
+                    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+                    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+                }
+            });
+            backdrop.querySelector("input").focus();
             backdrop.querySelector("[data-save]").onclick = async () => {
                 const conditions = Array.from(backdrop.querySelectorAll("input:checked")).map(input => ({ conditionKey: input.value }));
                 try {
                     await DentalApi.updatePatientMedicalConditions(paciente.id, conditions);
-                    backdrop.remove();
+                    close();
                     await cargarPacientes();
                     DentalRoles.notify("Alertas clínicas guardadas.", "success");
                 } catch (error) { DentalRoles.notify(error.message, "error"); }
@@ -2784,21 +2822,42 @@
             return labels[value] || value || "Evolución";
         }
 
+        function renderInformacionGeneralPaciente() {
+            const patient = pacienteExpediente;
+            const escape = value => DentalRoles.escapeHtml(String(value ?? ""));
+            const field = (label, value) => `<div><dt>${escape(label)}</dt><dd${value ? "" : ' class="overview-missing"'}>${value ? escape(value) : "Sin dato"}</dd></div>`;
+            const type = patient.patient_type === "ambulatory" ? "Ambulatorio" : "Regular";
+            const classifications = { sin_clasificacion: "Sin clasificación", cumplido: "Cumplido", impuntual: "Impuntual", ausencias_frecuentes: "Ausencias frecuentes", requiere_confirmacion: "Requiere confirmación", incumplimiento_indicaciones: "Incumplimiento recurrente de citas o indicaciones", documentacion_pendiente: "Documentación pendiente" };
+            const classification = classifications[patient.operational_classification || "sin_clasificacion"] || patient.operational_classification;
+            // The existing patient response already includes only active medical conditions.
+            const alerts = (patient.medical_conditions || []).filter(item => item.active !== false && item.condition_label);
+            document.getElementById("clinicalGeneralSummary").innerHTML = `
+                <header class="overview-heading">
+                    <h3>${escape(patient.nombre || "Paciente")}</h3>
+                    <div class="patient-detail-badges">
+                        <span class="patient-detail-badge">Código: ${escape(patient.patient_code || "Sin dato")}</span>
+                        <span class="patient-detail-badge type">${type}</span>
+                        <span class="patient-detail-badge status">Estado: ${escape(patient.estado || "Sin dato")}</span>
+                    </div>
+                    ${alerts.length ? `<div class="overview-alerts"><strong>Alertas activas:</strong>${alerts.map(item => `<span class="overview-alert-chip">${escape(item.condition_label)}</span>`).join("")}</div>` : ""}
+                </header>
+                <div class="overview-columns">
+                    <section class="overview-section" aria-labelledby="overviewContact"><h4 id="overviewContact">Identificación / Contacto</h4>
+                        <dl>${field("Cédula", patient.national_id)}${field("Teléfono", patient.phone)}${field("Correo", patient.email)}</dl>
+                    </section>
+                    <section class="overview-section" aria-labelledby="overviewCare"><h4 id="overviewCare">Atención</h4>
+                        <dl>${field("Doctor asignado", patient.doctor)}${field("Próxima cita", patient.fecha ? `${patient.fecha} ${patient.hora || ""}`.trim() : "Sin cita registrada")}</dl>
+                    </section>
+                    <section class="overview-section" aria-labelledby="overviewClassification"><h4 id="overviewClassification">Clasificación</h4>
+                        <dl>${field("Tipo de paciente", type)}${field("Clasificación operativa", classification)}</dl>
+                    </section>
+                </div>`;
+        }
+
         function renderResumenExpediente() {
             if (!pacienteExpediente) return;
 
-            renderInfoGrid("clinicalGeneralSummary", [
-                { label: "Paciente", value: pacienteExpediente.nombre },
-                { label: "Codigo", value: pacienteExpediente.patient_code },
-                { label: "Cedula", value: pacienteExpediente.national_id },
-                { label: "Telefono", value: pacienteExpediente.phone },
-                { label: "Correo", value: pacienteExpediente.email },
-                { label: "Doctor asignado", value: pacienteExpediente.doctor },
-                { label: "Proxima cita", value: pacienteExpediente.fecha ? `${pacienteExpediente.fecha} ${pacienteExpediente.hora || ""}`.trim() : "Sin cita registrada" },
-                { label: "Estado", value: pacienteExpediente.estado },
-                { label: "Tipo de paciente", value: pacienteExpediente.patient_type === "ambulatory" ? "Ambulatorio" : "Regular" },
-                { label: "Clasificación operativa", value: pacienteExpediente.operational_classification || "sin_clasificacion" }
-            ]);
+            renderInformacionGeneralPaciente();
 
             renderInfoGrid("clinicalHistorySummary", [
                 { label: "Motivo de consulta", value: pacienteExpediente.motivo_consulta || pacienteExpediente.diagnosis },
