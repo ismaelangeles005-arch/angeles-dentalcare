@@ -226,17 +226,19 @@
 
         .patients-page .patient-card {
             display: grid;
+            min-width: 0;
+            align-content: start;
             gap: 12px;
             padding: 16px;
-            border-radius: var(--radius-lg);
-            border-left: 4px solid rgba(47, 167, 160, 0.72);
-            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            box-shadow: none;
         }
 
         .patients-page .patient-card:hover {
-            transform: translateY(-2px);
+            transform: none;
             border-color: rgba(37, 99, 166, 0.36);
-            box-shadow: var(--shadow-md);
+            box-shadow: none;
         }
 
         .patients-page .patient-card header {
@@ -252,10 +254,30 @@
             color: var(--color-primary-dark);
             font-size: 18px;
             line-height: 1.2;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            overflow-wrap: anywhere;
         }
+
+        .patients-page .patient-avatar { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; background: #edf5f7; border: 1px solid #d8e7ec; color: #285769; font-size: 20px; font-weight: 700; }
+        .patients-page .patient-card .patient-title { flex: 1; min-width: 0; }
+        .patients-page .patient-card .patient-badges { justify-content: flex-start; margin-top: 8px; }
+        .patients-page .patient-card .patient-badge { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+        .patients-page .patient-card .meta-item { padding: 4px 0; border-radius: 0; background: transparent; }
+        .patients-page .patient-card .meta-item:last-child { grid-column: 1 / -1; }
+        .patients-page .patient-card .meta-value { white-space: normal; overflow-wrap: anywhere; }
+        .patients-page .patient-card .actions button { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+        .patients-page .patient-card .patient-primary-actions { margin-top: 0; }
+        .patients-page .patient-primary-actions > button { flex: 1 1 120px; }
+        .patients-page .patient-card .patient-secondary-actions { border: 0; margin: 0; padding: 0; align-items: center; }
+        .patients-page .patient-card .patient-alerts-btn { background: transparent; color: var(--color-primary-dark); border: 1px solid var(--color-border); box-shadow: none; }
+        .patients-page .patient-more { width: 100%; min-width: 0; }
+        .patients-page .patient-more summary { display: grid; place-items: center; list-style: none; margin-left: auto; width: 40px; height: 40px; border: 1px solid var(--color-border); border-radius: 6px; cursor: pointer; color: var(--color-text); font-size: 24px; }
+        .patients-page .patient-more summary::-webkit-details-marker { display: none; }
+        .patients-page .patient-more[open] summary { background: #edf5f7; }
+        .patients-page .patient-more summary:focus-visible, .patients-page .patient-card button:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+        .patients-page .patient-menu-actions { display: grid; gap: 4px; border-top: 1px solid var(--color-border); margin-top: 8px; padding-top: 8px; }
+        .patients-page .patient-menu-actions button { width: 100%; min-height: 40px; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--color-text); text-align: left; font-size: 13px; cursor: pointer; }
+        .patients-page .patient-menu-actions button:hover { background: #f1f5f8; }
+        .patients-page .patient-menu-actions .delete-btn { color: #a52d36; }
 
         .patients-page .patient-badges {
             display: flex;
@@ -1328,6 +1350,12 @@
             return !!paciente.has_attended_current_doctor;
         }
 
+        function inicialesPaciente(nombre) {
+            const words = typeof nombre === "string" ? nombre.normalize("NFC").match(/\p{L}[\p{L}\p{M}]*/gu) || [] : [];
+            if (!words.length) return "?";
+            return Array.from((Array.from(words[0])[0] + (words.length > 1 ? Array.from(words[words.length - 1])[0] : "")).toLocaleUpperCase("es")).slice(0, 2).join("");
+        }
+
         function renderPacientes() {
 
             let grid =
@@ -1403,15 +1431,16 @@
             <article class="patient-card">
 
                 <header>
+                    <div class="patient-avatar" aria-hidden="true">${DentalRoles.escapeHtml(inicialesPaciente(p.nombre))}</div>
                     <div class="patient-title">
                         <h3 title="${DentalRoles.escapeHtml(p.nombre)}">
                             ${DentalRoles.escapeHtml(p.nombre)}
                         </h3>
-                    </div>
                     <div class="patient-badges">
                         ${ownershipBadge}
                         ${identityBadge}
                         ${typeBadge}
+                    </div>
                     </div>
                 </header>
 
@@ -1425,31 +1454,33 @@
                         <span class="meta-value" title="${DentalRoles.escapeHtml(p.phone || "No registrado")}">${DentalRoles.escapeHtml(p.phone || "No registrado")}</span>
                     </div>
                     <div class="meta-item">
-                        <span class="meta-label">Correo</span>
-                        <span class="meta-value" title="${DentalRoles.escapeHtml(p.email || "No registrado")}">${DentalRoles.escapeHtml(p.email || "No registrado")}</span>
-                    </div>
-                    <div class="meta-item">
                         <span class="meta-label">Doctor</span>
                         <span class="meta-value" title="${DentalRoles.escapeHtml(p.doctor || "Sin asignar")}">${DentalRoles.escapeHtml(p.doctor || "Sin asignar")}</span>
                     </div>
                 </div>
 
-                <div class="actions">
+                <div class="actions patient-primary-actions">
 
                     <button class="view-btn" onclick="verDetallePaciente(${index})" title="Ver detalle del paciente">
                         Ver detalle
                     </button>
 
                     ${clinicalButton}
-                    ${rol !== "recepcion" ? `<button class="assign-btn" onclick="abrirClasificacionPaciente(${index})">Clasificación</button>` : ""}
-                    ${rol !== "recepcion" ? `<button class="file-btn" onclick="abrirCondicionesMedicas(${index})">Alertas clínicas</button>` : ""}
+                </div>
+                <div class="actions patient-secondary-actions">
+                    ${rol !== "recepcion" ? `<button class="patient-alerts-btn" onclick="abrirCondicionesMedicas(${index})">Alertas clínicas</button>` : ""}
                     ${rol !== "doctor" && p.patient_type === "ambulatory" ? `<button class="complete-btn" onclick="convertirPacienteRegular(${index})">Convertir a regular</button>` : ""}
                     ${takeButton}
                     ${followButton}
-                    ${assignButton}
-                    ${deleteButton}
-
                 </div>
+                <details class="patient-more" onkeydown="if (event.key === 'Escape') { this.open = false; this.querySelector('summary').focus(); event.stopPropagation(); }">
+                    <summary aria-label="Más acciones de ${DentalRoles.escapeHtml(p.nombre)}" title="Más acciones">⋯</summary>
+                    <div class="patient-menu-actions" onclick="if (event.target.closest('button')) this.closest('details').open = false;">
+                        ${rol !== "recepcion" ? `<button class="assign-btn" onclick="abrirClasificacionPaciente(${index})">Clasificación</button>` : ""}
+                        ${assignButton}
+                        ${deleteButton}
+                    </div>
+                </details>
 
             </article>
 
