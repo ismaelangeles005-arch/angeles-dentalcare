@@ -144,6 +144,9 @@ function harness(status = 'ACTIVE') {
 }
 function prepare(h, op) {
   if (op !== 'present' && op !== 'add') h.state().plan.status = 'PRESENTED';
+  if (op === 'decide') {
+    h.state().acceptances = [];
+  }
   if (op === 'sign') {
     h.state().items[0].status = 'ACCEPTED';
     h.state().acceptances = [];
@@ -264,6 +267,19 @@ test('decisions validate target only; signature validates every snapshot item in
   assert.equal((await h.run('decide')).code,200);
   h.state().acceptances = [];
   const before=clone(h.state());assert.equal((await h.run('sign')).code,409);assert.deepEqual(h.state(),before);
+});
+test('signed consent freezes later treatment plan decisions without changing history', async () => {
+  const h = harness();
+  h.state().plan.status = 'ACCEPTED';
+  h.state().items[0].status = 'ACCEPTED';
+
+  const before = clone(h.state());
+  const res = await h.run('decide', { body: { status: 'REJECTED' } });
+
+  assert.equal(res.code, 409);
+  assert.match(res.body.message, /consentimiento ya fue firmado/i);
+  assert.deepEqual(h.state(), before);
+  assert(!h.calls.some(c => c.q.startsWith('UPDATE treatment_plan_items')));
 });
 test('second acceptance for the same plan is rejected without changing historical consent', async () => {
   const h = harness();

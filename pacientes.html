@@ -2793,7 +2793,7 @@
                     <p><strong>${esc(itemStatusLabel[item.status] || item.status)}</strong></p>
                     ${plan.status === "IN_PROGRESS" && item.status === "ACCEPTED" ? `<button type="button" class="confirm-secondary" data-execution-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente(this.dataset.executionItem, 'IN_PROGRESS')">Comenzar tratamiento</button>` : ""}
                     ${plan.status === "IN_PROGRESS" && item.status === "IN_PROGRESS" ? `<button type="button" class="confirm-secondary" data-treatment-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="abrirRegistroRealizadoDesdePlan(this.dataset.treatmentItem)">Registrar como realizado</button>` : ""}
-                    ${["PRESENTED", "ACCEPTED", "PARTIALLY_ACCEPTED", "REJECTED", "POSTPONED"].includes(plan.status) && ["PROPOSED", "ACCEPTED", "REJECTED", "POSTPONED"].includes(item.status) ? `
+                    ${["PRESENTED", "ACCEPTED", "PARTIALLY_ACCEPTED", "REJECTED", "POSTPONED"].includes(plan.status) && !(plan.acceptances || []).length && ["PROPOSED", "ACCEPTED", "REJECTED", "POSTPONED"].includes(item.status) ? `
                         <div class="confirm-actions">
                             ${[["ACCEPTED", "Aceptar"], ["REJECTED", "Rechazar"], ["POSTPONED", "Posponer"]].map(([status, label]) => `<button type="button" class="confirm-secondary" data-item-id="${esc(item.id)}" data-status="${status}" ${state.busy || item.status === status ? "disabled" : ""} onclick="cambiarDecisionPlan(this.dataset.itemId, this.dataset.status)">${label}</button>`).join("")}
                         </div>` : ""}
@@ -3182,6 +3182,10 @@
             const state = treatmentPlanState;
             const plan = state?.plan;
             if (!plan || state.busy) return;
+            if (itemId && (plan.acceptances || []).length) {
+                DentalRoles.notify("Las decisiones del plan están bloqueadas porque el consentimiento ya fue firmado.", "warning");
+                return;
+            }
             state.busy = true;
             renderPlanPaciente();
             let saved = false;

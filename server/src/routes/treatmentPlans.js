@@ -338,6 +338,15 @@ router.patch("/:planId/items/:itemId/status", asyncHandler(async (req, res) => {
   if (!decisions.includes(status)) reject("Selecciona aceptar, rechazar o posponer");
   const result = await transaction(async client => {
     const plan = await lockPlan(client, planId, req.user.organizationId);
+    const existingAcceptance = await client.query(`
+      SELECT id
+      FROM treatment_plan_acceptances
+      WHERE treatment_plan_id = $1 AND organization_id = $2
+      LIMIT 1
+    `, [planId, req.user.organizationId]);
+    if (existingAcceptance.rows.length) {
+      reject("Las decisiones del plan están bloqueadas porque el consentimiento ya fue firmado", 409);
+    }
     if (!decisionPlanStatuses.includes(plan.status)) reject("El plan no admite decisiones de aceptacion", 409);
     const items = await client.query("SELECT * FROM treatment_plan_items WHERE treatment_plan_id = $1 ORDER BY id FOR UPDATE", [planId]);
     const item = items.rows.find(row => row.id === itemId);
