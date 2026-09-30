@@ -2941,6 +2941,15 @@
             if (document.getElementById("planConsentViewer")) return;
 
             const esc = DentalRoles.escapeHtml;
+            const money = value => {
+                const amount = Number(value);
+                return Number.isFinite(amount)
+                    ? `RD$ ${amount.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })}`
+                    : "RD$ 0.00";
+            };
             state.busy = true;
             renderPlanPaciente();
 
@@ -2957,12 +2966,10 @@
                     : [];
 
                 const acceptedItems = items.filter(item =>
-                    item.status === "ACCEPTED" ||
-                    item.status === "IN_PROGRESS" ||
-                    item.status === "COMPLETED"
+                    item.status === "ACCEPTED"
                 );
 
-                const visibleItems = acceptedItems.length ? acceptedItems : items;
+                const visibleItems = acceptedItems;
 
                 const backdrop = document.createElement("div");
                 backdrop.id = "planConsentViewer";
@@ -2978,10 +2985,6 @@
                     >
                         <h3 id="planConsentViewerTitle">Consentimiento de tratamiento</h3>
 
-                        <p>
-                            <strong>Paciente:</strong>
-                            ${esc(acceptance.patient || pacienteExpediente?.nombre || "")}
-                        </p>
 
                         <p>
                             <strong>Firmado por:</strong>
@@ -3008,19 +3011,19 @@
                                         : ""}
                                     <p>
                                         ${item.tooth_id
-                                            ? `Pieza ${esc(item.tooth_id)}`
+                                            ? esc(piezaPlanPaciente(item.tooth_id))
                                             : "Sin pieza específica"}
                                         ·
                                         ${esc(item.surface || "Pieza completa")}
                                     </p>
-                                    <p><strong>RD$${esc(item.final_amount ?? "0.00")}</strong></p>
+                                    <p><strong>${esc(money(item.final_amount))}</strong></p>
                                 </article>
                             `).join("")
                             : '<div class="empty-state">No hay tratamientos en el snapshot firmado.</div>'}
 
                         <p>
                             <strong>Total aceptado:</strong><br>
-                            <strong>RD$${esc(acceptance.accepted_total_snapshot ?? "0.00")}</strong>
+                            <strong>${esc(money(acceptance.accepted_total_snapshot))}</strong>
                         </p>
 
                         <hr>
