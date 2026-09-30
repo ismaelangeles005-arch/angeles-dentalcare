@@ -471,6 +471,28 @@
         .appointments-page .clinical-note-item { margin-top: 10px; }
         .appointments-page .clinical-note-item small { display: block; margin-bottom: 8px; color: var(--color-text-muted); font-weight: 900; }
 
+        .appointments-page .appointment-detail-dialog { width: min(680px, 100%); max-height: calc(100dvh - 40px); padding: 0; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-sm); }
+        .appointments-page .appointment-detail-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--color-border); }
+        .appointments-page .appointment-detail-top h2 { font-size: 18px; }
+        .appointments-page .appointment-detail-top .detail-close { flex: 0 0 38px; }
+        .appointments-page .appointment-detail-content { overflow-y: auto; min-height: 0; padding: 18px 20px; overflow-wrap: anywhere; }
+        .appointments-page .appointment-detail-content:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+        .appointments-page .appointment-detail-summary { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .appointments-page .appointment-detail-summary h3 { font-size: 22px; color: var(--color-primary-dark); margin-bottom: 6px; }
+        .appointments-page .appointment-detail-summary p { color: var(--color-text-muted); font-size: 14px; }
+        .appointments-page .appointment-detail-section { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--color-border); }
+        .appointments-page .appointment-detail-section h3 { font-size: 13px; text-transform: uppercase; margin-bottom: 12px; color: var(--color-primary-dark); }
+        .appointments-page .appointment-detail-section dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; }
+        .appointments-page .appointment-detail-section dt { color: var(--color-text-muted); font-size: 12px; margin-bottom: 4px; }
+        .appointments-page .appointment-detail-section dd { margin: 0; font-size: 14px; white-space: pre-wrap; }
+        .appointments-page .appointment-detail-reason { font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
+        .appointments-page .appointment-detail-missing { color: var(--color-text-muted); font-weight: normal; }
+        @media (max-width: 480px) {
+            .appointments-page .appointment-detail-section dl { grid-template-columns: 1fr; }
+            .appointments-page .appointment-detail-content { padding: 14px; }
+            .appointments-page .appointment-detail-top { padding: 12px 14px; }
+        }
+
         @media (max-width: 1180px) {
             .appointments-page .form-grid,
             .appointments-page .clinical-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1859,17 +1881,59 @@
                 return;
             }
 
-            DentalRoles.showDetails("Detalle de cita", [
-                { label: "Paciente", value: cita.paciente },
-                { label: "Doctor", value: cita.doctor },
-                { label: "Área odontológica", value: cita.dental_area },
-                { label: "Categoría de procedimiento", value: cita.categoria_procedimiento },
-                { label: "Procedimiento", value: cita.procedimiento || cita.motivo },                { label: "Piezas", value: (cita.tooth_selections || []).map(item => item.displayCode).join(", ") || cita.pieza_dental },
-                { label: "Motivo de consulta", value: cita.detalle_clinico || cita.motivo },
-                { label: "Fecha", value: cita.fecha },
-                { label: "Hora", value: rangoHorarioCita(cita) },
-                { label: "Estado", value: estadoEtiqueta(cita.estado) }
-            ]);
+            const previousFocus = document.activeElement;
+            const current = document.querySelector(".detail-backdrop");
+            current?.querySelector("[data-detail-close]")?.click();
+            current?.remove();
+            const escape = value => DentalRoles.escapeHtml(String(value || "No registrado"));
+            const field = (label, value) => `<div><dt>${escape(label)}</dt><dd${value ? "" : ' class="appointment-detail-missing"'}>${escape(value)}</dd></div>`;
+            const selections = cita.tooth_selections || [];
+            const toothLabel = selections.length === 1 ? "Pieza dental" : selections.length > 1 ? "Piezas dentales" : "Pieza(s) dental(es)";
+            const reason = cita.detalle_clinico || cita.motivo;
+            const backdrop = document.createElement("div");
+            backdrop.className = "detail-backdrop";
+            backdrop.innerHTML = `
+                <div class="detail-dialog appointment-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+                    <header class="appointment-detail-top">
+                        <h2 id="detailTitle">Detalle de cita</h2>
+                        <button type="button" class="detail-close" aria-label="Cerrar detalle" data-detail-close>&times;</button>
+                    </header>
+                    <div class="appointment-detail-content" tabindex="0" role="region" aria-label="Información de la cita">
+                        <div class="appointment-detail-summary">
+                            <div><h3>${escape(cita.paciente)}</h3><p>Doctor: ${escape(cita.doctor)}</p></div>
+                            <span class="estado ${DentalRoles.escapeHtml(estadoClase(cita.estado))}">${escape(estadoEtiqueta(cita.estado))}</span>
+                        </div>
+                        <section class="appointment-detail-section" aria-labelledby="appointmentDetailCare">
+                            <h3 id="appointmentDetailCare">Atención</h3>
+                            <dl>${field("Área odontológica", cita.dental_area)}${field("Categoría de procedimiento", cita.categoria_procedimiento)}${field("Procedimiento", cita.procedimiento || cita.motivo)}${field(toothLabel, selections.map(item => item.displayCode).join(", ") || cita.pieza_dental)}</dl>
+                        </section>
+                        <section class="appointment-detail-section" aria-labelledby="appointmentDetailSchedule">
+                            <h3 id="appointmentDetailSchedule">Agenda</h3>
+                            <dl>${field("Fecha", cita.fecha)}${field("Hora", rangoHorarioCita(cita))}</dl>
+                        </section>
+                        <section class="appointment-detail-section" aria-labelledby="appointmentDetailReason">
+                            <h3 id="appointmentDetailReason">Motivo de consulta</h3>
+                            <p class="appointment-detail-reason${reason ? "" : " appointment-detail-missing"}">${escape(reason)}</p>
+                        </section>
+                    </div>
+                </div>`;
+            document.body.appendChild(backdrop);
+            const closeButton = backdrop.querySelector("[data-detail-close]");
+            const content = backdrop.querySelector(".appointment-detail-content");
+            const close = () => {
+                backdrop.remove();
+                if (previousFocus?.isConnected) previousFocus.focus();
+            };
+            closeButton.addEventListener("click", close);
+            backdrop.addEventListener("click", event => { if (event.target === backdrop) close(); });
+            backdrop.addEventListener("keydown", event => {
+                if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(); }
+                if (event.key === "Tab") {
+                    event.preventDefault();
+                    (document.activeElement === closeButton ? content : closeButton).focus();
+                }
+            });
+            closeButton.focus();
         }
 
         function abrirCitaNotificada() {
