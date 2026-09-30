@@ -799,6 +799,55 @@
             .patients-page .clinical-note-form { grid-template-columns: 1fr; }
             .patients-page .clinical-note-form .span-2 { grid-column: auto; }
         }
+        .patients-page [data-clinical-panel="plan"] .plan-summary,
+        .patients-page [data-clinical-panel="plan"] .plan-section-heading,
+        .patients-page [data-clinical-panel="plan"] .plan-card-heading,
+        .patients-page [data-clinical-panel="plan"] .plan-list-row,
+        .patients-page [data-clinical-panel="plan"] .plan-consent {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+        }
+        .patients-page [data-clinical-panel="plan"] .plan-list-row {
+            padding: 12px 0; border-bottom: 1px solid var(--color-border);
+        }
+        .patients-page [data-clinical-panel="plan"] .plan-list-copy { flex: 1 1 240px; min-width: 0; }
+        .patients-page [data-clinical-panel="plan"] .plan-list-row p { margin: 5px 0 0; font-size: 13px; color: var(--color-text-light, #52616b); }
+        .patients-page [data-clinical-panel="plan"] #newTreatmentPlan { margin: 14px 0; }
+        .patients-page [data-clinical-panel="plan"] .plan-summary { align-items: flex-start; border-top: 2px solid var(--color-border); padding-top: 20px; margin-top: 18px; }
+        .patients-page [data-clinical-panel="plan"] .plan-summary h3 { margin: 0 0 8px; font-size: 20px; }
+        .patients-page [data-clinical-panel="plan"] .plan-meta { display: flex; gap: 8px 20px; flex-wrap: wrap; margin: 10px 0; color: var(--color-text-light, #52616b); font-size: 13px; }
+        .patients-page [data-clinical-panel="plan"] .plan-total { display: grid; gap: 4px; font-size: 13px; }
+        .patients-page [data-clinical-panel="plan"] .plan-total strong { font-size: 20px; color: var(--color-primary-dark); }
+        .patients-page [data-clinical-panel="plan"] .plan-badge { display: inline-block; padding: 4px 9px; border-radius: 6px; background: #eef3f5; color: #364b56; font-size: 12px; font-weight: 700; }
+        .patients-page [data-clinical-panel="plan"] .plan-badge[data-state="COMPLETED"] { background: #e7f3ec; color: #246042; }
+        .patients-page [data-clinical-panel="plan"] .plan-badge[data-state="IN_PROGRESS"] { background: #e6f3f8; color: #1e5b73; }
+        .patients-page [data-clinical-panel="plan"] .plan-consent { border-block: 1px solid var(--color-border); padding: 14px 0; margin: 16px 0; }
+        .patients-page [data-clinical-panel="plan"] .plan-consent strong { color: #246042; }
+        .patients-page [data-clinical-panel="plan"] .plan-consent p { margin: 5px 0 0; font-size: 13px; }
+        .patients-page [data-clinical-panel="plan"] .plan-consent-status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .patients-page [data-clinical-panel="plan"] .plan-section-heading { margin: 20px 0 12px; }
+        .patients-page [data-clinical-panel="plan"] h4 { margin: 0; font-size: 15px; color: var(--color-primary-dark); }
+        .patients-page [data-clinical-panel="plan"] #planToothTools label { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 0; }
+        .patients-page [data-clinical-panel="plan"] #treatmentPlanNumbering { width: auto; min-width: 104px; margin: 0; padding: 6px 8px; }
+        .patients-page [data-clinical-panel="plan"] .plan-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .patients-page [data-clinical-panel="plan"] .plan-item { min-width: 0; padding: 14px; border: 1px solid var(--color-border); border-radius: 8px; background: white; }
+        .patients-page [data-clinical-panel="plan"] .plan-item p { margin: 8px 0; font-size: 13px; color: var(--color-text-light, #52616b); }
+        .patients-page [data-clinical-panel="plan"] .plan-card-heading { align-items: flex-start; }
+        .patients-page [data-clinical-panel="plan"] .plan-card-heading > strong { flex: 1 1 150px; font-size: 15px; }
+        .patients-page [data-clinical-panel="plan"] .plan-item-facts { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; border-top: 1px solid #edf0f2; padding-top: 9px; margin-bottom: 12px; font-size: 13px; }
+        .patients-page [data-clinical-panel="plan"] .plan-primary { background: var(--color-primary-dark); color: white; border: 1px solid var(--color-primary-dark); }
+        .patients-page [data-clinical-panel="plan"] .plan-clinical { border: 1px solid #6e9b96; color: #245c56; background: #f1f8f6; }
+        .patients-page [data-clinical-panel="plan"] .plan-primary:hover { filter: brightness(.92); }
+        .patients-page [data-clinical-panel="plan"] .plan-clinical:hover { background: #e3f1ed; }
+        .patients-page [data-clinical-panel="plan"] :is(button, select):focus-visible { outline: 3px solid #287e91; outline-offset: 3px; }
+        .patients-page [data-clinical-panel="plan"] :is(button, p, strong, span) { overflow-wrap: anywhere; }
+        .patients-page [data-clinical-panel="plan"] button { max-width: 100%; white-space: normal; }
+        .patients-page [data-clinical-panel="plan"] .plan-progress { border-left: 3px solid #287e91; padding: 4px 12px; margin: 16px 0; font-size: 13px; }
+        @media (max-width: 700px) {
+            .patients-page [data-clinical-panel="plan"] .plan-items { grid-template-columns: minmax(0, 1fr); }
+            .patients-page [data-clinical-panel="plan"] .plan-consent > button,
+            .patients-page [data-clinical-panel="plan"] .plan-item > button { width: 100%; }
+            .patients-page [data-clinical-panel="plan"] .plan-total { width: 100%; }
+        }
     </style>
 
     <link rel="stylesheet" href="styles.css">
@@ -1050,7 +1099,7 @@
                             <button type="submit" class="add-btn">Crear plan</button>
                         </form>
                     </details>
-                    <label>Numeración dental<select id="treatmentPlanNumbering" onchange="renderPlanPaciente()"><option value="FDI">FDI</option><option value="UNIVERSAL">Universal</option></select></label>
+                    <div id="treatmentPlanNumberingHome" hidden><label>Numeración dental<select id="treatmentPlanNumbering" onchange="renderPlanPaciente()"><option value="FDI">FDI</option><option value="UNIVERSAL">Universal</option></select></label></div>
                     <div id="treatmentPlanDetail"></div>
                     <div id="treatmentPlanResults" role="status" aria-live="polite"></div>
                 </section>
@@ -1821,6 +1870,8 @@
             pacienteExpediente = paciente;
             treatmentPlanState = { patient: paciente, plan: null, loading: false, busy: false };
             document.getElementById("treatmentPlanList").innerHTML = "";
+            const planNumberingLabel = document.getElementById("treatmentPlanNumbering").closest("label");
+            document.getElementById("treatmentPlanNumberingHome").appendChild(planNumberingLabel);
             document.getElementById("treatmentPlanDetail").innerHTML = "";
             document.getElementById("treatmentPlanResults").textContent = "";
             document.querySelector("#newTreatmentPlan form").reset();
@@ -2678,11 +2729,11 @@
                 if (treatmentPlanState !== state) return;
                 const esc = DentalRoles.escapeHtml;
                 document.getElementById("treatmentPlanList").innerHTML = plans.length ? plans.map(plan => `
-                    <article class="odontogram-entry">
-                        <strong>${esc(plan.name)}</strong>
-                        <p>${esc(({ DRAFT: "En preparación", PRESENTED: "Presentado al paciente", ACCEPTED: "Aceptado", PARTIALLY_ACCEPTED: "Aceptado parcialmente", REJECTED: "No aceptado", POSTPONED: "Pospuesto", IN_PROGRESS: "En tratamiento", COMPLETED: "Tratamiento completado", CANCELLED: "Cancelado" })[plan.status] || plan.status)} · ${esc(plan.doctor || "Sin doctor")} · ${esc(new Date(plan.created_at).toLocaleDateString("es-DO"))}</p>
-                        <p>RD$${esc(plan.total)}</p>
-                        <button type="button" class="confirm-secondary" data-plan-id="${esc(plan.id)}" onclick="abrirPlanPaciente(this.dataset.planId)">Ver plan</button>
+                    <article class="plan-list-row">
+                        <div class="plan-list-copy"><strong>${esc(plan.name)}</strong>
+                        <p><span class="plan-badge" data-state="${esc(plan.status)}">${esc(({ DRAFT: "En preparación", PRESENTED: "Presentado al paciente", ACCEPTED: "Aceptado", PARTIALLY_ACCEPTED: "Aceptado parcialmente", REJECTED: "No aceptado", POSTPONED: "Pospuesto", IN_PROGRESS: "En tratamiento", COMPLETED: "Tratamiento completado", CANCELLED: "Cancelado" })[plan.status] || "Estado no disponible")}</span> · ${esc(plan.doctor || "Sin doctor")} · ${esc(new Date(plan.created_at).toLocaleDateString("es-DO"))}</p></div>
+                        <strong>RD$${esc(plan.total)}</strong>
+                        <button type="button" class="confirm-secondary plan-primary" data-plan-id="${esc(plan.id)}" onclick="abrirPlanPaciente(this.dataset.planId)">Ver plan</button>
                     </article>`).join("") : '<div class="empty-state">Sin planes de tratamiento</div>';
                 document.getElementById("treatmentPlanDoctor").innerHTML = '<option value="">Sin doctor</option>' + doctores.filter(d => d.active !== false).map(d => `<option value="${esc(d.id)}">${esc(d.name)}</option>`).join("");
             } catch (error) {
@@ -2782,27 +2833,36 @@
                 CANCELLED: "Cancelado"
             };
 
-            container.innerHTML = `<h3>${esc(plan.name)}</h3><p>${esc(planStatusLabel[plan.status] || plan.status)}</p>
-                ${plan.progress && plan.status === "IN_PROGRESS" ? `<p role="status"><strong>Progreso del tratamiento</strong><br>${esc(String(plan.progress.completed ?? 0))} de ${esc(String(plan.progress.total ?? 0))} tratamientos realizados · ${esc(String(plan.progress.percent ?? 0))}%</p>` : plan.progress && plan.status === "COMPLETED" && Number(plan.progress.total || 0) > 1 ? `<p role="status">${esc(String(plan.progress.completed ?? 0))} de ${esc(String(plan.progress.total ?? 0))} tratamientos realizados · ${esc(String(plan.progress.percent ?? 0))}%</p>` : ""}
-                ${["ACCEPTED", "PARTIALLY_ACCEPTED"].includes(plan.status) && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente()">Iniciar tratamiento</button>` : ""}
-                ${plan.items.length ? plan.items.map(item => `<article class="odontogram-entry">
-                    <strong>${esc(item.procedure_name_snapshot)}</strong>
-                    <p>Pieza: ${esc(piezaPlanPaciente(item.tooth_id))} · ${esc(surface(item.surface))}</p>
-
-
-                    <p><strong>${esc(itemStatusLabel[item.status] || item.status)}</strong></p>
-                    ${plan.status === "IN_PROGRESS" && item.status === "ACCEPTED" ? `<button type="button" class="confirm-secondary" data-execution-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente(this.dataset.executionItem, 'IN_PROGRESS')">Comenzar tratamiento</button>` : ""}
-                    ${plan.status === "IN_PROGRESS" && item.status === "IN_PROGRESS" ? `<button type="button" class="confirm-secondary" data-treatment-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="abrirRegistroRealizadoDesdePlan(this.dataset.treatmentItem)">Registrar como realizado</button>` : ""}
+            const numberingLabel = document.getElementById("treatmentPlanNumbering")?.closest?.("label");
+            const displayDate = value => value && !Number.isNaN(new Date(value).getTime()) ? new Date(value).toLocaleDateString("es-DO") : "Fecha no disponible";
+            const renderItem = item => {
+                const completedEntry = item.status === "COMPLETED" && item.odontogram_entry_id ? entries.find(entry =>
+                    entry.entry_type === "COMPLETED_TREATMENT" && entry.related_entry_id === item.odontogram_entry_id &&
+                    !["VOIDED", "SUPERSEDED"].includes(entry.status) && entry.procedure_id === item.procedure_id &&
+                    entry.tooth_id === item.tooth_id && (entry.surface ?? null) === (item.surface ?? null)) : null;
+                return `<article class="plan-item">
+                    <div class="plan-card-heading"><strong>${esc(item.procedure_name_snapshot)}</strong><span class="plan-badge" data-state="${esc(item.status)}">${esc(itemStatusLabel[item.status] || "Estado no disponible")}</span></div>
+                    <p>Pieza: ${esc(piezaPlanPaciente(item.tooth_id))}${item.surface ? ` · ${esc(surface(item.surface))}` : " · Pieza completa"}</p>
+                    ${item.status === "COMPLETED" ? `<p>Fecha: ${esc(displayDate(completedEntry?.created_at))}</p>` : ""}
+                    <div class="plan-item-facts"><span>Cantidad: ${esc(String(item.quantity ?? 1))}</span><strong>Total: RD$${esc(item.final_amount ?? "No disponible")}</strong></div>
+                    ${plan.status === "IN_PROGRESS" && item.status === "ACCEPTED" ? `<button type="button" class="confirm-secondary plan-clinical" data-execution-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente(this.dataset.executionItem, 'IN_PROGRESS')">Comenzar tratamiento</button>` : ""}
+                    ${plan.status === "IN_PROGRESS" && item.status === "IN_PROGRESS" ? `<button type="button" class="confirm-secondary plan-clinical" data-treatment-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="abrirRegistroRealizadoDesdePlan(this.dataset.treatmentItem)">Registrar como realizado</button>` : ""}
                     ${["PRESENTED", "ACCEPTED", "PARTIALLY_ACCEPTED", "REJECTED", "POSTPONED"].includes(plan.status) && !(plan.acceptances || []).length && ["PROPOSED", "ACCEPTED", "REJECTED", "POSTPONED"].includes(item.status) ? `
                         <div class="confirm-actions">
                             ${[["ACCEPTED", "Aceptar"], ["REJECTED", "Rechazar"], ["POSTPONED", "Posponer"]].map(([status, label]) => `<button type="button" class="confirm-secondary" data-item-id="${esc(item.id)}" data-status="${status}" ${state.busy || item.status === status ? "disabled" : ""} onclick="cambiarDecisionPlan(this.dataset.itemId, this.dataset.status)">${label}</button>`).join("")}
                         </div>` : ""}
-                </article>`).join("") : '<div class="empty-state">Sin ítems en el plan</div>'}
-                ${plan.status === "DRAFT" ? `<p><strong>RD$${esc(plan.total ?? "0.00")}</strong></p>` : ""}
-                ${plan.status !== "DRAFT" && plan.accepted_total != null ? `<p><strong>RD$${esc(plan.accepted_total)}</strong> · Aceptado por el paciente</p>` : ""}
-                ${(plan.acceptances || []).slice(-1).map(acceptance => `<div><p><strong>Consentimiento firmado ✓</strong><br><strong>Plan protegido</strong><br>${esc(acceptance.accepted_by_name)} · ${esc(new Date(acceptance.accepted_at).toLocaleString("es-DO"))}</p><button type="button" class="confirm-secondary" data-acceptance-id="${esc(acceptance.id)}" onclick="verConsentimientoPlan(this.dataset.acceptanceId)">Ver consentimiento</button></div>`).join("")}
+                </article>`;
+            };
+            container.innerHTML = `<header class="plan-summary"><div><h3>${esc(plan.name)}</h3><span class="plan-badge" data-state="${esc(plan.status)}">${esc(planStatusLabel[plan.status] || "Estado no disponible")}</span><div class="plan-meta"><span>Doctor: ${esc(plan.doctor || "Sin doctor asignado")}</span><span>Creado: ${esc(displayDate(plan.created_at))}</span></div></div><div class="plan-total"><span>Total del plan</span><strong>RD$${esc(plan.total ?? "0.00")}</strong>${plan.status !== "DRAFT" && plan.accepted_total != null ? `<span>RD$${esc(plan.accepted_total)} aceptado por el paciente</span>` : ""}</div></header>
+                ${(plan.acceptances || []).slice(-1).map(acceptance => `<section class="plan-consent" aria-label="Consentimiento"><div><div class="plan-consent-status"><strong>Consentimiento firmado ✓</strong><span class="plan-badge">Plan protegido</span></div><p>${esc(acceptance.accepted_by_name)} · ${esc(new Date(acceptance.accepted_at).toLocaleString("es-DO"))}</p></div><button type="button" class="confirm-secondary plan-primary" data-acceptance-id="${esc(acceptance.id)}" onclick="verConsentimientoPlan(this.dataset.acceptanceId)">Ver consentimiento</button></section>`).join("")}
                 ${!["DRAFT", "CANCELLED"].includes(plan.status) && !(plan.acceptances || []).length && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="formalizarAceptacionPlan()">Registrar aceptación del paciente</button>` : ""}
                 ${plan.status === "DRAFT" && !(plan.acceptances || []).length ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="presentarPlanPaciente()">Presentar plan</button>` : ""}
+                <div class="plan-section-heading"><h4>Tratamientos del plan</h4><div id="planToothTools"></div></div>
+                ${plan.progress && plan.status === "IN_PROGRESS" ? `<p class="plan-progress" role="status"><strong>Progreso del tratamiento</strong><br>${esc(String(plan.progress.completed ?? 0))} de ${esc(String(plan.progress.total ?? 0))} tratamientos realizados · ${esc(String(plan.progress.percent ?? 0))}%</p>` : plan.progress && plan.status === "COMPLETED" && Number(plan.progress.total || 0) > 1 ? `<p class="plan-progress" role="status">${esc(String(plan.progress.completed ?? 0))} de ${esc(String(plan.progress.total ?? 0))} tratamientos realizados · ${esc(String(plan.progress.percent ?? 0))}%</p>` : ""}
+                ${["ACCEPTED", "PARTIALLY_ACCEPTED"].includes(plan.status) && plan.items.some(item => item.status === "ACCEPTED") ? `<p><button type="button" class="confirm-secondary plan-clinical" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente()">Iniciar tratamiento</button></p>` : ""}
+                ${plan.items.some(item => item.status !== "COMPLETED") ? `<div class="plan-items">${plan.items.filter(item => item.status !== "COMPLETED").map(renderItem).join("")}</div>` : ""}
+                ${plan.items.some(item => item.status === "COMPLETED") ? `<section aria-label="Tratamientos realizados"><div class="plan-section-heading"><h4>Tratamientos realizados</h4></div><div class="plan-items">${plan.items.filter(item => item.status === "COMPLETED").map(renderItem).join("")}</div></section>` : ""}
+                ${!plan.items.length ? '<div class="empty-state">Sin ítems en el plan</div>' : ""}
                 ${plan.status === "DRAFT" && !(plan.acceptances || []).length ? `<form onsubmit="agregarPropuestasPlan(event)">
                     <h4>Tratamientos propuestos activos</h4>
                     ${proposals.length ? proposals.map(entry => {
@@ -2818,6 +2878,7 @@
                     }).join("") : '<div class="empty-state">Sin propuestas activas disponibles</div>'}
                     <button type="submit" class="add-btn" ${state.busy ? "disabled" : ""}>Agregar seleccionadas</button>
                 </form>` : ""}`;
+            if (numberingLabel) document.getElementById("planToothTools").appendChild(numberingLabel);
         }
 
         async function abrirRegistroRealizadoDesdePlan(itemId) {
