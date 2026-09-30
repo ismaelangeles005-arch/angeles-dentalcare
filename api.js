@@ -500,6 +500,9 @@
         return request(`/treatment-plans/${encodeURIComponent(planId)}/acceptance`, { method: "POST", body: JSON.stringify(acceptance) });
     }
 
+    function getTreatmentPlanAcceptance(planId, acceptanceId) {
+        return request(`/treatment-plans/${encodeURIComponent(planId)}/acceptances/${encodeURIComponent(acceptanceId)}`);
+    }
     function decideTreatmentPlanItem(planId, itemId, status) {
         return request(`/treatment-plans/${encodeURIComponent(planId)}/items/${encodeURIComponent(itemId)}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
     }
@@ -663,6 +666,7 @@
         addTreatmentPlanItem,
         presentTreatmentPlan,
         createTreatmentPlanAcceptance,
+        getTreatmentPlanAcceptance,
         decideTreatmentPlanItem,
         startTreatmentPlanExecution,
         updateTreatmentPlanItemExecution,

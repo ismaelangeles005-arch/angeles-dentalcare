@@ -2800,7 +2800,7 @@
                 </article>`).join("") : '<div class="empty-state">Sin ítems en el plan</div>'}
                 ${plan.status === "DRAFT" ? `<p><strong>RD$${esc(plan.total ?? "0.00")}</strong></p>` : ""}
                 ${plan.status !== "DRAFT" && plan.accepted_total != null ? `<p><strong>RD$${esc(plan.accepted_total)}</strong> · Aceptado por el paciente</p>` : ""}
-                ${(plan.acceptances || []).slice(-1).map(acceptance => `<p><strong>Consentimiento firmado ✓</strong><br>${esc(acceptance.accepted_by_name)} · ${esc(new Date(acceptance.accepted_at).toLocaleString("es-DO"))}</p>`).join("")}
+                ${(plan.acceptances || []).slice(-1).map(acceptance => `<div><p><strong>Consentimiento firmado ✓</strong><br>${esc(acceptance.accepted_by_name)} · ${esc(new Date(acceptance.accepted_at).toLocaleString("es-DO"))}</p><button type="button" class="confirm-secondary" data-acceptance-id="${esc(acceptance.id)}" onclick="verConsentimientoPlan(this.dataset.acceptanceId)">Ver consentimiento</button></div>`).join("")}
                 ${!["DRAFT", "CANCELLED"].includes(plan.status) && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="formalizarAceptacionPlan()">Registrar aceptación del paciente</button>` : ""}
                 ${plan.status === "DRAFT" ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="presentarPlanPaciente()">Presentar plan</button>` : ""}
                 ${plan.status === "DRAFT" ? `<form onsubmit="agregarPropuestasPlan(event)">
@@ -2933,6 +2933,151 @@
             }
         }
 
+        async function verConsentimientoPlan(acceptanceId) {
+            const state = treatmentPlanState;
+            const plan = state?.plan;
+
+            if (!plan || !acceptanceId || state.busy) return;
+            if (document.getElementById("planConsentViewer")) return;
+
+            const esc = DentalRoles.escapeHtml;
+            state.busy = true;
+            renderPlanPaciente();
+
+            try {
+                const acceptance = await DentalApi.getTreatmentPlanAcceptance(
+                    plan.id,
+                    acceptanceId
+                );
+
+                if (treatmentPlanState !== state || state.plan !== plan) return;
+
+                const items = Array.isArray(acceptance.items_snapshot)
+                    ? acceptance.items_snapshot
+                    : [];
+
+                const acceptedItems = items.filter(item =>
+                    item.status === "ACCEPTED" ||
+                    item.status === "IN_PROGRESS" ||
+                    item.status === "COMPLETED"
+                );
+
+                const visibleItems = acceptedItems.length ? acceptedItems : items;
+
+                const backdrop = document.createElement("div");
+                backdrop.id = "planConsentViewer";
+                backdrop.className = "confirm-backdrop";
+
+                backdrop.innerHTML = `
+                    <section
+                        class="confirm-dialog odontogram-condition-form"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="planConsentViewerTitle"
+                        style="width: min(720px, 94vw); max-height: 90vh; overflow-y: auto; box-sizing: border-box;"
+                    >
+                        <h3 id="planConsentViewerTitle">Consentimiento de tratamiento</h3>
+
+                        <p>
+                            <strong>Paciente:</strong>
+                            ${esc(acceptance.patient || pacienteExpediente?.nombre || "")}
+                        </p>
+
+                        <p>
+                            <strong>Firmado por:</strong>
+                            ${esc(acceptance.accepted_by_name || "")}
+                        </p>
+
+                        <p>
+                            <strong>Fecha:</strong>
+                            ${acceptance.accepted_at
+                                ? esc(new Date(acceptance.accepted_at).toLocaleString("es-DO"))
+                                : "—"}
+                        </p>
+
+                        <hr>
+
+                        <h4>Tratamientos aceptados</h4>
+
+                        ${visibleItems.length
+                            ? visibleItems.map(item => `
+                                <article class="odontogram-entry">
+                                    <strong>${esc(item.procedure_name_snapshot || item.procedure_name || "Tratamiento")}</strong>
+                                    ${item.area_name_snapshot || item.area_name
+                                        ? `<p>${esc(item.area_name_snapshot || item.area_name)}</p>`
+                                        : ""}
+                                    <p>
+                                        ${item.tooth_id
+                                            ? `Pieza ${esc(item.tooth_id)}`
+                                            : "Sin pieza específica"}
+                                        ·
+                                        ${esc(item.surface || "Pieza completa")}
+                                    </p>
+                                    <p><strong>RD$${esc(item.final_amount ?? "0.00")}</strong></p>
+                                </article>
+                            `).join("")
+                            : '<div class="empty-state">No hay tratamientos en el snapshot firmado.</div>'}
+
+                        <p>
+                            <strong>Total aceptado:</strong><br>
+                            <strong>RD$${esc(acceptance.accepted_total_snapshot ?? "0.00")}</strong>
+                        </p>
+
+                        <hr>
+
+                        <h4>Firma del paciente</h4>
+
+                        ${acceptance.signature_data
+                            ? `<div style="background: white; border: 1px solid #d1d5db; border-radius: 8px; padding: 12px;">
+                                <img
+                                    src="${esc(acceptance.signature_data)}"
+                                    alt="Firma manuscrita del consentimiento"
+                                    style="display: block; width: 100%; max-height: 220px; object-fit: contain;"
+                                >
+                            </div>`
+                            : '<p>Firma no disponible.</p>'}
+
+                        <div class="confirm-actions">
+                            <button type="button" class="confirm-secondary" data-close>
+                                Cerrar
+                            </button>
+                        </div>
+                    </section>
+                `;
+
+                const close = () => {
+                    backdrop.remove();
+                };
+
+                backdrop.querySelector("[data-close]").onclick = close;
+
+                backdrop.onclick = event => {
+                    if (event.target === backdrop) close();
+                };
+
+                backdrop.onkeydown = event => {
+                    if (event.key === "Escape") {
+                        event.preventDefault();
+                        close();
+                    }
+                };
+
+                document.body.appendChild(backdrop);
+                backdrop.querySelector("[data-close]").focus();
+
+            } catch (error) {
+                DentalRoles.notify(
+                    error.message || "No fue posible cargar el consentimiento.",
+                    "warning"
+                );
+            } finally {
+                state.busy = false;
+
+                if (treatmentPlanState === state) {
+                    renderPlanPaciente();
+                }
+            }
+        }
         function formalizarAceptacionPlan() {
             const state = treatmentPlanState;
             const plan = state?.plan;

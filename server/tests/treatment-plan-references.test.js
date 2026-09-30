@@ -62,6 +62,33 @@ function harness(status = 'ACTIVE') {
       state.plan.status = q.includes("status = 'PRESENTED'") ? 'PRESENTED' : (values[2] || state.plan.status);
       return { rows: [clone(state.plan)] };
     }
+    if (q.includes('FROM treatment_plan_acceptances a')) {
+      assert(q.includes('a.id = $1'));
+      assert(q.includes('a.treatment_plan_id = $2'));
+      assert(q.includes('a.organization_id = $3'));
+      assert(q.includes('tp.organization_id = a.organization_id'));
+      assert(q.includes('p.organization_id = a.organization_id'));
+
+      const acceptance = state.acceptances.find(a =>
+        a.id === values[0] &&
+        (a.treatment_plan_id || state.plan.id) === values[1] &&
+        (a.organization_id || state.plan.organization_id) === values[2]
+      );
+
+      if (!acceptance) return { rows: [] };
+
+      return {
+        rows: [{
+          ...clone(acceptance),
+          treatment_plan_id: acceptance.treatment_plan_id || state.plan.id,
+          patient_id: acceptance.patient_id || state.plan.patient_id,
+          organization_id: acceptance.organization_id || state.plan.organization_id,
+          accepted_by_name: acceptance.accepted_by_name || 'Historical signer',
+          accepted_at: acceptance.accepted_at || '2026-09-29T12:00:00.000Z',
+          patient: 'Historical patient'
+        }]
+      };
+    }
     if (q.startsWith('INSERT INTO treatment_plan_acceptances')) {
       const row = { id: uuid(10 + state.acceptances.length), organization_id: values[0], treatment_plan_id: values[1], patient_id: values[2], accepted_by_name: values[3], signature_data: values[4], created_by: values[5], plan_status_snapshot: values[6], total_snapshot: values[7], accepted_total_snapshot: values[8], items_snapshot: JSON.parse(values[9]) };
       state.acceptances.push(row); return { rows: [clone(row)] };
@@ -91,9 +118,10 @@ function harness(status = 'ACTIVE') {
         present: ['patch', '/:planId/status', { status: 'PRESENTED' }],
         decide: ['patch', '/:planId/items/:itemId/status', { status: 'ACCEPTED' }],
         sign: ['post', '/:planId/acceptance', { accepted_by_name: 'QA simulated', signature_data: signature }],
+        consent: ['get', '/:planId/acceptances/:acceptanceId', {}],
         add: ['post', '/:planId/items', { procedure_id: procedure, odontogram_entry_id: entryId }]
       }[operation];
-      const req = { params: { planId, itemId, ...overrides.params }, body: { ...config[2], ...overrides.body }, user: { id: uuid(8), organizationId: org, ...overrides.user } };
+      const req = { params: { planId, itemId, acceptanceId: state.acceptances[0]?.id, ...overrides.params }, body: { ...config[2], ...overrides.body }, user: { id: uuid(8), organizationId: org, ...overrides.user } };
       const res = { code: 200, status(code) { this.code = code; return this; }, json(body) { this.body = clone(body); return this; } };
       try { await routes.find(r => r.method === config[0] && r.p === config[1]).h.at(-1)(req, res); }
       catch (error) { errors[0](error, req, res, e => { res.code = e.status || 500; res.body = { message: e.message }; }); }
@@ -125,6 +153,59 @@ for (const status of ['ACTIVE', 'RESOLVED', 'VOIDED', 'SUPERSEDED']) {
     }
   });
 }
+test('consent detail returns immutable historical snapshot and signature', async () => {
+  const h = harness();
+  const historical = h.state().acceptances[0];
+
+  historical.organization_id = org;
+  historical.treatment_plan_id = planId;
+  historical.patient_id = patient;
+  historical.accepted_by_name = 'Historical signer';
+  historical.accepted_at = '2026-09-29T12:00:00.000Z';
+  historical.accepted_total_snapshot = '50.00';
+
+  const before = clone(historical);
+  const res = await h.run('consent');
+
+  assert.equal(res.code, 200);
+  assert.equal(res.body.id, before.id);
+  assert.equal(res.body.signature_data, 'HISTORICAL');
+  assert.deepEqual(res.body.items_snapshot, before.items_snapshot);
+  assert.equal(res.body.total_snapshot, '50.00');
+  assert.equal(res.body.accepted_total_snapshot, '50.00');
+  assert.equal(res.body.accepted_by_name, 'Historical signer');
+  assert.deepEqual(h.state().acceptances[0], before);
+});
+
+test('consent detail cannot be read through a different treatment plan', async () => {
+  const h = harness();
+
+  h.state().acceptances[0].organization_id = org;
+  h.state().acceptances[0].treatment_plan_id = planId;
+  h.state().acceptances[0].patient_id = patient;
+
+  const res = await h.run('consent', {
+    params: { planId: uuid(90) }
+  });
+
+  assert.equal(res.code, 404);
+  assert.equal(res.body.message, 'Consentimiento no encontrado');
+});
+
+test('consent detail is isolated by organization', async () => {
+  const h = harness();
+
+  h.state().acceptances[0].organization_id = org;
+  h.state().acceptances[0].treatment_plan_id = planId;
+  h.state().acceptances[0].patient_id = patient;
+
+  const res = await h.run('consent', {
+    user: { organizationId: uuid(91) }
+  });
+
+  assert.equal(res.code, 404);
+  assert.equal(res.body.message, 'Consentimiento no encontrado');
+});
 test('new incorporation remains ACTIVE-only, with original snapshot/duplicate rules', async () => {
   for (const status of ['ACTIVE', 'RESOLVED', 'VOIDED', 'SUPERSEDED']) {
     const h = harness(status); h.state().items = [];

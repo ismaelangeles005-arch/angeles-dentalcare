@@ -359,6 +359,40 @@ router.patch("/:planId/items/:itemId/status", asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
+router.get("/:planId/acceptances/:acceptanceId", asyncHandler(async (req, res) => {
+  const planId = uuid(req.params.planId);
+  const acceptanceId = uuid(req.params.acceptanceId);
+
+  const result = await db.query(`
+    SELECT
+      a.id,
+      a.treatment_plan_id,
+      a.patient_id,
+      a.accepted_by_name,
+      a.accepted_at,
+      a.signature_data,
+      a.plan_status_snapshot,
+      a.total_snapshot,
+      a.accepted_total_snapshot,
+      a.items_snapshot,
+      p.full_name AS patient
+    FROM treatment_plan_acceptances a
+    JOIN treatment_plans tp
+      ON tp.id = a.treatment_plan_id
+      AND tp.organization_id = a.organization_id
+    JOIN patients p
+      ON p.id = a.patient_id
+      AND p.organization_id = a.organization_id
+      AND p.deleted_at IS NULL
+    WHERE a.id = $1
+      AND a.treatment_plan_id = $2
+      AND a.organization_id = $3
+  `, [acceptanceId, planId, req.user.organizationId]);
+
+  if (!result.rows.length) reject("Consentimiento no encontrado", 404);
+
+  res.json(result.rows[0]);
+}));
 router.post("/:planId/acceptance", asyncHandler(async (req, res) => {
   const planId = uuid(req.params.planId);
   const signer = text(req.body.accepted_by_name, 200, true);
