@@ -2680,8 +2680,8 @@
                 document.getElementById("treatmentPlanList").innerHTML = plans.length ? plans.map(plan => `
                     <article class="odontogram-entry">
                         <strong>${esc(plan.name)}</strong>
-                        <p>${esc(plan.status)} · ${esc(plan.doctor || "Sin doctor")} · ${esc(new Date(plan.created_at).toLocaleDateString("es-DO"))}</p>
-                        <p>Total: ${esc(plan.total)}</p>
+                        <p>${esc(({ DRAFT: "En preparación", PRESENTED: "Presentado al paciente", ACCEPTED: "Aceptado", PARTIALLY_ACCEPTED: "Aceptado parcialmente", REJECTED: "No aceptado", POSTPONED: "Pospuesto", IN_PROGRESS: "En tratamiento", COMPLETED: "Tratamiento completado", CANCELLED: "Cancelado" })[plan.status] || plan.status)} · ${esc(plan.doctor || "Sin doctor")} · ${esc(new Date(plan.created_at).toLocaleDateString("es-DO"))}</p>
+                        <p>RD$${esc(plan.total)}</p>
                         <button type="button" class="confirm-secondary" data-plan-id="${esc(plan.id)}" onclick="abrirPlanPaciente(this.dataset.planId)">Ver plan</button>
                     </article>`).join("") : '<div class="empty-state">Sin planes de tratamiento</div>';
                 document.getElementById("treatmentPlanDoctor").innerHTML = '<option value="">Sin doctor</option>' + doctores.filter(d => d.active !== false).map(d => `<option value="${esc(d.id)}">${esc(d.name)}</option>`).join("");
@@ -2783,13 +2783,13 @@
             };
 
             container.innerHTML = `<h3>${esc(plan.name)}</h3><p>${esc(planStatusLabel[plan.status] || plan.status)}</p>
-                ${plan.progress && ["IN_PROGRESS", "COMPLETED"].includes(plan.status) ? `<p role="status"><strong>${plan.status === "COMPLETED" ? "Tratamiento completado" : "Progreso del tratamiento"}</strong><br>${esc(plan.progress.completed ?? 0)} de ${esc(plan.progress.total ?? 0)} tratamientos realizados · ${esc(plan.progress.percent ?? 0)}%</p>` : ""}
+                ${plan.progress && plan.status === "IN_PROGRESS" ? `<p role="status"><strong>Progreso del tratamiento</strong><br>${esc(String(plan.progress.completed ?? 0))} de ${esc(String(plan.progress.total ?? 0))} tratamientos realizados · ${esc(String(plan.progress.percent ?? 0))}%</p>` : plan.progress && plan.status === "COMPLETED" && Number(plan.progress.total || 0) > 1 ? `<p role="status">${esc(String(plan.progress.completed ?? 0))} de ${esc(String(plan.progress.total ?? 0))} tratamientos realizados · ${esc(String(plan.progress.percent ?? 0))}%</p>` : ""}
                 ${["ACCEPTED", "PARTIALLY_ACCEPTED"].includes(plan.status) && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente()">Iniciar tratamiento</button>` : ""}
                 ${plan.items.length ? plan.items.map(item => `<article class="odontogram-entry">
                     <strong>${esc(item.procedure_name_snapshot)}</strong>
                     <p>Pieza: ${esc(piezaPlanPaciente(item.tooth_id))} · ${esc(surface(item.surface))}</p>
-                    <p>Precio unitario: ${esc(item.unit_price_snapshot)} · Cantidad: ${esc(item.quantity)}</p>
-                    <p>Descuento: ${esc(item.discount_amount)} · Total: ${esc(item.final_amount)}</p>
+
+
                     <p><strong>${esc(itemStatusLabel[item.status] || item.status)}</strong></p>
                     ${plan.status === "IN_PROGRESS" && item.status === "ACCEPTED" ? `<button type="button" class="confirm-secondary" data-execution-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente(this.dataset.executionItem, 'IN_PROGRESS')">Comenzar tratamiento</button>` : ""}
                     ${plan.status === "IN_PROGRESS" && item.status === "IN_PROGRESS" ? `<button type="button" class="confirm-secondary" data-treatment-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="abrirRegistroRealizadoDesdePlan(this.dataset.treatmentItem)">Registrar como realizado</button>` : ""}
@@ -2798,9 +2798,9 @@
                             ${[["ACCEPTED", "Aceptar"], ["REJECTED", "Rechazar"], ["POSTPONED", "Posponer"]].map(([status, label]) => `<button type="button" class="confirm-secondary" data-item-id="${esc(item.id)}" data-status="${status}" ${state.busy || item.status === status ? "disabled" : ""} onclick="cambiarDecisionPlan(this.dataset.itemId, this.dataset.status)">${label}</button>`).join("")}
                         </div>` : ""}
                 </article>`).join("") : '<div class="empty-state">Sin ítems en el plan</div>'}
-                <p><strong>Total del plan: ${esc(plan.total ?? "Pendiente de actualizar")}</strong></p>
-                <p><strong>Total aceptado: ${esc(plan.accepted_total ?? (plan.status === "DRAFT" ? "0.00" : "Pendiente de actualizar"))}</strong></p>
-                ${(plan.acceptances || []).map(acceptance => `<p><strong>Consentimiento firmado ✓</strong><br>${esc(acceptance.accepted_by_name)} · ${esc(new Date(acceptance.accepted_at).toLocaleString("es-DO"))} · Total aceptado: ${esc(acceptance.accepted_total_snapshot)}</p>`).join("")}
+                ${plan.status === "DRAFT" ? `<p><strong>RD$${esc(plan.total ?? "0.00")}</strong></p>` : ""}
+                ${plan.status !== "DRAFT" && plan.accepted_total != null ? `<p><strong>RD$${esc(plan.accepted_total)}</strong> · Aceptado por el paciente</p>` : ""}
+                ${(plan.acceptances || []).slice(-1).map(acceptance => `<p><strong>Consentimiento firmado ✓</strong><br>${esc(acceptance.accepted_by_name)} · ${esc(new Date(acceptance.accepted_at).toLocaleString("es-DO"))}</p>`).join("")}
                 ${!["DRAFT", "CANCELLED"].includes(plan.status) && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="formalizarAceptacionPlan()">Registrar aceptación del paciente</button>` : ""}
                 ${plan.status === "DRAFT" ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="presentarPlanPaciente()">Presentar plan</button>` : ""}
                 ${plan.status === "DRAFT" ? `<form onsubmit="agregarPropuestasPlan(event)">
