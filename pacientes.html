@@ -2727,12 +2727,15 @@
             const included = new Set(plan.items.map(item => item.odontogram_entry_id));
             const surface = value => ODONTOGRAM_SURFACES.find(item => item.value === (value || ""))?.label || value;
             container.innerHTML = `<h3>${esc(plan.name)}</h3><p>${esc(plan.status)}</p>
+                ${plan.progress && ["IN_PROGRESS", "COMPLETED"].includes(plan.status) ? `<p role="status"><strong>Progreso${plan.status === "COMPLETED" ? " · Tratamiento completado" : ""}</strong><br>${esc(plan.progress.completed)} de ${esc(plan.progress.total)} completados · ${esc(plan.progress.percent)}%</p>` : ""}
+                ${["ACCEPTED", "PARTIALLY_ACCEPTED"].includes(plan.status) && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente()">Iniciar tratamiento</button>` : ""}
                 ${plan.items.length ? plan.items.map(item => `<article class="odontogram-entry">
                     <strong>${esc(item.procedure_name_snapshot)}</strong>
                     <p>Pieza: ${esc(piezaPlanPaciente(item.tooth_id))} · ${esc(surface(item.surface))}</p>
                     <p>Precio unitario: ${esc(item.unit_price_snapshot)} · Cantidad: ${esc(item.quantity)}</p>
                     <p>Descuento: ${esc(item.discount_amount)} · Total: ${esc(item.final_amount)}</p>
                     <p>Estado: <strong>${esc(item.status)}</strong></p>
+                    ${plan.status === "IN_PROGRESS" && ["ACCEPTED", "IN_PROGRESS"].includes(item.status) ? `<button type="button" class="confirm-secondary" data-execution-item="${esc(item.id)}" data-execution-status="${item.status === "ACCEPTED" ? "IN_PROGRESS" : "COMPLETED"}" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente(this.dataset.executionItem, this.dataset.executionStatus)">${item.status === "ACCEPTED" ? "Iniciar" : "Completar"}</button>` : ""}
                     ${["PRESENTED", "ACCEPTED", "PARTIALLY_ACCEPTED", "REJECTED", "POSTPONED"].includes(plan.status) && ["PROPOSED", "ACCEPTED", "REJECTED", "POSTPONED"].includes(item.status) ? `
                         <div class="confirm-actions">
                             ${[["ACCEPTED", "Aceptar"], ["REJECTED", "Rechazar"], ["POSTPONED", "Posponer"]].map(([status, label]) => `<button type="button" class="confirm-secondary" data-item-id="${esc(item.id)}" data-status="${status}" ${state.busy || item.status === status ? "disabled" : ""} onclick="cambiarDecisionPlan(this.dataset.itemId, this.dataset.status)">${label}</button>`).join("")}
@@ -2758,6 +2761,33 @@
                     }).join("") : '<div class="empty-state">Sin propuestas activas disponibles</div>'}
                     <button type="submit" class="add-btn" ${state.busy ? "disabled" : ""}>Agregar seleccionadas</button>
                 </form>` : ""}`;
+        }
+
+        async function ejecutarPlanPaciente(itemId = null, status = "IN_PROGRESS") {
+            const state = treatmentPlanState;
+            const plan = state?.plan;
+            if (!plan || state.busy) return;
+            state.busy = true;
+            renderPlanPaciente();
+            try {
+                if (itemId) await DentalApi.updateTreatmentPlanItemExecution(plan.id, itemId, status);
+                else await DentalApi.startTreatmentPlanExecution(plan.id);
+                if (treatmentPlanState === state) DentalRoles.notify("Ejecución del tratamiento actualizada.", "success");
+            } catch (error) {
+                if (treatmentPlanState === state) DentalRoles.notify(error.message || "No fue posible actualizar la ejecución.", "error");
+            }
+            try {
+                const refreshed = await DentalApi.getTreatmentPlan(plan.id);
+                if (treatmentPlanState === state) state.plan = refreshed;
+            } catch (error) {
+                if (treatmentPlanState === state) DentalRoles.notify(error.message || "No fue posible actualizar el plan. Vuelve a abrirlo para confirmar su estado.", "error");
+            } finally {
+                state.busy = false;
+                if (treatmentPlanState === state) {
+                    renderPlanPaciente();
+                    cargarPlanesPaciente();
+                }
+            }
         }
 
         function formalizarAceptacionPlan() {

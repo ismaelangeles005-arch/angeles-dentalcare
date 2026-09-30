@@ -504,6 +504,14 @@
         return request(`/treatment-plans/${encodeURIComponent(planId)}/items/${encodeURIComponent(itemId)}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
     }
 
+    function startTreatmentPlanExecution(planId) {
+        return request(`/treatment-plans/${encodeURIComponent(planId)}/execution`, { method: "PATCH", body: JSON.stringify({ status: "IN_PROGRESS" }) });
+    }
+
+    function updateTreatmentPlanItemExecution(planId, itemId, status) {
+        return request(`/treatment-plans/${encodeURIComponent(planId)}/items/${encodeURIComponent(itemId)}/execution`, { method: "PATCH", body: JSON.stringify({ status }) });
+    }
+
     function createProcedure(procedure) {
         return request("/procedures", {
             method: "POST",
@@ -656,6 +664,8 @@
         presentTreatmentPlan,
         createTreatmentPlanAcceptance,
         decideTreatmentPlanItem,
+        startTreatmentPlanExecution,
+        updateTreatmentPlanItemExecution,
         createProcedure,
         updateProcedure,
         getBillingEstimates,

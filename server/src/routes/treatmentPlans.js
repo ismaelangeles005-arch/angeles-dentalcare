@@ -39,6 +39,19 @@ function money(value) {
   return `${value / 100n}.${String(value % 100n).padStart(2, "0")}`;
 }
 
+const executableStatuses = ["ACCEPTED", "IN_PROGRESS", "COMPLETED"];
+
+function executionProgress(items) {
+  const executable = items.filter(item => executableStatuses.includes(item.status));
+  const completed = executable.filter(item => item.status === "COMPLETED").length;
+  return {
+    total: executable.length, completed,
+    in_progress: executable.filter(item => item.status === "IN_PROGRESS").length,
+    pending: executable.filter(item => item.status === "ACCEPTED").length,
+    percent: executable.length ? Math.round(completed * 100 / executable.length) : 0
+  };
+}
+
 async function transaction(work) {
   const client = await db.pool.connect();
   let releaseError;
@@ -92,13 +105,13 @@ router.get("/:planId", asyncHandler(async (req, res) => {
     ORDER BY i.created_at, i.id
   `, [planId, req.user.organizationId]);
   const total = items.rows.reduce((sum, item) => sum + cents(item.final_amount), 0n);
-  const accepted = items.rows.filter(item => item.status === "ACCEPTED").reduce((sum, item) => sum + cents(item.final_amount), 0n);
+  const accepted = items.rows.filter(item => executableStatuses.includes(item.status)).reduce((sum, item) => sum + cents(item.final_amount), 0n);
   const acceptances = await db.query(`
     SELECT id, accepted_by_name, accepted_at, accepted_total_snapshot
     FROM treatment_plan_acceptances WHERE treatment_plan_id = $1 AND organization_id = $2
     ORDER BY accepted_at DESC, id
   `, [planId, req.user.organizationId]);
-  res.json({ ...result.rows[0], items: items.rows, total: money(total), accepted_total: money(accepted), acceptances: acceptances.rows });
+  res.json({ ...result.rows[0], items: items.rows, total: money(total), accepted_total: money(accepted), acceptances: acceptances.rows, progress: executionProgress(items.rows) });
 }));
 
 router.post("/", asyncHandler(async (req, res) => {
@@ -232,6 +245,75 @@ async function validateClinicalReferences(client, plan, items) {
     }
   }
 }
+
+router.patch("/:planId/execution", asyncHandler(async (req, res) => {
+  const planId = uuid(req.params.planId);
+  if (req.body.status !== "IN_PROGRESS") reject("Solo se permite iniciar la ejecucion del plan");
+  const result = await transaction(async client => {
+    const plan = await lockPlan(client, planId, req.user.organizationId);
+    if (plan.status === "IN_PROGRESS") return plan;
+    if (!["ACCEPTED", "PARTIALLY_ACCEPTED"].includes(plan.status)) reject("El plan no admite iniciar tratamiento", 409);
+    const items = await client.query("SELECT * FROM treatment_plan_items WHERE treatment_plan_id = $1 ORDER BY id FOR UPDATE", [planId]);
+    const accepted = items.rows.filter(item => item.status === "ACCEPTED");
+    if (!accepted.length) reject("El plan debe tener al menos un item aceptado", 409);
+    await validateClinicalReferences(client, plan, accepted);
+    const updated = await client.query("UPDATE treatment_plans SET status = $3, updated_at = NOW() WHERE id = $1 AND organization_id = $2 RETURNING *", [planId, req.user.organizationId, "IN_PROGRESS"]);
+    await writeAuditLog(req, "update_execution", "treatment_plans", planId, { previous_status: plan.status, status: "IN_PROGRESS" }, client);
+    return updated.rows[0];
+  });
+  res.json(result);
+}));
+
+router.patch("/:planId/items/:itemId/execution", asyncHandler(async (req, res) => {
+  const planId = uuid(req.params.planId);
+  const itemId = uuid(req.params.itemId);
+  const status = req.body.status;
+  if (!["IN_PROGRESS", "COMPLETED"].includes(status)) reject("Estado de ejecucion invalido");
+  const result = await transaction(async client => {
+    const plan = await lockPlan(client, planId, req.user.organizationId);
+    if (!["IN_PROGRESS", "COMPLETED"].includes(plan.status)) reject("Primero inicia el tratamiento del plan", 409);
+    const items = await client.query("SELECT * FROM treatment_plan_items WHERE treatment_plan_id = $1 ORDER BY id FOR UPDATE", [planId]);
+    const item = items.rows.find(row => row.id === itemId);
+    if (!item) reject("Item no encontrado en este plan", 404);
+    // A retry of the final completion must also work after the parent has completed.
+    if (item.status === status && (plan.status === "IN_PROGRESS" || status === "COMPLETED")) {
+      return { item, plan_status: plan.status, progress: executionProgress(items.rows) };
+    }
+    if (plan.status !== "IN_PROGRESS") reject("Un plan completado no puede reabrirse", 409);
+    const required = status === "IN_PROGRESS" ? "ACCEPTED" : "IN_PROGRESS";
+    if (item.status !== required) reject("El item no admite esa transicion de ejecucion", 409);
+    await validateClinicalReferences(client, plan, [item]);
+    let evidenceId = null;
+    if (status === "COMPLETED" && item.odontogram_entry_id) {
+      const evidence = await client.query(`
+        SELECT oe.id FROM odontogram_entries oe
+        WHERE oe.related_entry_id = $1 AND oe.organization_id = $2 AND oe.patient_id = $3
+          AND oe.entry_type = 'COMPLETED_TREATMENT' AND oe.status NOT IN ('VOIDED', 'SUPERSEDED')
+          AND oe.procedure_id IS NOT DISTINCT FROM $4::uuid
+          AND oe.tooth_id IS NOT DISTINCT FROM $5::text
+          AND oe.surface IS NOT DISTINCT FROM $6::text
+        ORDER BY oe.id LIMIT 1 FOR SHARE OF oe
+      `, [item.odontogram_entry_id, plan.organization_id, plan.patient_id, item.procedure_id, item.tooth_id, item.surface]);
+      if (!evidence.rows.length) reject("Primero registra el tratamiento realizado en el Odontograma, vinculado a esta propuesta y con la misma pieza, superficie y procedimiento.", 409);
+      evidenceId = evidence.rows[0].id;
+    }
+    const previousStatus = item.status;
+    const updated = await client.query("UPDATE treatment_plan_items SET status = $3 WHERE id = $1 AND treatment_plan_id = $2 RETURNING *", [itemId, planId, status]);
+    item.status = status;
+    const progress = executionProgress(items.rows);
+    const planStatus = progress.total > 0 && progress.completed === progress.total ? "COMPLETED" : "IN_PROGRESS";
+    await client.query("UPDATE treatment_plans SET status = $3, updated_at = NOW() WHERE id = $1 AND organization_id = $2", [planId, req.user.organizationId, planStatus]);
+    await writeAuditLog(req, "update_execution", "treatment_plan_items", itemId, {
+      treatment_plan_id: planId, previous_status: previousStatus, status,
+      ...(evidenceId ? { completed_treatment_id: evidenceId } : {})
+    }, client);
+    if (plan.status !== planStatus) {
+      await writeAuditLog(req, "update_execution", "treatment_plans", planId, { item_id: itemId, previous_status: plan.status, status: planStatus }, client);
+    }
+    return { item: updated.rows[0], plan_status: planStatus, progress };
+  });
+  res.json(result);
+}));
 
 router.patch("/:planId/status", asyncHandler(async (req, res) => {
   const planId = uuid(req.params.planId);
