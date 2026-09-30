@@ -170,7 +170,7 @@ textarea:focus {
     background: #ffffff;
 }
 
-.topbar .logout-btn {
+.logout-btn {
     min-height: 42px;
     padding: 10px 16px;
     border: none;

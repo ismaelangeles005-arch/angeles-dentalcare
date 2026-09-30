@@ -11,7 +11,6 @@
     <style>
         .main { flex: 1; padding: 30px; min-width: 0; }
         .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 30px; }
-        .logout-btn { background: #dc2626; color: white; border: 0; padding: 12px 18px; border-radius: 12px; }
         .panel { background: white; border-radius: 16px; padding: 22px; box-shadow: 0 8px 24px rgba(15,23,42,0.08); }
         .log-list { display: grid; gap: 12px; margin-top: 16px; }
         .log-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
@@ -43,7 +42,7 @@
     <main class="main">
         <div class="topbar">
             <h1>Control de Cambios</h1>
-            <button class="logout-btn" onclick="DentalRoles.logout()">Cerrar Sesión</button>
+            <button type="button" class="logout-btn" onclick="DentalRoles.logout()">Bloquear sesión</button>
         </div>
         <section class="panel">
             <h2>Actividad del sistema</h2>
