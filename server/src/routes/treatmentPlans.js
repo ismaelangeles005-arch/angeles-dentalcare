@@ -152,6 +152,7 @@ router.post("/:planId/items", asyncHandler(async (req, res) => {
     `, [planId, req.user.organizationId]);
     const plan = plans.rows[0];
     if (!plan) reject("Plan no encontrado", 404);
+    await assertPlanAdministrationUnlocked(client, plan);
     if (plan.status !== "DRAFT") reject("Solo se pueden agregar items a un plan DRAFT", 409);
     let toothId = req.body.tooth_id ?? null;
     let surface = req.body.surface ?? null;
@@ -217,6 +218,16 @@ async function lockPlan(client, planId, organizationId) {
   `, [planId, organizationId]);
   if (!result.rows.length) reject("Plan no encontrado", 404);
   return result.rows[0];
+}
+
+// Call only after locking the plan: signature creation uses the same lock.
+async function assertPlanAdministrationUnlocked(client, plan) {
+  const acceptance = await client.query(`
+    SELECT id FROM treatment_plan_acceptances
+    WHERE treatment_plan_id = $1 AND organization_id = $2
+    LIMIT 1
+  `, [plan.id, plan.organization_id]);
+  if (acceptance.rows.length) reject("Este plan ya tiene un consentimiento firmado y está protegido. No se permiten cambios administrativos.", 409);
 }
 
 async function validateClinicalReferences(client, plan, items) {
@@ -338,15 +349,7 @@ router.patch("/:planId/items/:itemId/status", asyncHandler(async (req, res) => {
   if (!decisions.includes(status)) reject("Selecciona aceptar, rechazar o posponer");
   const result = await transaction(async client => {
     const plan = await lockPlan(client, planId, req.user.organizationId);
-    const existingAcceptance = await client.query(`
-      SELECT id
-      FROM treatment_plan_acceptances
-      WHERE treatment_plan_id = $1 AND organization_id = $2
-      LIMIT 1
-    `, [planId, req.user.organizationId]);
-    if (existingAcceptance.rows.length) {
-      reject("Las decisiones del plan están bloqueadas porque el consentimiento ya fue firmado", 409);
-    }
+    await assertPlanAdministrationUnlocked(client, plan);
     if (!decisionPlanStatuses.includes(plan.status)) reject("El plan no admite decisiones de aceptacion", 409);
     const items = await client.query("SELECT * FROM treatment_plan_items WHERE treatment_plan_id = $1 ORDER BY id FOR UPDATE", [planId]);
     const item = items.rows.find(row => row.id === itemId);
@@ -416,14 +419,8 @@ router.post("/:planId/acceptance", asyncHandler(async (req, res) => {
       png.toString("ascii", png.length - 8, png.length - 4) !== "IEND") reject("Formato de firma invalido");
   const acceptance = await transaction(async client => {
     const plan = await lockPlan(client, planId, req.user.organizationId);
+    await assertPlanAdministrationUnlocked(client, plan);
     if (["DRAFT", "CANCELLED"].includes(plan.status)) reject("Este plan no puede formalizarse", 409);
-    const existingAcceptance = await client.query(`
-      SELECT id
-      FROM treatment_plan_acceptances
-      WHERE treatment_plan_id = $1 AND organization_id = $2
-      LIMIT 1
-    `, [planId, req.user.organizationId]);
-    if (existingAcceptance.rows.length) reject("Este plan ya tiene un consentimiento firmado", 409);
     if (req.body.expected_updated_at !== undefined &&
         new Date(req.body.expected_updated_at).getTime() !== new Date(plan.updated_at).getTime()) reject("El plan cambio mientras se firmaba. Revisa el plan actualizado y firma nuevamente", 409);
     const result = await client.query("SELECT * FROM treatment_plan_items WHERE treatment_plan_id = $1 ORDER BY created_at, id FOR SHARE", [planId]);

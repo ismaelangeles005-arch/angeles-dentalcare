@@ -44,6 +44,13 @@ function harness(status = 'ACTIVE') {
       if (options.afterLock) await options.afterLock();
       return { rows: clone(rows) };
     }
+    if (q.startsWith('SELECT oe.id FROM odontogram_entries')) {
+      return { rows: clone(state.entries.filter(e => e.related_entry_id === values[0] &&
+        e.organization_id === values[1] && e.patient_id === values[2] &&
+        e.entry_type === 'COMPLETED_TREATMENT' && !['VOIDED', 'SUPERSEDED'].includes(e.status) &&
+        (e.procedure_id ?? null) === (values[3] ?? null) && e.tooth_id === values[4] &&
+        (e.surface ?? null) === (values[5] ?? null))) };
+    }
     if (q.startsWith('SELECT tooth_id, surface')) {
       assert(q.includes("status = 'ACTIVE'") && q.includes('FOR SHARE'));
       return { rows: clone(state.entries.filter(e => e.id === values[0] && e.organization_id === values[1] && e.patient_id === values[2] && e.entry_type === 'PROPOSED_TREATMENT' && e.status === 'ACTIVE')) };
@@ -92,6 +99,8 @@ function harness(status = 'ACTIVE') {
     if (q.includes('FROM treatment_plan_acceptances') &&
         q.includes('treatment_plan_id = $1') &&
         !q.includes('FROM treatment_plan_acceptances a')) {
+      assert(q.includes('organization_id = $2'));
+      assert(calls.some(c => c.q.includes('FOR UPDATE OF tp')));
       return {
         rows: state.acceptances
           .filter(a =>
@@ -132,6 +141,9 @@ function harness(status = 'ACTIVE') {
         decide: ['patch', '/:planId/items/:itemId/status', { status: 'ACCEPTED' }],
         sign: ['post', '/:planId/acceptance', { accepted_by_name: 'QA simulated', signature_data: signature }],
         consent: ['get', '/:planId/acceptances/:acceptanceId', {}],
+        execute: ['patch', '/:planId/execution', { status: 'IN_PROGRESS' }],
+        startItem: ['patch', '/:planId/items/:itemId/execution', { status: 'IN_PROGRESS' }],
+        completeItem: ['patch', '/:planId/items/:itemId/execution', { status: 'COMPLETED' }],
         add: ['post', '/:planId/items', { procedure_id: procedure, odontogram_entry_id: entryId }]
       }[operation];
       const req = { params: { planId, itemId, acceptanceId: state.acceptances[0]?.id, ...overrides.params }, body: { ...config[2], ...overrides.body }, user: { id: uuid(8), organizationId: org, ...overrides.user } };
@@ -232,11 +244,12 @@ test('consent detail is isolated by organization', async () => {
 });
 test('new incorporation remains ACTIVE-only, with original snapshot/duplicate rules', async () => {
   for (const status of ['ACTIVE', 'RESOLVED', 'VOIDED', 'SUPERSEDED']) {
-    const h = harness(status); h.state().items = [];
+    const h = harness(status); h.state().items = []; h.state().acceptances = [];
     assert.equal((await h.run('add')).code, status === 'ACTIVE' ? 201 : 400);
     assert.equal(h.state().items.length, status === 'ACTIVE' ? 1 : 0);
   }
-  assert.equal((await harness().run('add')).code, 409);
+  const duplicate = harness(); duplicate.state().acceptances = [];
+  assert.equal((await duplicate.run('add')).code, 409);
 });
 for (const mismatch of ['organization_id', 'patient_id', 'entry_type', 'procedure_id', 'tooth_id', 'surface', 'missing']) {
   test(`reference ${mismatch} mismatch: scoped conflict and rollback in all mutations`, async () => {
@@ -277,7 +290,7 @@ test('signed consent freezes later treatment plan decisions without changing his
   const res = await h.run('decide', { body: { status: 'REJECTED' } });
 
   assert.equal(res.code, 409);
-  assert.match(res.body.message, /consentimiento ya fue firmado/i);
+  assert.match(res.body.message, /consentimiento firmado.*protegido/i);
   assert.deepEqual(h.state(), before);
   assert(!h.calls.some(c => c.q.startsWith('UPDATE treatment_plan_items')));
 });
@@ -297,6 +310,67 @@ test('second acceptance for the same plan is rejected without changing historica
   assert.match(second.body.message, /ya tiene un consentimiento firmado/i);
   assert.deepEqual(h.state().acceptances, signed);
   assert.deepEqual(h.state().audits, audits);
+});
+
+test('signed plan rejects adding items before any insert, even for historical DRAFT status', async () => {
+  for (const status of ['DRAFT', 'ACCEPTED', 'IN_PROGRESS']) {
+    const h = harness(); h.state().plan.status = status; h.state().items = [];
+    const before = clone(h.state()); const res = await h.run('add');
+    assert.equal(res.code, 409); assert.match(res.body.message, /consentimiento firmado.*protegido/i);
+    assert.deepEqual(h.state(), before);
+    assert(h.calls.some(c => c.q === 'ROLLBACK'));
+    assert(!h.calls.some(c => /^(INSERT|UPDATE|DELETE)/.test(c.q)));
+  }
+});
+
+test('signed plan permits clinical execution and completion, preserving consent and clinical history', async () => {
+  const h = harness('RESOLVED'); h.state().plan.status = 'ACCEPTED'; h.state().items[0].status = 'ACCEPTED';
+  h.state().entries.push({ ...clone(h.state().entries[0]), id: uuid(40), entry_type: 'COMPLETED_TREATMENT', status: 'ACTIVE', related_entry_id: entryId });
+  const signed = clone(h.state().acceptances), clinical = clone(h.state().entries);
+  for (const operation of ['execute', 'startItem', 'completeItem']) {
+    const res = await h.run(operation); assert.equal(res.code, 200, res.body.message);
+  }
+  assert.equal(h.state().items[0].status, 'COMPLETED'); assert.equal(h.state().plan.status, 'COMPLETED');
+  assert.deepEqual(h.state().acceptances, signed); assert.deepEqual(h.state().entries, clinical);
+  assert.equal(h.state().audits.length, 4);
+  assert(!h.calls.some(c => c.q.includes('FROM treatment_plan_acceptances')));
+});
+
+test('consent lock remains organization scoped; another tenant cannot mutate signed plan', async () => {
+  for (const operation of ['add', 'decide', 'sign']) {
+    const h = harness(); const before = clone(h.state());
+    assert.equal((await h.run(operation, { user: { organizationId: uuid(99) } })).code, 404);
+    assert.deepEqual(h.state(), before);
+    assert(!h.calls.some(c => c.q.includes('FROM treatment_plan_acceptances')));
+  }
+});
+
+test('signed UI hides administrative controls but keeps consent viewing and clinical actions', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../../pacientes.html'), 'utf8');
+  const begin = html.indexOf('        function renderPlanPaciente()');
+  const end = html.indexOf('        async function abrirRegistroRealizadoDesdePlan', begin);
+  assert(begin > 0 && end > begin);
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const plan = { id: planId, name: 'Plan', status: 'DRAFT', items: [{ id: itemId, status: 'ACCEPTED' }],
+    acceptances: [{ id: uuid(9), accepted_by_name: 'Paciente', accepted_at: '2026-09-30' }] };
+  const context = { treatmentPlanState: { plan, busy: false }, document: { getElementById: () => container },
+    DentalRoles: { escapeHtml: value => String(value ?? '') }, odontogramCurrent: { teeth: {} },
+    odontogramLoaded: true, ODONTOGRAM_SURFACES: [], piezaPlanPaciente: () => '1.1' };
+  vm.createContext(context); vm.runInContext(html.slice(begin, end), context);
+  for (const status of ['DRAFT', 'PRESENTED', 'ACCEPTED', 'IN_PROGRESS']) {
+    plan.status = status; context.renderPlanPaciente();
+    assert.match(container.innerHTML, /Consentimiento firmado ✓/); assert.match(container.innerHTML, /Plan protegido/);
+    assert.match(container.innerHTML, /Ver consentimiento/);
+    for (const action of ['agregarPropuestasPlan(event)', 'cambiarDecisionPlan(', 'formalizarAceptacionPlan()', 'presentarPlanPaciente()']) {
+      assert(!container.innerHTML.includes(action), action);
+    }
+    if (status === 'ACCEPTED') assert.match(container.innerHTML, /Iniciar tratamiento/);
+    if (status === 'IN_PROGRESS') assert.match(container.innerHTML, /Comenzar tratamiento/);
+  }
+  plan.items[0].status = 'IN_PROGRESS'; context.renderPlanPaciente();
+  assert.match(container.innerHTML, /Registrar como realizado/);
+  plan.status = 'DRAFT'; plan.acceptances = []; context.renderPlanPaciente();
+  assert.match(container.innerHTML, /agregarPropuestasPlan\(event\)/);
 });
 test('audit failure rolls back updates/new signature and leaves historical acceptance intact', async () => {
   for(const op of ['present','decide','sign']){const h=harness();prepare(h,op);h.options.failAudit=true;const before=clone(h.state());assert.equal((await h.run(op)).code,500);assert.deepEqual(h.state(),before);assert(h.calls.some(c=>c.q==='ROLLBACK'));}
