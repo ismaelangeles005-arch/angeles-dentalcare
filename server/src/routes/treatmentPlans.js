@@ -206,14 +206,42 @@ async function lockPlan(client, planId, organizationId) {
   return result.rows[0];
 }
 
+async function validateClinicalReferences(client, plan, items) {
+  const linked = items.filter(item => item.odontogram_entry_id);
+  if (!linked.length) return;
+  const ids = [...new Set(linked.map(item => item.odontogram_entry_id))].sort();
+  // Stable lock order; SHARE conflicts with odontogram correction/status updates until commit.
+  const result = await client.query(`
+    SELECT oe.id, oe.status, oe.procedure_id, oe.tooth_id, oe.surface
+    FROM odontogram_entries oe
+    WHERE oe.id = ANY($1::uuid[]) AND oe.organization_id = $2 AND oe.patient_id = $3
+      AND oe.entry_type = 'PROPOSED_TREATMENT'
+    ORDER BY oe.id FOR SHARE OF oe
+  `, [ids, plan.organization_id, plan.patient_id]);
+  const entries = new Map(result.rows.map(entry => [entry.id, entry]));
+  for (const item of linked) {
+    const entry = entries.get(item.odontogram_entry_id);
+    // RESOLVED remains historically valid; it never advances the item's own status.
+    if (!entry || !["ACTIVE", "RESOLVED"].includes(entry.status) ||
+        (entry.procedure_id ?? null) !== (item.procedure_id ?? null) ||
+        (entry.tooth_id ?? null) !== (item.tooth_id ?? null) ||
+        (entry.surface ?? null) !== (item.surface ?? null)) {
+      throw Object.assign(new Error("La referencia clinica de un item requiere revision antes de continuar."), {
+        status: 409, code: "TREATMENT_PLAN_CLINICAL_REFERENCE_INVALID", itemId: item.id
+      });
+    }
+  }
+}
+
 router.patch("/:planId/status", asyncHandler(async (req, res) => {
   const planId = uuid(req.params.planId);
   if (req.body.status !== "PRESENTED") reject("Solo se permite presentar un plan DRAFT");
   const plan = await transaction(async client => {
     const original = await lockPlan(client, planId, req.user.organizationId);
     if (original.status !== "DRAFT") reject("El plan ya no esta en DRAFT", 409);
-    const items = await client.query("SELECT id FROM treatment_plan_items WHERE treatment_plan_id = $1 LIMIT 1", [planId]);
+    const items = await client.query("SELECT * FROM treatment_plan_items WHERE treatment_plan_id = $1 ORDER BY id FOR SHARE", [planId]);
     if (!items.rows.length) reject("Agrega al menos un item antes de presentar el plan", 409);
+    await validateClinicalReferences(client, original, items.rows);
     const updated = await client.query("UPDATE treatment_plans SET status = 'PRESENTED', updated_at = NOW() WHERE id = $1 AND organization_id = $2 RETURNING *", [planId, req.user.organizationId]);
     await writeAuditLog(req, "update_status", "treatment_plans", planId, { previous_status: "DRAFT", status: "PRESENTED" }, client);
     return updated.rows[0];
@@ -233,6 +261,7 @@ router.patch("/:planId/items/:itemId/status", asyncHandler(async (req, res) => {
     const item = items.rows.find(row => row.id === itemId);
     if (!item) reject("Item no encontrado en este plan", 404);
     if (items.rows.some(row => !["PROPOSED", ...decisions].includes(row.status))) reject("El plan contiene items clinicamente avanzados; requiere revisar su estado antes de cambiar decisiones", 409);
+    await validateClinicalReferences(client, plan, [item]);
     if (item.status === status) return { item, plan_status: plan.status };
     const previousStatus = item.status;
     const updated = await client.query("UPDATE treatment_plan_items SET status = $3 WHERE id = $1 AND treatment_plan_id = $2 RETURNING *", [itemId, planId, status]);
@@ -267,6 +296,8 @@ router.post("/:planId/acceptance", asyncHandler(async (req, res) => {
         new Date(req.body.expected_updated_at).getTime() !== new Date(plan.updated_at).getTime()) reject("El plan cambio mientras se firmaba. Revisa el plan actualizado y firma nuevamente", 409);
     const result = await client.query("SELECT * FROM treatment_plan_items WHERE treatment_plan_id = $1 ORDER BY created_at, id FOR SHARE", [planId]);
     if (!result.rows.some(item => item.status === "ACCEPTED")) reject("El plan debe tener al menos un item aceptado", 409);
+    // The signed snapshot includes every item, not only accepted items.
+    await validateClinicalReferences(client, plan, result.rows);
     const snapshots = result.rows.map(item => ({
       item_id: item.id, procedure_name_snapshot: item.procedure_name_snapshot,
       procedure_area_snapshot: item.procedure_area_snapshot, tooth_id: item.tooth_id, surface: item.surface,
@@ -290,5 +321,10 @@ router.post("/:planId/acceptance", asyncHandler(async (req, res) => {
   });
   res.status(201).json(acceptance);
 }));
+
+router.use((error, req, res, next) => {
+  if (error.code !== "TREATMENT_PLAN_CLINICAL_REFERENCE_INVALID") return next(error);
+  return res.status(409).json({ code: error.code, message: error.message, item_id: error.itemId });
+});
 
 module.exports = router;
