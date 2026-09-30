@@ -2726,16 +2726,39 @@
             const proposals = odontogramLoaded ? entries.filter(entry => entry.entry_type === "PROPOSED_TREATMENT" && entry.status === "ACTIVE") : [];
             const included = new Set(plan.items.map(item => item.odontogram_entry_id));
             const surface = value => ODONTOGRAM_SURFACES.find(item => item.value === (value || ""))?.label || value;
-            container.innerHTML = `<h3>${esc(plan.name)}</h3><p>${esc(plan.status)}</p>
-                ${plan.progress && ["IN_PROGRESS", "COMPLETED"].includes(plan.status) ? `<p role="status"><strong>Progreso${plan.status === "COMPLETED" ? " · Tratamiento completado" : ""}</strong><br>${esc(plan.progress.completed)} de ${esc(plan.progress.total)} completados · ${esc(plan.progress.percent)}%</p>` : ""}
+            const planStatusLabel = {
+                DRAFT: "En preparación",
+                PRESENTED: "Presentado al paciente",
+                ACCEPTED: "Aceptado",
+                PARTIALLY_ACCEPTED: "Aceptado parcialmente",
+                REJECTED: "No aceptado",
+                POSTPONED: "Pospuesto",
+                IN_PROGRESS: "En tratamiento",
+                COMPLETED: "Tratamiento completado",
+                CANCELLED: "Cancelado"
+            };
+
+            const itemStatusLabel = {
+                PROPOSED: "Pendiente de decisión",
+                ACCEPTED: "Pendiente de iniciar",
+                REJECTED: "No aceptado",
+                POSTPONED: "Pospuesto",
+                IN_PROGRESS: "En tratamiento",
+                COMPLETED: "Realizado",
+                CANCELLED: "Cancelado"
+            };
+
+            container.innerHTML = `<h3>${esc(plan.name)}</h3><p>${esc(planStatusLabel[plan.status] || plan.status)}</p>
+                ${plan.progress && ["IN_PROGRESS", "COMPLETED"].includes(plan.status) ? `<p role="status"><strong>${plan.status === "COMPLETED" ? "Tratamiento completado" : "Progreso del tratamiento"}</strong><br>${esc(plan.progress.completed ?? 0)} de ${esc(plan.progress.total ?? 0)} tratamientos realizados · ${esc(plan.progress.percent ?? 0)}%</p>` : ""}
                 ${["ACCEPTED", "PARTIALLY_ACCEPTED"].includes(plan.status) && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente()">Iniciar tratamiento</button>` : ""}
                 ${plan.items.length ? plan.items.map(item => `<article class="odontogram-entry">
                     <strong>${esc(item.procedure_name_snapshot)}</strong>
                     <p>Pieza: ${esc(piezaPlanPaciente(item.tooth_id))} · ${esc(surface(item.surface))}</p>
                     <p>Precio unitario: ${esc(item.unit_price_snapshot)} · Cantidad: ${esc(item.quantity)}</p>
                     <p>Descuento: ${esc(item.discount_amount)} · Total: ${esc(item.final_amount)}</p>
-                    <p>Estado: <strong>${esc(item.status)}</strong></p>
-                    ${plan.status === "IN_PROGRESS" && ["ACCEPTED", "IN_PROGRESS"].includes(item.status) ? `<button type="button" class="confirm-secondary" data-execution-item="${esc(item.id)}" data-execution-status="${item.status === "ACCEPTED" ? "IN_PROGRESS" : "COMPLETED"}" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente(this.dataset.executionItem, this.dataset.executionStatus)">${item.status === "ACCEPTED" ? "Iniciar" : "Completar"}</button>` : ""}
+                    <p><strong>${esc(itemStatusLabel[item.status] || item.status)}</strong></p>
+                    ${plan.status === "IN_PROGRESS" && item.status === "ACCEPTED" ? `<button type="button" class="confirm-secondary" data-execution-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente(this.dataset.executionItem, 'IN_PROGRESS')">Comenzar tratamiento</button>` : ""}
+                    ${plan.status === "IN_PROGRESS" && item.status === "IN_PROGRESS" ? `<button type="button" class="confirm-secondary" data-treatment-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="abrirRegistroRealizadoDesdePlan(this.dataset.treatmentItem)">Registrar como realizado</button>` : ""}
                     ${["PRESENTED", "ACCEPTED", "PARTIALLY_ACCEPTED", "REJECTED", "POSTPONED"].includes(plan.status) && ["PROPOSED", "ACCEPTED", "REJECTED", "POSTPONED"].includes(item.status) ? `
                         <div class="confirm-actions">
                             ${[["ACCEPTED", "Aceptar"], ["REJECTED", "Rechazar"], ["POSTPONED", "Posponer"]].map(([status, label]) => `<button type="button" class="confirm-secondary" data-item-id="${esc(item.id)}" data-status="${status}" ${state.busy || item.status === status ? "disabled" : ""} onclick="cambiarDecisionPlan(this.dataset.itemId, this.dataset.status)">${label}</button>`).join("")}
@@ -2743,8 +2766,8 @@
                 </article>`).join("") : '<div class="empty-state">Sin ítems en el plan</div>'}
                 <p><strong>Total del plan: ${esc(plan.total ?? "Pendiente de actualizar")}</strong></p>
                 <p><strong>Total aceptado: ${esc(plan.accepted_total ?? (plan.status === "DRAFT" ? "0.00" : "Pendiente de actualizar"))}</strong></p>
-                ${(plan.acceptances || []).map(acceptance => `<p>Aceptación registrada: ${esc(acceptance.accepted_by_name)} · ${esc(new Date(acceptance.accepted_at).toLocaleString("es-DO"))} · Total aceptado: ${esc(acceptance.accepted_total_snapshot)}</p>`).join("")}
-                ${!["DRAFT", "CANCELLED"].includes(plan.status) && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="formalizarAceptacionPlan()">Formalizar aceptación</button>` : ""}
+                ${(plan.acceptances || []).map(acceptance => `<p><strong>Consentimiento firmado ✓</strong><br>${esc(acceptance.accepted_by_name)} · ${esc(new Date(acceptance.accepted_at).toLocaleString("es-DO"))} · Total aceptado: ${esc(acceptance.accepted_total_snapshot)}</p>`).join("")}
+                ${!["DRAFT", "CANCELLED"].includes(plan.status) && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="formalizarAceptacionPlan()">Registrar aceptación del paciente</button>` : ""}
                 ${plan.status === "DRAFT" ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="presentarPlanPaciente()">Presentar plan</button>` : ""}
                 ${plan.status === "DRAFT" ? `<form onsubmit="agregarPropuestasPlan(event)">
                     <h4>Tratamientos propuestos activos</h4>
@@ -2763,6 +2786,92 @@
                 </form>` : ""}`;
         }
 
+        async function abrirRegistroRealizadoDesdePlan(itemId) {
+            const state = treatmentPlanState;
+            const plan = state?.plan;
+            const item = plan?.items?.find(candidate => candidate.id === itemId);
+
+            if (!item || item.status !== "IN_PROGRESS") {
+                DentalRoles.notify("Este tratamiento no está listo para registrar como realizado.", "warning");
+                return;
+            }
+
+            if (!item.odontogram_entry_id || !item.tooth_id) {
+                DentalRoles.notify("Este tratamiento no tiene una propuesta clínica vinculada.", "warning");
+                return;
+            }
+
+            if (!odontogramLoaded) {
+                DentalRoles.notify("Espera a que termine de cargar el odontograma.", "warning");
+                return;
+            }
+
+            const proposal = entradasOdontograma(item.tooth_id).find(entry =>
+                entry.id === item.odontogram_entry_id &&
+                entry.entry_type === "PROPOSED_TREATMENT" &&
+                entry.status === "ACTIVE"
+            );
+
+            if (!proposal) {
+                DentalRoles.notify(
+                    "La propuesta clínica vinculada ya no está activa. Revisa el odontograma antes de continuar.",
+                    "warning"
+                );
+                return;
+            }
+
+            cambiarPestanaExpediente("odontograma");
+
+            selectedOdontogramToothId = item.tooth_id;
+            renderOdontogramView();
+
+            const form = document.getElementById("odontogramCompletedForm");
+
+            if (!form) {
+                DentalRoles.notify("No fue posible abrir el registro del tratamiento realizado.", "error");
+                return;
+            }
+
+            const details = form.closest("details");
+            details.open = true;
+
+            await cargarProcedimientosOdontograma(details);
+
+            if (!form.isConnected) return;
+
+            const relation = form.elements.namedItem("related_entry_id");
+            const procedure = form.elements.namedItem("procedure_id");
+            const surface = form.elements.namedItem("surface");
+
+            if (relation) {
+                relation.value = proposal.id;
+            }
+
+            if (procedure) {
+                procedure.value = proposal.procedure_id || "";
+
+                if (!procedure.value) {
+                    DentalRoles.notify(
+                        "El procedimiento vinculado ya no está disponible en el catálogo.",
+                        "warning"
+                    );
+                }
+            }
+
+            if (surface) {
+                surface.value = proposal.surface || "";
+                sincronizarSuperficiesVisualesOdontograma(surface);
+            }
+
+            form.dataset.treatmentPlanItemId = item.id;
+
+            form.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
+
+            form.elements.namedItem("notes")?.focus();
+        }
         async function ejecutarPlanPaciente(itemId = null, status = "IN_PROGRESS") {
             const state = treatmentPlanState;
             const plan = state?.plan;
