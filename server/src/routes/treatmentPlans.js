@@ -408,6 +408,13 @@ router.post("/:planId/acceptance", asyncHandler(async (req, res) => {
   const acceptance = await transaction(async client => {
     const plan = await lockPlan(client, planId, req.user.organizationId);
     if (["DRAFT", "CANCELLED"].includes(plan.status)) reject("Este plan no puede formalizarse", 409);
+    const existingAcceptance = await client.query(`
+      SELECT id
+      FROM treatment_plan_acceptances
+      WHERE treatment_plan_id = $1 AND organization_id = $2
+      LIMIT 1
+    `, [planId, req.user.organizationId]);
+    if (existingAcceptance.rows.length) reject("Este plan ya tiene un consentimiento firmado", 409);
     if (req.body.expected_updated_at !== undefined &&
         new Date(req.body.expected_updated_at).getTime() !== new Date(plan.updated_at).getTime()) reject("El plan cambio mientras se firmaba. Revisa el plan actualizado y firma nuevamente", 409);
     const result = await client.query("SELECT * FROM treatment_plan_items WHERE treatment_plan_id = $1 ORDER BY created_at, id FOR SHARE", [planId]);

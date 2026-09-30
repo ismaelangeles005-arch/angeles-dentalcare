@@ -2801,7 +2801,7 @@
                 ${plan.status === "DRAFT" ? `<p><strong>RD$${esc(plan.total ?? "0.00")}</strong></p>` : ""}
                 ${plan.status !== "DRAFT" && plan.accepted_total != null ? `<p><strong>RD$${esc(plan.accepted_total)}</strong> · Aceptado por el paciente</p>` : ""}
                 ${(plan.acceptances || []).slice(-1).map(acceptance => `<div><p><strong>Consentimiento firmado ✓</strong><br>${esc(acceptance.accepted_by_name)} · ${esc(new Date(acceptance.accepted_at).toLocaleString("es-DO"))}</p><button type="button" class="confirm-secondary" data-acceptance-id="${esc(acceptance.id)}" onclick="verConsentimientoPlan(this.dataset.acceptanceId)">Ver consentimiento</button></div>`).join("")}
-                ${!["DRAFT", "CANCELLED"].includes(plan.status) && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="formalizarAceptacionPlan()">Registrar aceptación del paciente</button>` : ""}
+                ${!["DRAFT", "CANCELLED"].includes(plan.status) && !(plan.acceptances || []).length && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="formalizarAceptacionPlan()">Registrar aceptación del paciente</button>` : ""}
                 ${plan.status === "DRAFT" ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="presentarPlanPaciente()">Presentar plan</button>` : ""}
                 ${plan.status === "DRAFT" ? `<form onsubmit="agregarPropuestasPlan(event)">
                     <h4>Tratamientos propuestos activos</h4>
@@ -3084,7 +3084,7 @@
         function formalizarAceptacionPlan() {
             const state = treatmentPlanState;
             const plan = state?.plan;
-            if (!plan || state.busy || ["DRAFT", "CANCELLED"].includes(plan.status) || !plan.items.some(item => item.status === "ACCEPTED")) return;
+            if (!plan || state.busy || ["DRAFT", "CANCELLED"].includes(plan.status) || (plan.acceptances || []).length || !plan.items.some(item => item.status === "ACCEPTED")) return;
             if (document.getElementById("planAcceptanceDialog")) return;
             const esc = DentalRoles.escapeHtml;
             const backdrop = document.createElement("div");

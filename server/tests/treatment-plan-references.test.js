@@ -89,6 +89,19 @@ function harness(status = 'ACTIVE') {
         }]
       };
     }
+    if (q.includes('FROM treatment_plan_acceptances') &&
+        q.includes('treatment_plan_id = $1') &&
+        !q.includes('FROM treatment_plan_acceptances a')) {
+      return {
+        rows: state.acceptances
+          .filter(a =>
+            (a.treatment_plan_id || state.plan.id) === values[0] &&
+            (a.organization_id || state.plan.organization_id) === values[1]
+          )
+          .slice(0, 1)
+          .map(a => ({ id: a.id }))
+      };
+    }
     if (q.startsWith('INSERT INTO treatment_plan_acceptances')) {
       const row = { id: uuid(10 + state.acceptances.length), organization_id: values[0], treatment_plan_id: values[1], patient_id: values[2], accepted_by_name: values[3], signature_data: values[4], created_by: values[5], plan_status_snapshot: values[6], total_snapshot: values[7], accepted_total_snapshot: values[8], items_snapshot: JSON.parse(values[9]) };
       state.acceptances.push(row); return { rows: [clone(row)] };
@@ -131,7 +144,10 @@ function harness(status = 'ACTIVE') {
 }
 function prepare(h, op) {
   if (op !== 'present' && op !== 'add') h.state().plan.status = 'PRESENTED';
-  if (op === 'sign') h.state().items[0].status = 'ACCEPTED';
+  if (op === 'sign') {
+    h.state().items[0].status = 'ACCEPTED';
+    h.state().acceptances = [];
+  }
 }
 
 for (const status of ['ACTIVE', 'RESOLVED', 'VOIDED', 'SUPERSEDED']) {
@@ -143,7 +159,12 @@ for (const status of ['ACTIVE', 'RESOLVED', 'VOIDED', 'SUPERSEDED']) {
       assert(h.calls.some(c => c.q === 'COMMIT'));
       assert.equal(h.state().items.length, 1);
       assert.notEqual(h.state().items[0].status, 'COMPLETED');
-      assert.deepEqual(h.state().acceptances[0], before.acceptances[0]);
+      if (op === 'sign') {
+        assert.equal(before.acceptances.length, 0);
+        assert.equal(h.state().acceptances.length, 1);
+      } else {
+        assert.deepEqual(h.state().acceptances[0], before.acceptances[0]);
+      }
       assert.equal(h.state().entries[0].status, status);
     } else {
       assert.equal(res.code, 409); assert.equal(res.body.code, 'TREATMENT_PLAN_CLINICAL_REFERENCE_INVALID');
@@ -241,7 +262,25 @@ test('unlinked items remain valid; nullable procedure reference preserved when b
 test('decisions validate target only; signature validates every snapshot item including rejected', async () => {
   const h=harness();prepare(h,'decide');h.state().items.push({...clone(h.state().items[0]),id:uuid(20),odontogram_entry_id:uuid(21),status:'REJECTED'});
   assert.equal((await h.run('decide')).code,200);
+  h.state().acceptances = [];
   const before=clone(h.state());assert.equal((await h.run('sign')).code,409);assert.deepEqual(h.state(),before);
+});
+test('second acceptance for the same plan is rejected without changing historical consent', async () => {
+  const h = harness();
+  prepare(h, 'sign');
+
+  const first = await h.run('sign');
+  assert.equal(first.code, 201);
+
+  const signed = clone(h.state().acceptances);
+  const audits = clone(h.state().audits);
+
+  const second = await h.run('sign');
+
+  assert.equal(second.code, 409);
+  assert.match(second.body.message, /ya tiene un consentimiento firmado/i);
+  assert.deepEqual(h.state().acceptances, signed);
+  assert.deepEqual(h.state().audits, audits);
 });
 test('audit failure rolls back updates/new signature and leaves historical acceptance intact', async () => {
   for(const op of ['present','decide','sign']){const h=harness();prepare(h,op);h.options.failAudit=true;const before=clone(h.state());assert.equal((await h.run(op)).code,500);assert.deepEqual(h.state(),before);assert(h.calls.some(c=>c.q==='ROLLBACK'));}
