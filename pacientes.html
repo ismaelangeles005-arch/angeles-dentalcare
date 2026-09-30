@@ -2834,6 +2834,8 @@
             };
 
             const numberingLabel = document.getElementById("treatmentPlanNumbering")?.closest?.("label");
+            const hasPendingItems = plan.items.some(item => item.status !== "COMPLETED");
+            const acceptedAmount = plan.accepted_total == null ? "" : Number(plan.accepted_total).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const displayDate = value => value && !Number.isNaN(new Date(value).getTime()) ? new Date(value).toLocaleDateString("es-DO") : "Fecha no disponible";
             const renderItem = item => {
                 const completedEntry = item.status === "COMPLETED" && item.odontogram_entry_id ? entries.find(entry =>
@@ -2853,15 +2855,15 @@
                         </div>` : ""}
                 </article>`;
             };
-            container.innerHTML = `<header class="plan-summary"><div><h3>${esc(plan.name)}</h3><span class="plan-badge" data-state="${esc(plan.status)}">${esc(planStatusLabel[plan.status] || "Estado no disponible")}</span><div class="plan-meta"><span>Doctor: ${esc(plan.doctor || "Sin doctor asignado")}</span><span>Creado: ${esc(displayDate(plan.created_at))}</span></div></div><div class="plan-total"><span>Total del plan</span><strong>RD$${esc(plan.total ?? "0.00")}</strong>${plan.status !== "DRAFT" && plan.accepted_total != null ? `<span>RD$${esc(plan.accepted_total)} aceptado por el paciente</span>` : ""}</div></header>
+            container.innerHTML = `<header class="plan-summary"><div><h3>${esc(plan.name)}</h3><span class="plan-badge" data-state="${esc(plan.status)}">${esc(planStatusLabel[plan.status] || "Estado no disponible")}</span><div class="plan-meta"><span>Doctor: ${esc(plan.doctor || "Sin doctor asignado")}</span><span>Creado: ${esc(displayDate(plan.created_at))}</span></div></div><div class="plan-total"><span>Total del plan</span><strong>RD$${esc(plan.total ?? "0.00")}</strong>${plan.status !== "DRAFT" && plan.accepted_total != null ? `<span>Aceptado: RD$${esc(acceptedAmount)}</span>` : ""}</div></header>
                 ${(plan.acceptances || []).slice(-1).map(acceptance => `<section class="plan-consent" aria-label="Consentimiento"><div><div class="plan-consent-status"><strong>Consentimiento firmado ✓</strong><span class="plan-badge">Plan protegido</span></div><p>${esc(acceptance.accepted_by_name)} · ${esc(new Date(acceptance.accepted_at).toLocaleString("es-DO"))}</p></div><button type="button" class="confirm-secondary plan-primary" data-acceptance-id="${esc(acceptance.id)}" onclick="verConsentimientoPlan(this.dataset.acceptanceId)">Ver consentimiento</button></section>`).join("")}
                 ${!["DRAFT", "CANCELLED"].includes(plan.status) && !(plan.acceptances || []).length && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="formalizarAceptacionPlan()">Registrar aceptación del paciente</button>` : ""}
                 ${plan.status === "DRAFT" && !(plan.acceptances || []).length ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="presentarPlanPaciente()">Presentar plan</button>` : ""}
-                <div class="plan-section-heading"><h4>Tratamientos del plan</h4><div id="planToothTools"></div></div>
+                ${hasPendingItems ? '<div class="plan-section-heading"><h4>Tratamientos del plan</h4><div id="planToothTools"></div></div>' : ""}
                 ${plan.progress && plan.status === "IN_PROGRESS" ? `<p class="plan-progress" role="status"><strong>Progreso del tratamiento</strong><br>${esc(String(plan.progress.completed ?? 0))} de ${esc(String(plan.progress.total ?? 0))} tratamientos realizados · ${esc(String(plan.progress.percent ?? 0))}%</p>` : plan.progress && plan.status === "COMPLETED" && Number(plan.progress.total || 0) > 1 ? `<p class="plan-progress" role="status">${esc(String(plan.progress.completed ?? 0))} de ${esc(String(plan.progress.total ?? 0))} tratamientos realizados · ${esc(String(plan.progress.percent ?? 0))}%</p>` : ""}
                 ${["ACCEPTED", "PARTIALLY_ACCEPTED"].includes(plan.status) && plan.items.some(item => item.status === "ACCEPTED") ? `<p><button type="button" class="confirm-secondary plan-clinical" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente()">Iniciar tratamiento</button></p>` : ""}
                 ${plan.items.some(item => item.status !== "COMPLETED") ? `<div class="plan-items">${plan.items.filter(item => item.status !== "COMPLETED").map(renderItem).join("")}</div>` : ""}
-                ${plan.items.some(item => item.status === "COMPLETED") ? `<section aria-label="Tratamientos realizados"><div class="plan-section-heading"><h4>Tratamientos realizados</h4></div><div class="plan-items">${plan.items.filter(item => item.status === "COMPLETED").map(renderItem).join("")}</div></section>` : ""}
+                ${plan.items.some(item => item.status === "COMPLETED") ? `<section aria-label="Tratamientos realizados"><div class="plan-section-heading"><h4>Tratamientos realizados</h4>${!hasPendingItems ? '<div id="planToothTools"></div>' : ""}</div><div class="plan-items">${plan.items.filter(item => item.status === "COMPLETED").map(renderItem).join("")}</div></section>` : ""}
                 ${!plan.items.length ? '<div class="empty-state">Sin ítems en el plan</div>' : ""}
                 ${plan.status === "DRAFT" && !(plan.acceptances || []).length ? `<form onsubmit="agregarPropuestasPlan(event)">
                     <h4>Tratamientos propuestos activos</h4>
@@ -2878,7 +2880,7 @@
                     }).join("") : '<div class="empty-state">Sin propuestas activas disponibles</div>'}
                     <button type="submit" class="add-btn" ${state.busy ? "disabled" : ""}>Agregar seleccionadas</button>
                 </form>` : ""}`;
-            if (numberingLabel) document.getElementById("planToothTools").appendChild(numberingLabel);
+            if (numberingLabel) (document.getElementById("planToothTools") || document.getElementById("treatmentPlanNumberingHome")).appendChild(numberingLabel);
         }
 
         async function abrirRegistroRealizadoDesdePlan(itemId) {
