@@ -44,27 +44,99 @@
         function render() {
             const grid = document.getElementById(options.gridId);
             if (!grid) return;
+
             const system = numberingSystem();
-            let group = "";
-            grid.innerHTML = catalog.getTeethByDentition(dentitionMode()).map(tooth => {
-                const key = tooth.dentition + tooth.arch;
-                const heading = dentitionMode() === "MIXED" && key !== group
-                    ? '<strong style="grid-column:1/-1">' + (tooth.dentition === "PRIMARY" ? "Temporal" : "Permanente") + (tooth.arch === "UPPER" ? " superior" : " inferior") + '</strong>' : "";
-                group = key;
+            const teeth = catalog.getTeethByDentition(dentitionMode());
+            const visual = options.visual === true;
+            const mode = countMode();
+
+            function renderTooth(tooth) {
                 const isSelected = selected.includes(tooth.toothId);
-                const visual = options.visual === true;
-                const description = `Pieza ${tooth[system]} · ${clinicalName(tooth.toothId)}`;
-                return heading + `
-                <button type="button"
-                        class="tooth-button ${visual ? "clinical-visual-tooth odontogram-tooth" : ""} ${isSelected ? "selected" : ""}"
-                        onclick="${options.toggleFunctionName}('${tooth.toothId}')"
-                        aria-pressed="${isSelected}"
-                        aria-label="${escapeHtml(description)}"
-                        title="${escapeHtml(description)}">
-                    ${visual ? clinicalIllustration(tooth.toothId) : ""}
-                    <span class="${visual ? "odontogram-code" : ""}">${escapeHtml(tooth[system])}</span>
-                </button>
-            `; }).join("");
+                const description = `Pieza ${tooth[system]} - ${clinicalName(tooth.toothId)}`;
+
+                return `
+                    <button type="button"
+                            class="tooth-button ${visual ? "clinical-visual-tooth odontogram-tooth" : ""} ${isSelected ? "selected" : ""}"
+                            onclick="${options.toggleFunctionName}('${tooth.toothId}')"
+                            aria-pressed="${isSelected}"
+                            aria-label="${escapeHtml(description)}"
+                            title="${escapeHtml(description)}"
+                            ${visual && !mode ? "disabled" : ""}>
+                        ${visual ? clinicalIllustration(tooth.toothId) : ""}
+                        <span class="${visual ? "odontogram-code" : ""}">${escapeHtml(tooth[system])}</span>
+                    </button>
+                `;
+            }
+
+            if (!visual) {
+                grid.innerHTML = teeth.map(renderTooth).join("");
+                syncHiddenInput();
+                return;
+            }
+
+            const groups = [
+                ["PERMANENT", "UPPER", "Permanente superior"],
+                ["PERMANENT", "LOWER", "Permanente inferior"],
+                ["PRIMARY", "UPPER", "Temporal superior"],
+                ["PRIMARY", "LOWER", "Temporal inferior"]
+            ];
+
+            grid.innerHTML = groups.map(([dentition, arch, label]) => {
+                let groupTeeth = teeth.filter(tooth =>
+                    tooth.dentition === dentition && tooth.arch === arch
+                );
+
+                if (!groupTeeth.length) return "";
+
+                // Vista frontal: derecha del paciente a la izquierda de la pantalla.
+                if (arch === "LOWER") groupTeeth = [...groupTeeth].reverse();
+
+                const right = groupTeeth.filter(tooth => tooth.side === "RIGHT");
+                const left = groupTeeth.filter(tooth => tooth.side === "LEFT");
+
+                return `
+                    <section class="clinical-tooth-arch">
+                        <strong class="clinical-tooth-arch-title">${label}</strong>
+
+                        <div class="clinical-tooth-sides">
+                            <div class="clinical-tooth-side">
+                                <span>Derecha del paciente</span>
+                                <div class="clinical-tooth-row">
+                                    ${right.map(renderTooth).join("")}
+                                </div>
+                            </div>
+
+                            <div class="clinical-tooth-midline" aria-hidden="true"></div>
+
+                            <div class="clinical-tooth-side">
+                                <span>Izquierda del paciente</span>
+                                <div class="clinical-tooth-row">
+                                    ${left.map(renderTooth).join("")}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                `;
+            }).join("");
+
+            const count = selected.length;
+            const expected = ["1", "2", "3", "4"].includes(mode)
+                ? Number(mode)
+                : null;
+
+            const status = document.createElement("div");
+            status.className = "clinical-tooth-selection-status";
+            status.setAttribute("aria-live", "polite");
+
+            if (!mode) {
+                status.textContent = "Sin selección de piezas.";
+            } else if (expected !== null) {
+                status.textContent = `${count} de ${expected} piezas seleccionadas`;
+            } else {
+                status.textContent = `${count} piezas seleccionadas`;
+            }
+
+            grid.appendChild(status);
             syncHiddenInput();
         }
 

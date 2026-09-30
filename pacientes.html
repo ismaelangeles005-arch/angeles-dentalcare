@@ -529,41 +529,106 @@
         .patients-page .odontogram-tooth:hover { background: #eaf2f5; border-color: #859dac; }
         /* Visual dental selector - clinical evolution */
         .patients-page #clinicalToothGrid {
-            grid-template-columns: repeat(16, minmax(42px, 1fr));
-            gap: 4px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .patients-page .clinical-tooth-arch {
+            min-width: 0;
+        }
+
+        .patients-page .clinical-tooth-arch + .clinical-tooth-arch {
+            border-top: 1px solid var(--color-border);
+            padding-top: 10px;
+        }
+
+        .patients-page .clinical-tooth-arch-title {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--color-primary-dark);
+            font-size: 14px;
+        }
+
+        .patients-page .clinical-tooth-sides {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
+            gap: 8px;
             align-items: stretch;
+        }
+
+        .patients-page .clinical-tooth-side {
+            min-width: 0;
+        }
+
+        .patients-page .clinical-tooth-side > span {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--color-text-muted);
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .patients-page .clinical-tooth-midline {
+            background: var(--color-border);
+        }
+
+        .patients-page .clinical-tooth-row {
+            display: grid;
+            grid-template-columns: repeat(8, minmax(38px, 1fr));
+            gap: 3px;
+        }
+
+        .patients-page .clinical-tooth-row:has(.clinical-visual-tooth:nth-child(5):last-child) {
+            grid-template-columns: repeat(5, minmax(38px, 1fr));
         }
 
         .patients-page #clinicalToothGrid .clinical-visual-tooth {
             display: grid;
             justify-items: center;
             align-content: center;
-            gap: 3px;
+            gap: 2px;
+            width: 100%;
             min-width: 0;
-            min-height: 100px;
-            padding: 5px 1px;
+            min-height: 88px;
+            padding: 4px 1px;
         }
 
         .patients-page #clinicalToothGrid .clinical-visual-tooth .odontogram-anatomy {
             width: 100%;
-            max-width: 40px;
-            height: 58px;
+            max-width: 36px;
+            height: 52px;
         }
 
         .patients-page #clinicalToothGrid .clinical-visual-tooth .odontogram-code {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
         }
 
-        @media (max-width: 900px) {
-            .patients-page #clinicalToothGrid {
-                grid-template-columns: repeat(8, minmax(42px, 1fr));
-            }
+        .patients-page #clinicalToothGrid .clinical-visual-tooth:disabled {
+            opacity: .42;
+            cursor: not-allowed;
         }
 
-        @media (max-width: 480px) {
-            .patients-page #clinicalToothGrid {
-                grid-template-columns: repeat(4, minmax(48px, 1fr));
+        .patients-page .clinical-tooth-selection-status {
+            color: var(--color-text-muted);
+            font-size: 12px;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        @media (max-width: 760px) {
+            .patients-page .clinical-tooth-sides {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .patients-page .clinical-tooth-midline {
+                display: none;
+            }
+
+            .patients-page .clinical-tooth-row {
+                grid-template-columns: repeat(4, minmax(44px, 1fr));
             }
         }
         .patients-page .odontogram-tooth.selected { color: #154b67; border: 2px solid #256387; background: #e9f4fa; padding: 5px 0; }
@@ -1109,7 +1174,7 @@
     <script src="api.js?v=20260626e"></script>
     <script src="roles.js?v=20260626e"></script>
     <script src="dental-tooth-catalog.js?v=odontogram-v2"></script>
-    <script src="dental-tooth-selector.js?v=clinical-visual-v1"></script>
+    <script src="dental-tooth-selector.js?v=clinical-visual-v2"></script>
 
     <script type="text/plain" data-dental-page='{"active":"pacientes"}'>
 
