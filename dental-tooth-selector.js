@@ -51,9 +51,19 @@
                 const heading = dentitionMode() === "MIXED" && key !== group
                     ? '<strong style="grid-column:1/-1">' + (tooth.dentition === "PRIMARY" ? "Temporal" : "Permanente") + (tooth.arch === "UPPER" ? " superior" : " inferior") + '</strong>' : "";
                 group = key;
+                const isSelected = selected.includes(tooth.toothId);
+                const visual = options.visual === true;
+                const description = `Pieza ${tooth[system]} · ${clinicalName(tooth.toothId)}`;
                 return heading + `
-                <button type="button" class="tooth-button ${selected.includes(tooth.toothId) ? "selected" : ""}"
-                        onclick="${options.toggleFunctionName}('${tooth.toothId}')">${escapeHtml(tooth[system])}</button>
+                <button type="button"
+                        class="tooth-button ${visual ? "clinical-visual-tooth odontogram-tooth" : ""} ${isSelected ? "selected" : ""}"
+                        onclick="${options.toggleFunctionName}('${tooth.toothId}')"
+                        aria-pressed="${isSelected}"
+                        aria-label="${escapeHtml(description)}"
+                        title="${escapeHtml(description)}">
+                    ${visual ? clinicalIllustration(tooth.toothId) : ""}
+                    <span class="${visual ? "odontogram-code" : ""}">${escapeHtml(tooth[system])}</span>
+                </button>
             `; }).join("");
             syncHiddenInput();
         }
