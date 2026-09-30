@@ -170,6 +170,20 @@ textarea:focus {
     background: #ffffff;
 }
 
+.topbar .logout-btn {
+    min-height: 42px;
+    padding: 10px 16px;
+    border: none;
+    background: var(--color-error);
+    color: white;
+    border-radius: var(--radius-md);
+    font-family: var(--font-main);
+    font-size: 16px;
+    font-weight: 800;
+    line-height: normal;
+    cursor: pointer;
+}
+
 .logout-btn,
 .add-btn,
 .save-btn,
@@ -461,11 +475,18 @@ body.role-recepcion .role-note { background: rgba(47, 167, 160, 0.12); color: #1
 
 .topbar-actions {
     display: flex;
+    flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
     align-items: center;
     gap: 12px;
 }
 
-.notification-center { position: relative; }
+.notification-center { position: relative; flex: 0 0 42px; }
+
+@media (max-width: 400px) {
+    .topbar-actions { gap: 8px; }
+}
 
 .notification-button {
     position: relative;
