@@ -2590,6 +2590,8 @@
                 button.disabled = false;
                 return;
             }
+            const treatmentPlanItemId = form.dataset.treatmentPlanItemId || null;
+            delete form.dataset.treatmentPlanItemId;
             DentalRoles.notify("Tratamiento realizado registrado.", "success");
             form.reset();
             try {
@@ -2603,6 +2605,38 @@
             } finally {
                 delete form.dataset.saving;
                 button.disabled = false;
+            }
+            if (treatmentPlanItemId) {
+                const state = treatmentPlanState;
+                const plan = state?.plan;
+
+                if (!plan) {
+                    DentalRoles.notify("El tratamiento clínico se guardó, pero no fue posible localizar el plan para actualizarlo.", "warning");
+                } else {
+                    try {
+                        await DentalApi.updateTreatmentPlanItemExecution(
+                            plan.id,
+                            treatmentPlanItemId,
+                            "COMPLETED"
+                        );
+
+                        const refreshed = await DentalApi.getTreatmentPlan(plan.id);
+
+                        if (treatmentPlanState === state) {
+                            state.plan = refreshed;
+                            renderPlanPaciente();
+                            await cargarPlanesPaciente();
+                            DentalRoles.notify("Tratamiento realizado y plan actualizado.", "success");
+                        }
+                    } catch (error) {
+                        if (treatmentPlanState === state) {
+                            DentalRoles.notify(
+                                error.message || "El tratamiento clínico se guardó, pero no fue posible completar el tratamiento en el plan.",
+                                "warning"
+                            );
+                        }
+                    }
+                }
             }
         }
 
