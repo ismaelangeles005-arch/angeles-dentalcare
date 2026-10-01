@@ -322,6 +322,144 @@ router.post("/change-password", authenticate, asyncHandler(async (req, res) => {
   return res.status(204).send();
 }));
 
+
+router.post("/my-pin", authenticate, asyncHandler(async (req, res) => {
+  const { currentPin, newPin, confirmPin } = req.body;
+
+  if (!validPin(currentPin)) {
+    return res.status(400).json({
+      message: "Escribe tu PIN actual de cuatro digitos"
+    });
+  }
+
+  if (!validPin(newPin)) {
+    return res.status(400).json({
+      message: "El nuevo PIN debe tener cuatro digitos"
+    });
+  }
+
+  if (newPin !== confirmPin) {
+    return res.status(400).json({
+      message: "La confirmacion del PIN no coincide"
+    });
+  }
+
+  if (currentPin === newPin) {
+    return res.status(400).json({
+      message: "El nuevo PIN debe ser diferente al actual"
+    });
+  }
+
+  const result = await db.query(`
+    SELECT
+      id,
+      organization_id,
+      pin_hash,
+      pin_lookup_hash,
+      pin_enabled,
+      active,
+      deleted_at
+    FROM users
+    WHERE id = $1
+      AND organization_id = $2
+      AND active = true
+      AND deleted_at IS NULL
+    LIMIT 1
+  `, [req.user.id, req.user.organizationId]);
+
+  const user = result.rows[0];
+
+  if (!user) {
+    return res.status(404).json({
+      message: "Usuario no encontrado"
+    });
+  }
+
+  const validCurrentPin = await bcrypt.compare(
+    currentPin,
+    user.pin_hash || dummyHash
+  );
+
+  if (!validCurrentPin) {
+    return res.status(401).json({
+      code: "INVALID_CURRENT_PIN",
+      message: "El PIN actual no es correcto"
+    });
+  }
+
+  const newLookupHash = pinLookupHash(
+    newPin,
+    req.user.organizationId
+  );
+
+  const duplicate = await db.query(`
+    SELECT id
+    FROM users
+    WHERE organization_id = $1
+      AND pin_lookup_hash = $2
+      AND id <> $3
+      AND active = true
+      AND deleted_at IS NULL
+    LIMIT 1
+  `, [
+    req.user.organizationId,
+    newLookupHash,
+    req.user.id
+  ]);
+
+  if (duplicate.rows.length) {
+    return res.status(409).json({
+      code: "PIN_ALREADY_IN_USE",
+      message: "Ese PIN ya esta siendo utilizado por otro usuario"
+    });
+  }
+
+  const newPinHash = await bcrypt.hash(newPin, 12);
+
+  const client = await db.pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    await client.query(`
+      UPDATE users
+      SET
+        pin_hash = $1,
+        pin_lookup_hash = $2,
+        pin_enabled = true,
+        failed_pin_attempts = 0,
+        pin_locked_until = NULL,
+        updated_at = NOW()
+      WHERE id = $3
+        AND organization_id = $4
+        AND active = true
+        AND deleted_at IS NULL
+    `, [
+      newPinHash,
+      newLookupHash,
+      req.user.id,
+      req.user.organizationId
+    ]);
+
+    await writeAuditLog(
+      req,
+      "change_pin",
+      "users",
+      req.user.id,
+      {},
+      client
+    );
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  return res.status(204).send();
+}));
 router.get("/me", authenticate, (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   return res.json({ user: req.user });
