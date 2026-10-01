@@ -9,6 +9,5 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMPTZ;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_org_pin_lookup_active
   ON users (organization_id, pin_lookup_hash)
   WHERE pin_lookup_hash IS NOT NULL
-    AND pin_enabled = true
     AND active = true
     AND deleted_at IS NULL;
