@@ -1093,7 +1093,7 @@
                     <div class="odontogram-toolbar">
                         <strong>Odontograma clínico</strong>
                         <label>Dentición
-                            <select id="odontogramDentition" onchange="renderOdontogramView()">
+                            <select id="odontogramDentition" onchange="cambiarDenticionOdontograma()">
                                 <option value="PERMANENT">Permanente</option><option value="PRIMARY">Temporal</option><option value="MIXED">Mixta</option>
                             </select>
                         </label>
@@ -1946,6 +1946,7 @@
             notasClinicas = [];
             odontogramCurrent = { teeth: {} };
             selectedOdontogramToothId = "";
+            clinicalToothSelector.reset();
             document.getElementById("clinicalFileList").innerHTML = "";
             document.getElementById("clinicalHistoryList").innerHTML = "";
             document.getElementById("odontogramUpperGrid").innerHTML = "";
@@ -1998,7 +1999,7 @@
             const sides = [...new Set(teeth.map(tooth => tooth.side))];
             container.innerHTML = sides.map(side => `<div class="odontogram-quadrant"><span class="odontogram-quadrant-label">${side === "RIGHT" ? "Derecha" : "Izquierda"} del paciente</span><div class="odontogram-quadrant-teeth ${teeth[0]?.dentition === "PRIMARY" ? "primary" : ""}">${teeth.filter(tooth => tooth.side === side).map(tooth => {
                 const entries = entradasOdontograma(tooth.toothId);
-                const selected = selectedOdontogramToothId === tooth.toothId;
+                const selected = clinicalToothSelector.selectedToothIds().includes(tooth.toothId);
                 const kinds = ["EXISTING_CONDITION", "DIAGNOSIS", "PROPOSED_TREATMENT", "COMPLETED_TREATMENT"].filter(kind => entries.some(entry => entry.entry_type === kind));
                 const description = `Pieza ${codigoOdontograma(tooth)} · ${DentalToothSelector.clinicalName(tooth.toothId)}${kinds.length ? " · " + kinds.map(etiquetaEntradaOdontograma).join(", ") : " · Sin registros"}`;
                 return `
@@ -2016,6 +2017,8 @@
         }
 
         function cambiarNumeracionOdontograma() {
+            document.getElementById("clinicalToothNumberingSystem").value = document.getElementById("odontogramNumberingSystem").value;
+            clinicalToothSelector.render();
             // Only labels/teeth change: retain the form DOM, drafts and historical correction context.
             const teeth = DentalToothSelector.getTeethByDentition(document.getElementById("odontogramDentition").value);
             for (const [id, dentition, arch] of [
@@ -2058,8 +2061,28 @@
         }
 
         function seleccionarPiezaOdontograma(toothId) {
-            if (selectedOdontogramToothId === toothId) return;
-            selectedOdontogramToothId = toothId;
+            const mode = document.getElementById("odontogramDentition").value;
+            if (!DentalToothSelector.getTeethByDentition(mode).some(tooth => tooth.toothId === toothId)) return;
+            document.getElementById("clinicalDentition").value = mode;
+            document.getElementById("clinicalToothNumberingSystem").value = document.getElementById("odontogramNumberingSystem").value;
+            const selected = clinicalToothSelector.selectedToothIds();
+            const removing = selected.includes(toothId);
+            const count = selected.length + (removing ? -1 : 1);
+            // Evolution validates the derived count using the existing selector rules.
+            document.getElementById("clinicalToothCountMode").value = count > 4 ? "multiple" : count ? String(count) : "";
+            clinicalToothSelector.toggle(toothId);
+            selectedOdontogramToothId = removing ? clinicalToothSelector.selectedToothIds().at(-1) || "" : toothId;
+            renderOdontogramView();
+        }
+
+        function cambiarDenticionOdontograma() {
+            const mode = document.getElementById("odontogramDentition").value;
+            const visible = DentalToothSelector.getTeethByDentition(mode);
+            const selected = clinicalToothSelector.selectedToothIds().filter(id => visible.some(tooth => tooth.toothId === id));
+            document.getElementById("clinicalDentition").value = mode;
+            document.getElementById("clinicalToothCountMode").value = selected.length > 4 ? "multiple" : selected.length ? String(selected.length) : "";
+            clinicalToothSelector.setSelected(selected);
+            if (!selected.includes(selectedOdontogramToothId)) selectedOdontogramToothId = selected.at(-1) || "";
             renderOdontogramView();
         }
 
@@ -2762,6 +2785,7 @@
             odontogramLoaded = false;
             odontogramCurrent = { teeth: {} };
             selectedOdontogramToothId = "";
+            clinicalToothSelector.reset();
             renderOdontogramView();
 
             if (!apiActiva || !pacienteExpediente?.id || typeof DentalApi.getPatientOdontogramCurrent !== "function") {
