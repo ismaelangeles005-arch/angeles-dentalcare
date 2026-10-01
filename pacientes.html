@@ -3561,30 +3561,74 @@
 
         function renderLineaTiempoClinica() {
             const list = document.getElementById("clinicalHistoryList");
-            list.innerHTML = notasClinicas.length
-                ? notasClinicas.map(note => `
+
+            if (!notasClinicas.length) {
+                list.innerHTML = '<div class="empty-state">Este paciente todavía no tiene evolución clínica registrada.</div>';
+                return;
+            }
+
+            const renderFarmacoterapia = pharmacotherapy => {
+                if (!Array.isArray(pharmacotherapy) || !pharmacotherapy.length) return "";
+
+                const items = pharmacotherapy
+                    .map(item => {
+                        const parts = [
+                            item?.drug ? `Medicamento: ${item.drug}` : "",
+                            item?.presentation ? `Presentación: ${item.presentation}` : "",
+                            item?.dose ? `Dosis: ${item.dose}` : "",
+                            item?.frequency ? `Frecuencia: ${item.frequency}` : "",
+                            item?.route ? `Vía: ${item.route}` : "",
+                            item?.indications ? `Indicaciones: ${item.indications}` : ""
+                        ].filter(Boolean);
+
+                        return parts.length
+                            ? `<div class="clinical-note-subsection"><strong>Farmacoterapia</strong><p>${DentalRoles.escapeHtml(parts.join(" · "))}</p></div>`
+                            : "";
+                    })
+                    .filter(Boolean)
+                    .join("");
+
+                return items;
+            };
+
+            list.innerHTML = notasClinicas.map(note => {
+                const tooth = note.tooth_number || note.toothNumber || "";
+                const selections = Array.isArray(note.tooth_selections)
+                    ? note.tooth_selections.join(", ")
+                    : "";
+
+                const piezas = tooth || selections
+                    ? `<p><strong>Piezas dentales:</strong> ${DentalRoles.escapeHtml([tooth, selections].filter(Boolean).join(" · "))}</p>`
+                    : "";
+
+                const pharmacotherapy = renderFarmacoterapia(note.pharmacotherapy);
+
+                return `
                     <article class="clinical-note-card">
                         <header>
                             <span>${DentalRoles.escapeHtml(note.fecha_registro || "Sin fecha")}</span>
                             <span>${DentalRoles.escapeHtml(note.doctor || "Doctor no asignado")}</span>
                             <span>${DentalRoles.escapeHtml(estadoClinico(note.note_type))}</span>
                         </header>
+
                         ${note.consultation_status ? `<p><strong>Estado consulta:</strong> ${DentalRoles.escapeHtml(estadoClinico(note.consultation_status))}</p>` : ""}
                         ${note.motivo_consulta ? `<p><strong>Motivo de consulta:</strong> ${DentalRoles.escapeHtml(note.motivo_consulta)}</p>` : ""}
+                        ${piezas}
                         ${note.estado_general ? `<p><strong>Estado general:</strong> ${DentalRoles.escapeHtml(note.estado_general)}</p>` : ""}
                         ${note.hallazgos_clinicos ? `<p><strong>Hallazgos clínicos:</strong> ${DentalRoles.escapeHtml(note.hallazgos_clinicos)}</p>` : ""}
                         ${note.evaluacion_clinica ? `<p><strong>Evaluación clínica:</strong> ${DentalRoles.escapeHtml(note.evaluacion_clinica)}</p>` : ""}
                         ${note.diagnostico_odontologico ? `<p><strong>Diagnóstico odontológico:</strong> ${DentalRoles.escapeHtml(note.diagnostico_odontologico)}</p>` : ""}
                         ${note.procedimiento ? `<p><strong>Procedimiento:</strong> ${DentalRoles.escapeHtml(note.procedimiento)}</p>` : ""}
                         ${note.procedimientos_realizados ? `<p><strong>Procedimientos realizados:</strong> ${DentalRoles.escapeHtml(note.procedimientos_realizados)}</p>` : ""}
-                        ${note.medicamentos_indicados ? `<p><strong>Medicamentos:</strong> ${DentalRoles.escapeHtml(note.medicamentos_indicados)}</p>` : ""}
+                        ${note.medicamentos_indicados ? `<p><strong>Medicamentos indicados:</strong> ${DentalRoles.escapeHtml(note.medicamentos_indicados)}</p>` : ""}
+                        ${pharmacotherapy}
                         ${note.indicaciones ? `<p><strong>Indicaciones:</strong> ${DentalRoles.escapeHtml(note.indicaciones)}</p>` : ""}
                         ${note.observaciones ? `<p><strong>Observaciones:</strong> ${DentalRoles.escapeHtml(note.observaciones)}</p>` : ""}
-                        ${note.proxima_cita_fecha ? `<p><strong>Proxima cita:</strong> ${DentalRoles.escapeHtml(`${note.proxima_cita_fecha} ${note.proxima_cita_hora || ""}`.trim())}</p>` : ""}
-                        <p><strong>Nota clínica:</strong> ${DentalRoles.escapeHtml(note.nota)}</p>
+                        ${note.proxima_cita_fecha ? `<p><strong>Próxima cita:</strong> ${DentalRoles.escapeHtml(`${note.proxima_cita_fecha} ${note.proxima_cita_hora || ""}`.trim())}</p>` : ""}
+                        ${note.nota ? `<p><strong>Nota clínica:</strong> ${DentalRoles.escapeHtml(note.nota)}</p>` : ""}
                     </article>
-                `).join("")
-                : '<div class="empty-state">Este paciente todavía no tiene evolución clínica registrada.</div>';
+                `;
+            }).join("");
         }
 
         async function cargarEvolucionPaciente() {
