@@ -3489,26 +3489,47 @@
 
             renderInfoGrid("clinicalHistorySummary", [
                 { label: "Motivo de consulta", value: pacienteExpediente.motivo_consulta || pacienteExpediente.diagnosis },
-                { label: "Antecedentes medicos", value: pacienteExpediente.medical_history },
-                { label: "Antecedentes odontologicos", value: pacienteExpediente.notes },
+                { label: "Antecedentes médicos", value: pacienteExpediente.medical_history },
+                { label: "Antecedentes odontológicos", value: pacienteExpediente.notes },
                 { label: "Alergias", value: pacienteExpediente.allergies },
-                { label: "Medicamentos", value: pacienteExpediente.current_medications },
-                { label: "Condiciones médicas relevantes", value: (pacienteExpediente.medical_conditions || []).map(item => item.condition_label).join(", ") || "Sin alertas clínicas" },
+                { label: "Medicamentos actuales", value: pacienteExpediente.current_medications },
+                { label: "Condiciones médicas relevantes", value: (pacienteExpediente.medical_conditions || []).filter(item => item.active !== false && item.condition_label).map(item => item.condition_label).join(", ") || "Sin alertas clínicas" },
                 { label: "Hábitos", value: "Preparado para registro clínico" },
                 { label: "Observaciones", value: pacienteExpediente.notes }
             ]);
 
             const ultimaEvaluacion = notasClinicas.find(note =>
-                note.evaluacion_clinica || note.diagnostico_odontologico || note.hallazgos_clinicos || note.estado_general
+                note.evaluacion_clinica ||
+                note.diagnostico_odontologico ||
+                note.hallazgos_clinicos ||
+                note.estado_general ||
+                note.pharmacotherapy ||
+                note.medicamentos_indicados ||
+                note.receta
             ) || {};
 
+            const farmacoterapia = Array.isArray(ultimaEvaluacion.pharmacotherapy)
+                ? ultimaEvaluacion.pharmacotherapy
+                    .map(item => Object.values(item || {}).filter(Boolean).join(" · "))
+                    .filter(Boolean)
+                    .join(" | ")
+                : ultimaEvaluacion.pharmacotherapy;
+
+            const fechaEvaluacion = ultimaEvaluacion.fecha_registro || "Fecha no disponible";
+            const doctorEvaluacion = ultimaEvaluacion.doctor || "Doctor no asignado";
+
             renderInfoGrid("clinicalEvaluationSummary", [
+                { label: "Fecha de evaluación", value: fechaEvaluacion },
+                { label: "Profesional", value: doctorEvaluacion },
                 { label: "Estado general", value: ultimaEvaluacion.estado_general },
-                { label: "Hallazgos clínicos", value: ultimaEvaluacion.hallazgos_clinicos || ultimaEvaluacion.evaluacion_clinica },
+                { label: "Hallazgos clínicos", value: ultimaEvaluacion.hallazgos_clinicos },
                 { label: "Evaluación clínica", value: ultimaEvaluacion.evaluacion_clinica },
                 { label: "Diagnóstico odontológico", value: ultimaEvaluacion.diagnostico_odontologico },
                 { label: "Indicaciones", value: ultimaEvaluacion.indicaciones || ultimaEvaluacion.receta },
-                { label: "Proxima cita", value: ultimaEvaluacion.proxima_cita_fecha ? `${ultimaEvaluacion.proxima_cita_fecha} ${ultimaEvaluacion.proxima_cita_hora || ""}`.trim() : "No programada" }
+                { label: "Medicamentos indicados", value: ultimaEvaluacion.medicamentos_indicados },
+                { label: "Farmacoterapia", value: farmacoterapia },
+                { label: "Receta", value: ultimaEvaluacion.receta },
+                { label: "Próxima cita", value: ultimaEvaluacion.proxima_cita_fecha ? `${ultimaEvaluacion.proxima_cita_fecha} ${ultimaEvaluacion.proxima_cita_hora || ""}`.trim() : "No programada" }
             ]);
         }
 
