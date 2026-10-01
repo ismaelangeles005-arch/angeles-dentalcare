@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS clinical_notes (
 
 CREATE TABLE IF NOT EXISTS procedure_catalog (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID REFERENCES organizations(id),
+  organization_id UUID NOT NULL REFERENCES organizations(id),
   category_key TEXT NOT NULL,
   category_name TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -177,9 +177,12 @@ CREATE TABLE IF NOT EXISTS procedure_catalog (
   active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMPTZ,
-  UNIQUE (category_key, name)
+  deleted_at TIMESTAMPTZ
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_procedure_catalog_org_category_name
+    ON procedure_catalog (organization_id, category_key, name)
+    WHERE deleted_at IS NULL;
 
 
 CREATE TABLE IF NOT EXISTS odontogram_entries (
