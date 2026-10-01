@@ -2505,8 +2505,17 @@
                 return;
             }
 
-            if (!pacienteExpediente?.id || !selectedOdontogramToothId) {
-                DentalRoles.notify("Selecciona una pieza dental.", "warning");
+            if (!pacienteExpediente?.id) {
+                DentalRoles.notify("No hay un paciente seleccionado.", "warning");
+                return;
+            }
+
+            const selectedToothIds = typeof clinicalToothSelector?.selectedToothIds === "function"
+                ? clinicalToothSelector.selectedToothIds()
+                : [];
+
+            if (!selectedToothIds.length) {
+                DentalRoles.notify("Selecciona al menos una pieza dental.", "warning");
                 return;
             }
 
@@ -2520,9 +2529,8 @@
                 return;
             }
 
-            const payload = {
+            const basePayload = {
                 patient_id: pacienteExpediente.id,
-                tooth_id: selectedOdontogramToothId,
                 entry_type: "EXISTING_CONDITION",
                 condition_code: condition.code,
                 condition_label: condition.label,
@@ -2532,12 +2540,29 @@
             };
 
             try {
-                await guardarEntradaOdontograma(event.currentTarget, payload);
-                DentalRoles.notify("Condición registrada en el odontograma.", "success");
+                await Promise.all(
+                    selectedToothIds.map(toothId =>
+                        guardarEntradaOdontograma(event.currentTarget, {
+                            ...basePayload,
+                            tooth_id: toothId
+                        })
+                    )
+                );
+
+                DentalRoles.notify(
+                    selectedToothIds.length === 1
+                        ? "Condición registrada en el odontograma."
+                        : `Condición registrada en ${selectedToothIds.length} piezas dentales.`,
+                    "success"
+                );
+
                 await recargarOdontogramaActual();
             }
             catch (error) {
-                DentalRoles.notify(error.message || "No fue posible registrar la condición.", "error");
+                DentalRoles.notify(
+                    error.message || "No fue posible registrar la condición.",
+                    "error"
+                );
             }
         }
 
@@ -2549,8 +2574,17 @@
                 return;
             }
 
-            if (!pacienteExpediente?.id || !selectedOdontogramToothId) {
-                DentalRoles.notify("Selecciona una pieza dental.", "warning");
+            if (!pacienteExpediente?.id) {
+                DentalRoles.notify("No hay un paciente seleccionado.", "warning");
+                return;
+            }
+
+            const selectedToothIds = typeof clinicalToothSelector?.selectedToothIds === "function"
+                ? clinicalToothSelector.selectedToothIds()
+                : [];
+
+            if (!selectedToothIds.length) {
+                DentalRoles.notify("Selecciona al menos una pieza dental.", "warning");
                 return;
             }
 
@@ -2570,9 +2604,8 @@
                 return;
             }
 
-            const payload = {
+            const basePayload = {
                 patient_id: pacienteExpediente.id,
-                tooth_id: selectedOdontogramToothId,
                 entry_type: "DIAGNOSIS",
                 condition_code: diagnosis.code,
                 condition_label: diagnosis.code === "OTHER" ? customLabel : diagnosis.label,
@@ -2582,12 +2615,29 @@
             };
 
             try {
-                await guardarEntradaOdontograma(event.currentTarget, payload);
-                DentalRoles.notify("Diagnóstico registrado en el odontograma.", "success");
+                await Promise.all(
+                    selectedToothIds.map(toothId =>
+                        guardarEntradaOdontograma(event.currentTarget, {
+                            ...basePayload,
+                            tooth_id: toothId
+                        })
+                    )
+                );
+
+                DentalRoles.notify(
+                    selectedToothIds.length === 1
+                        ? "Diagnóstico registrado en el odontograma."
+                        : `Diagnóstico registrado en ${selectedToothIds.length} piezas dentales.`,
+                    "success"
+                );
+
                 await recargarOdontogramaActual();
             }
             catch (error) {
-                DentalRoles.notify(error.message || "No fue posible registrar el diagnóstico.", "error");
+                DentalRoles.notify(
+                    error.message || "No fue posible registrar el diagnóstico.",
+                    "error"
+                );
             }
         }
 
