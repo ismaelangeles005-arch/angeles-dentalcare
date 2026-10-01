@@ -8,6 +8,8 @@
   "migration_short_patient_codes.sql",
   "migration_patient_visits.sql",
   "migration_doctor_availability_audit.sql",
+  "migration_platform_tenant_foundation.sql",
+  "migration_procedure_catalog_organization_scope.sql",
   "migration_procedures_billing.sql",
   "migration_billing_statuses.sql",
   "migration_billing_payments_discounts.sql",
@@ -23,6 +25,5 @@
   "migration_odontogram_entries.sql",
   "migration_treatment_plans.sql",
   "migration_treatment_plan_acceptances.sql",
-  "migration_platform_tenant_foundation.sql",
   "migration_odontogram_primary_teeth.sql"
 ]

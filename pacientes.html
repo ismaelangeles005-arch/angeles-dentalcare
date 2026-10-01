@@ -448,6 +448,36 @@
 
         .patients-page .clinical-panel[hidden] { display: none; }
 
+        .patients-page .clinical-header { align-items: flex-start; }
+        .patients-page .clinical-context { flex: 1; min-width: 0; }
+        .patients-page .clinical-context h2 { font-size: 12px; font-weight: 600; }
+        .patients-page .clinical-context #clinicalPatientName { font-size: 22px; line-height: 1.3; color: var(--color-primary-dark); overflow-wrap: anywhere; }
+        .patients-page .clinical-context-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; align-items: center; font-size: 12px; overflow-wrap: anywhere; }
+        .patients-page .clinical-context .overview-alerts { margin-top: 8px; max-height: 76px; overflow-y: auto; }
+        .patients-page .clinical-dialog { background: #fff; }
+        .patients-page [data-clinical-panel="general"] .overview-heading { display: none; }
+        .patients-page [data-clinical-panel="general"] > h3 { font-size: 18px; margin: 0; }
+        .patients-page .clinical-close { flex: 0 0 38px; }
+        .patients-page .clinical-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+        .patients-page .clinical-tabs .clinical-tab { text-align: left; min-width: 0; min-height: 44px; white-space: normal; }
+        .patients-page .clinical-subtabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .patients-page .clinical-subtabs[hidden] { display: none; }
+        .patients-page .clinical-subtabs .clinical-tab { min-height: 44px; }
+        .patients-page .clinical-tab:focus-visible, .patients-page .clinical-close:focus-visible { outline: 2px solid var(--color-primary-dark); outline-offset: 3px; }
+        .patients-page .clinical-summary-recent { margin-top: 20px; }
+        .patients-page .clinical-summary-recent h3 { font-size: 16px; margin: 0 0 8px; }
+        .patients-page .clinical-summary-recent p { color: var(--color-text-muted); font-size: 13px; }
+        .patients-page .clinical-summary-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+        .patients-page .clinical-summary-actions .clinical-tab { min-height: 44px; }
+        @media (max-width: 600px) {
+            .patients-page .clinical-header { padding: 12px; gap: 8px; max-height: 40dvh; overflow-y: auto; }
+            .patients-page .clinical-context #clinicalPatientName { font-size: 18px; }
+            .patients-page .clinical-body { padding: 14px 12px; }
+            .patients-page .clinical-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .patients-page .clinical-tabs .clinical-tab { padding: 8px; font-size: 12px; }
+            .patients-page .clinical-summary-actions { flex-direction: column; }
+        }
+
         .patients-page .clinical-info-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1008,26 +1038,43 @@
     <div class="clinical-backdrop" id="clinicalModal" hidden>
         <section class="clinical-dialog" role="dialog" aria-modal="true" aria-labelledby="clinicalTitle">
             <div class="clinical-header">
-                <div>
+                <div class="clinical-context">
                     <h2 id="clinicalTitle">Expediente clínico</h2>
                     <p id="clinicalPatientName"></p>
+                    <div id="clinicalPatientContext"></div>
                 </div>
                 <button type="button" class="clinical-close" id="clinicalClose" aria-label="Cerrar">&times;</button>
             </div>
             <div class="clinical-body">
-                <div class="clinical-tabs" role="tablist" aria-label="Secciones del expediente clínico">
-                    <button type="button" class="clinical-tab active" data-clinical-tab="general" onclick="cambiarPestanaExpediente('general')">Información General</button>
-                    <button type="button" class="clinical-tab" data-clinical-tab="historia" onclick="cambiarPestanaExpediente('historia')">Historia Clínica</button>
-                    <button type="button" class="clinical-tab" data-clinical-tab="evaluacion" onclick="cambiarPestanaExpediente('evaluacion')">Evaluación Clínica</button>
-                    <button type="button" class="clinical-tab" data-clinical-tab="procedimientos" onclick="cambiarPestanaExpediente('procedimientos')">Procedimientos</button>
-                    <button type="button" class="clinical-tab" data-clinical-tab="odontograma" onclick="cambiarPestanaExpediente('odontograma')">Odontograma</button>
-                    <button type="button" class="clinical-tab" data-clinical-tab="plan" onclick="cambiarPestanaExpediente('plan')">Plan de tratamiento</button>
-                    <button type="button" class="clinical-tab" data-clinical-tab="evolucion" onclick="cambiarPestanaExpediente('evolucion')">Evolución</button>
-                    <button type="button" class="clinical-tab" data-clinical-tab="archivos" onclick="cambiarPestanaExpediente('archivos')">Imágenes y Documentos</button>
+                <nav class="clinical-tabs" aria-label="Secciones del expediente clínico">
+                    <button type="button" class="clinical-tab active" data-clinical-tab="general" aria-pressed="true" onclick="cambiarPestanaExpediente('general')">Resumen</button>
+                    <button type="button" class="clinical-tab" data-clinical-group="historia" aria-pressed="false" onclick="cambiarPestanaExpediente('historia')">Historia y evaluación</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="odontograma" aria-pressed="false" onclick="cambiarPestanaExpediente('odontograma')">Odontograma</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="plan" aria-pressed="false" onclick="cambiarPestanaExpediente('plan')">Plan de tratamiento</button>
+                    <button type="button" class="clinical-tab" data-clinical-group="evolucion" aria-pressed="false" onclick="cambiarPestanaExpediente('evolucion')">Atención y evolución</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="archivos" aria-pressed="false" onclick="cambiarPestanaExpediente('archivos')">Imágenes y documentos</button>
+                </nav>
+                <div class="clinical-subtabs" data-clinical-subnav="historia" role="group" aria-label="Historia y evaluación" hidden>
+                    <button type="button" class="clinical-tab" data-clinical-tab="historia" aria-pressed="false" onclick="cambiarPestanaExpediente('historia')">Historia Clínica</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="evaluacion" aria-pressed="false" onclick="cambiarPestanaExpediente('evaluacion')">Evaluación Clínica</button>
+                </div>
+                <div class="clinical-subtabs" data-clinical-subnav="evolucion" role="group" aria-label="Atención y evolución" hidden>
+                    <button type="button" class="clinical-tab" data-clinical-tab="procedimientos" aria-pressed="false" onclick="cambiarPestanaExpediente('procedimientos')">Procedimientos</button>
+                    <button type="button" class="clinical-tab" data-clinical-tab="evolucion" aria-pressed="false" onclick="cambiarPestanaExpediente('evolucion')">Evolución</button>
                 </div>
 
                 <section class="clinical-panel" data-clinical-panel="general">
+                    <h3>Resumen clínico</h3>
                     <div class="patient-overview" id="clinicalGeneralSummary"></div>
+                    <section class="clinical-summary-recent" aria-labelledby="clinicalRecentTitle">
+                        <h3 id="clinicalRecentTitle">Información clínica reciente</h3>
+                        <div id="clinicalRecentSummary" aria-live="polite"></div>
+                    </section>
+                    <div class="clinical-summary-actions" role="group" aria-label="Acciones del resumen">
+                        <button type="button" class="clinical-tab" onclick="cambiarPestanaExpediente('odontograma')">Consultar odontograma</button>
+                        <button type="button" class="clinical-tab" onclick="cambiarPestanaExpediente('plan')">Consultar planes y pendientes</button>
+                        <button type="button" class="clinical-tab" onclick="cambiarPestanaExpediente('evolucion')">Registrar evolución</button>
+                    </div>
                 </section>
 
                 <section class="clinical-panel" data-clinical-panel="historia" hidden>
@@ -1877,6 +1924,10 @@
             document.querySelector("#newTreatmentPlan form").reset();
             document.getElementById("newTreatmentPlan").open = false;
             document.getElementById("clinicalPatientName").textContent = paciente.nombre;
+            notasClinicas = [];
+            renderContextoPaciente();
+            renderResumenExpediente();
+            renderResumenClinicoReciente("loading");
             document.getElementById("clinicalModal").hidden = false;
             cambiarPestanaExpediente("general");
             await Promise.all([
@@ -1909,10 +1960,20 @@
 
         function cambiarPestanaExpediente(tab) {
             if (tab === "plan") cargarPlanesPaciente();
+            const group = ["historia", "evaluacion"].includes(tab) ? "historia"
+                : ["procedimientos", "evolucion"].includes(tab) ? "evolucion" : null;
+            document.querySelectorAll("[data-clinical-group]").forEach(button => {
+                const active = button.dataset.clinicalGroup === group;
+                button.classList.toggle("active", active);
+                button.setAttribute("aria-pressed", String(active));
+            });
+            document.querySelectorAll("[data-clinical-subnav]").forEach(nav => {
+                nav.hidden = nav.dataset.clinicalSubnav !== group;
+            });
             document.querySelectorAll("[data-clinical-tab]").forEach(button => {
                 const active = button.dataset.clinicalTab === tab;
                 button.classList.toggle("active", active);
-                button.setAttribute("aria-selected", active ? "true" : "false");
+                button.setAttribute("aria-pressed", active ? "true" : "false");
             });
 
             document.querySelectorAll("[data-clinical-panel]").forEach(panel => {
@@ -2848,19 +2909,19 @@
                     ${item.status === "COMPLETED" ? `<p>Fecha: ${esc(displayDate(completedEntry?.created_at))}</p>` : ""}
                     <div class="plan-item-facts"><span>Cantidad: ${esc(String(item.quantity ?? 1))}</span><strong>Total: RD$${esc(item.final_amount ?? "No disponible")}</strong></div>
                     ${plan.status === "IN_PROGRESS" && item.status === "ACCEPTED" ? `<button type="button" class="confirm-secondary plan-clinical" data-execution-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente(this.dataset.executionItem, 'IN_PROGRESS')">Comenzar tratamiento</button>` : ""}
-                    ${plan.status === "IN_PROGRESS" && item.status === "IN_PROGRESS" ? `<button type="button" class="confirm-secondary plan-clinical" data-treatment-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="abrirRegistroRealizadoDesdePlan(this.dataset.treatmentItem)">Registrar como realizado</button>` : ""}
+                    ${plan.status === "IN_PROGRESS" && item.status === "IN_PROGRESS" ? `<button type="button" class="confirm-secondary plan-clinical" data-treatment-item="${esc(item.id)}" data-execution-status="COMPLETED" ${state.busy ? "disabled" : ""} onclick="abrirRegistroRealizadoDesdePlan(this.dataset.treatmentItem)">Registrar como realizado</button>` : ""}
                     ${["PRESENTED", "ACCEPTED", "PARTIALLY_ACCEPTED", "REJECTED", "POSTPONED"].includes(plan.status) && !(plan.acceptances || []).length && ["PROPOSED", "ACCEPTED", "REJECTED", "POSTPONED"].includes(item.status) ? `
                         <div class="confirm-actions">
                             ${[["ACCEPTED", "Aceptar"], ["REJECTED", "Rechazar"], ["POSTPONED", "Posponer"]].map(([status, label]) => `<button type="button" class="confirm-secondary" data-item-id="${esc(item.id)}" data-status="${status}" ${state.busy || item.status === status ? "disabled" : ""} onclick="cambiarDecisionPlan(this.dataset.itemId, this.dataset.status)">${label}</button>`).join("")}
                         </div>` : ""}
                 </article>`;
             };
-            container.innerHTML = `<header class="plan-summary"><div><h3>${esc(plan.name)}</h3><span class="plan-badge" data-state="${esc(plan.status)}">${esc(planStatusLabel[plan.status] || "Estado no disponible")}</span><div class="plan-meta"><span>Doctor: ${esc(plan.doctor || "Sin doctor asignado")}</span><span>Creado: ${esc(displayDate(plan.created_at))}</span></div></div><div class="plan-total"><span>Total del plan</span><strong>RD$${esc(plan.total ?? "0.00")}</strong>${plan.status !== "DRAFT" && plan.accepted_total != null ? `<span>Aceptado: RD$${esc(acceptedAmount)}</span>` : ""}</div></header>
+            container.innerHTML = `<header class="plan-summary"><div><h3>${esc(plan.name)}</h3><span class="plan-badge" data-state="${esc(plan.status)}"${plan.status === "IN_PROGRESS" ? ' data-execution-status="IN_PROGRESS"' : ""}>${esc(planStatusLabel[plan.status] || "Estado no disponible")}</span><div class="plan-meta"><span>Doctor: ${esc(plan.doctor || "Sin doctor asignado")}</span><span>Creado: ${esc(displayDate(plan.created_at))}</span></div></div><div class="plan-total"><span>Total del plan</span><strong>RD$${esc(plan.total ?? "0.00")}</strong>${plan.status !== "DRAFT" && plan.accepted_total != null ? `<span>Aceptado: RD$${esc(acceptedAmount)}</span>` : ""}</div></header>
                 ${(plan.acceptances || []).slice(-1).map(acceptance => `<section class="plan-consent" aria-label="Consentimiento"><div><div class="plan-consent-status"><strong>Consentimiento firmado ✓</strong><span class="plan-badge">Plan protegido</span></div><p>${esc(acceptance.accepted_by_name)} · ${esc(new Date(acceptance.accepted_at).toLocaleString("es-DO"))}</p></div><button type="button" class="confirm-secondary plan-primary" data-acceptance-id="${esc(acceptance.id)}" onclick="verConsentimientoPlan(this.dataset.acceptanceId)">Ver consentimiento</button></section>`).join("")}
                 ${!["DRAFT", "CANCELLED"].includes(plan.status) && !(plan.acceptances || []).length && plan.items.some(item => item.status === "ACCEPTED") ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="formalizarAceptacionPlan()">Registrar aceptación del paciente</button>` : ""}
                 ${plan.status === "DRAFT" && !(plan.acceptances || []).length ? `<button type="button" class="confirm-secondary" ${state.busy ? "disabled" : ""} onclick="presentarPlanPaciente()">Presentar plan</button>` : ""}
                 ${hasPendingItems ? '<div class="plan-section-heading"><h4>Tratamientos del plan</h4><div id="planToothTools"></div></div>' : ""}
-                ${plan.progress && plan.status === "IN_PROGRESS" ? `<p class="plan-progress" role="status"><strong>Progreso del tratamiento</strong><br>${esc(String(plan.progress.completed ?? 0))} de ${esc(String(plan.progress.total ?? 0))} tratamientos realizados · ${esc(String(plan.progress.percent ?? 0))}%</p>` : plan.progress && plan.status === "COMPLETED" && Number(plan.progress.total || 0) > 1 ? `<p class="plan-progress" role="status">${esc(String(plan.progress.completed ?? 0))} de ${esc(String(plan.progress.total ?? 0))} tratamientos realizados · ${esc(String(plan.progress.percent ?? 0))}%</p>` : ""}
+                ${plan.progress && plan.status === "IN_PROGRESS" ? `<p class="plan-progress" role="status"><strong>Progreso del tratamiento</strong><br>${esc(String(plan.progress.completed ?? 0))} de ${esc(String(plan.progress.total ?? 0))} tratamientos realizados · ${esc(String(plan.progress.percent ?? 0))}%</p>` : plan.progress && plan.status === "COMPLETED" && Number(plan.progress.total || 0) > 0 ? `<p class="plan-progress" role="status">${esc(String(plan.progress.completed ?? 0))} de ${esc(String(plan.progress.total ?? 0))} completados · ${esc(String(plan.progress.percent ?? 0))}%</p>` : ""}
                 ${["ACCEPTED", "PARTIALLY_ACCEPTED"].includes(plan.status) && plan.items.some(item => item.status === "ACCEPTED") ? `<p><button type="button" class="confirm-secondary plan-clinical" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente()">Iniciar tratamiento</button></p>` : ""}
                 ${plan.items.some(item => item.status !== "COMPLETED") ? `<div class="plan-items">${plan.items.filter(item => item.status !== "COMPLETED").map(renderItem).join("")}</div>` : ""}
                 ${plan.items.some(item => item.status === "COMPLETED") ? `<section aria-label="Tratamientos realizados"><div class="plan-section-heading"><h4>Tratamientos realizados</h4>${!hasPendingItems ? '<div id="planToothTools"></div>' : ""}</div><div class="plan-items">${plan.items.filter(item => item.status === "COMPLETED").map(renderItem).join("")}</div></section>` : ""}
@@ -3366,16 +3427,59 @@
                     ${alerts.length ? `<div class="overview-alerts"><strong>Alertas activas:</strong>${alerts.map(item => `<span class="overview-alert-chip">${escape(item.condition_label)}</span>`).join("")}</div>` : ""}
                 </header>
                 <div class="overview-columns">
-                    <section class="overview-section" aria-labelledby="overviewContact"><h4 id="overviewContact">Identificación / Contacto</h4>
-                        <dl>${field("Cédula", patient.national_id)}${field("Teléfono", patient.phone)}${field("Correo", patient.email)}</dl>
+                    <section class="overview-section" aria-labelledby="overviewClinical"><h4 id="overviewClinical">Contexto clínico</h4>
+                        <dl>${field("Motivo de consulta", patient.motivo_consulta || patient.diagnosis)}${field("Alergias", patient.allergies)}${field("Antecedentes médicos", patient.medical_history)}${field("Medicamentos actuales", patient.current_medications)}</dl>
                     </section>
                     <section class="overview-section" aria-labelledby="overviewCare"><h4 id="overviewCare">Atención</h4>
-                        <dl>${field("Doctor asignado", patient.doctor)}${field("Próxima cita", patient.fecha ? `${patient.fecha} ${patient.hora || ""}`.trim() : "Sin cita registrada")}</dl>
+                        <dl>${field("Doctor asignado", patient.doctor)}${field("Próximo seguimiento registrado", patient.fecha ? `${patient.fecha} ${patient.hora || ""}`.trim() : "")}</dl>
+                    </section>
+                    <section class="overview-section" aria-labelledby="overviewContact"><h4 id="overviewContact">Identificación / Contacto</h4>
+                        <dl>${field("Cédula", patient.national_id)}${field("Teléfono", patient.phone)}${field("Correo", patient.email)}</dl>
                     </section>
                     <section class="overview-section" aria-labelledby="overviewClassification"><h4 id="overviewClassification">Clasificación</h4>
                         <dl>${field("Tipo de paciente", type)}${field("Clasificación operativa", classification)}</dl>
                     </section>
                 </div>`;
+        }
+
+        function renderContextoPaciente() {
+            const patient = pacienteExpediente;
+            if (!patient) return;
+            const escape = value => DentalRoles.escapeHtml(String(value ?? ""));
+            const alerts = (patient.medical_conditions || []).filter(item => item.active !== false && item.condition_label);
+            document.getElementById("clinicalPatientContext").innerHTML = `
+                <div class="clinical-context-meta">
+                    <span class="patient-detail-badge">${escape(patient.patient_code || patient.national_id || "Sin código registrado")}</span>
+                    <span class="patient-detail-badge type">${patient.patient_type === "ambulatory" ? "Ambulatorio" : "Regular"}</span>
+                    ${patient.estado ? `<span class="patient-detail-badge status">Estado: ${escape(patient.estado)}</span>` : ""}
+                    ${patient.doctor ? `<span>Doctor: ${escape(patient.doctor)}</span>` : ""}
+                </div>
+                ${alerts.length || patient.allergies ? `<div class="overview-alerts" aria-label="Contexto clínico del paciente">
+                    ${patient.allergies ? `<span class="overview-alert-chip"><strong>Alergias:</strong> ${escape(patient.allergies)}</span>` : ""}
+                    ${alerts.map(item => `<span class="overview-alert-chip">${escape(item.condition_label)}</span>`).join("")}
+                </div>` : ""}`;
+        }
+
+        function renderResumenClinicoReciente(state = "ready") {
+            const container = document.getElementById("clinicalRecentSummary");
+            if (state !== "ready") {
+                container.innerHTML = `<p role="status">${state === "loading" ? "Cargando registros clínicos…" : "No fue posible consultar los registros clínicos."}</p>`;
+                return;
+            }
+            const note = notasClinicas[0];
+            if (!note) {
+                container.innerHTML = '<p>Sin evoluciones registradas.</p>';
+                return;
+            }
+            const escape = value => DentalRoles.escapeHtml(String(value ?? ""));
+            const fields = [
+                ["Motivo registrado", note.motivo_consulta],
+                ["Evaluación", note.evaluacion_clinica || note.hallazgos_clinicos],
+                ["Diagnóstico registrado", note.diagnostico_odontologico],
+                ["Indicaciones", note.indicaciones]
+            ].filter(([, value]) => value);
+            container.innerHTML = `<p>Última evolución: ${escape(note.fecha_registro || "Sin fecha")}${note.doctor ? ` · ${escape(note.doctor)}` : ""}</p>
+                ${fields.length ? `<div class="overview-columns"><section class="overview-section"><dl>${fields.map(([label, value]) => `<div><dt>${label}</dt><dd>${escape(value)}</dd></div>`).join("")}</dl></section></div>` : ""}`;
         }
 
         function renderResumenExpediente() {
@@ -3468,6 +3572,7 @@
 
             if (!apiActiva || !pacienteExpediente?.id) {
                 list.innerHTML = '<div class="empty-state">La evolución clínica requiere conexión con la API.</div>';
+                renderResumenClinicoReciente("error");
                 renderResumenExpediente();
                 renderProcedimientosClinicos();
                 return;
@@ -3475,12 +3580,14 @@
 
             try {
                 notasClinicas = await DentalApi.getClinicalNotes({ patientId: pacienteExpediente.id });
+                renderResumenClinicoReciente();
                 renderResumenExpediente();
                 renderProcedimientosClinicos();
                 renderLineaTiempoClinica();
             }
             catch (error) {
                 list.innerHTML = '<div class="empty-state">No fue posible cargar la evolución clínica.</div>';
+                renderResumenClinicoReciente("error");
                 DentalRoles.notify(error.message, "error");
             }
         }
