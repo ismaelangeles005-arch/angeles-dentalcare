@@ -212,3 +212,14 @@ test('security UI: conditional actions, PIN confirmation, cancellation and secre
   action('Cambiar PIN').onclick(); pin.value = confirmation.value = '4826'; await get('pinForm').onsubmit({ preventDefault() {} });
   assert.equal(pin.value, ''); assert.equal(confirmation.value, ''); assert.equal(get('pinError').textContent, 'Simulated failure');
 });
+
+test('PIN login preserves mandatory password change state', async () => {
+  const h = harness({ user: { must_change_password: true } });
+
+  assert.equal((await h.call('pin', { pin: '4826' })).code, 200);
+
+  const r = await h.login('4826');
+
+  assert.equal(r.code, 200);
+  assert.equal(r.body.user.mustChangePassword, true);
+});
