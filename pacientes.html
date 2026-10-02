@@ -782,10 +782,10 @@
         .patients-page .file-delete { background: var(--color-error); }
 
         .patients-page .preview-dialog {
-            width: min(1100px, 100%);
-            height: min(780px, calc(100vh - 36px));
+            width: min(1320px, 100%);
+            height: min(880px, calc(100dvh - 36px));
             display: grid;
-            grid-template-rows: auto minmax(0, 1fr);
+            grid-template-rows: auto auto minmax(0, 1fr);
             overflow: hidden;
             border-radius: var(--radius-lg);
         }
@@ -807,6 +807,51 @@
 
         .patients-page .preview-content iframe { width: 100%; height: 100%; border: 0; background: #fff; }
         .patients-page .preview-content img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .patients-page #clinicalFileList { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+        .patients-page #clinicalFileList .file-row { grid-template-columns: 76px minmax(0, 1fr); align-content: start; border-radius: 8px; }
+        .patients-page .file-thumbnail { height: 76px; display: grid; place-items: center; border: 1px solid var(--color-border); border-radius: 6px; background: #f1f5f5; overflow: hidden; position: relative; }
+        .patients-page .file-thumbnail img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+        .patients-page .file-thumbnail span { font-size: 12px; font-weight: 700; margin: 0; }
+        .patients-page .file-category { font-size: 11px; font-weight: 700; color: #22665f; }
+        .patients-page #clinicalFileList .file-actions { grid-column: 1 / -1; border-top: 1px solid var(--color-border); padding-top: 10px; }
+        .patients-page .preview-header > div { min-width: 0; }
+        .patients-page .preview-header p { margin: 4px 0 0; color: var(--color-text-muted); font-size: 12px; }
+        .patients-page .preview-header h3 { font-size: 17px; }
+        .patients-page .preview-toolbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 16px; background: #f5f7f7; border-bottom: 1px solid var(--color-border); }
+        .patients-page .preview-tools { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+        .patients-page .preview-tools[hidden] { display: none; }
+        .patients-page .preview-tool { min-width: 40px; min-height: 40px; padding: 7px 10px; background: #fff; color: #263e43; border: 1px solid #bdcacc; border-radius: 6px; cursor: pointer; font: inherit; font-size: 14px; }
+        .patients-page .preview-tool:hover:not(:disabled) { background: #e2f0ed; border-color: #38746a; }
+        .patients-page .preview-tool:disabled { opacity: .4; cursor: default; }
+        .patients-page .preview-tool:focus-visible, .patients-page .preview-content:focus-visible { outline: 3px solid #138578; outline-offset: 2px; }
+        .patients-page .preview-counter { min-width: 60px; text-align: center; font-size: 12px; font-variant-numeric: tabular-nums; }
+        .patients-page .preview-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 240px; min-height: 0; }
+        .patients-page .preview-content { position: relative; display: block; background: #202629; color: #e6edef; overscroll-behavior: contain; }
+        .patients-page .preview-image-stage { position: relative; margin: auto; }
+        .patients-page .preview-content .preview-image-stage img { position: absolute; left: 50%; top: 50%; max-width: none; max-height: none; transform-origin: center; user-select: none; }
+        .patients-page .preview-message { min-height: 100%; display: grid; place-content: center; padding: 24px; text-align: center; line-height: 1.6; }
+        .patients-page .preview-metadata { background: #fff; padding: 18px; overflow: auto; border-left: 1px solid var(--color-border); }
+        .patients-page .preview-metadata h4 { margin: 0 0 16px; font-size: 14px; }
+        .patients-page .preview-metadata dl { margin: 0; display: grid; gap: 14px; }
+        .patients-page .preview-metadata dt { color: var(--color-text-muted); font-size: 11px; margin-bottom: 4px; }
+        .patients-page .preview-metadata dd { margin: 0; font-size: 13px; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .patients-page #filePreviewModal:fullscreen { padding: 0; }
+        .patients-page #filePreviewModal:fullscreen .preview-dialog { width: 100%; height: 100dvh; border-radius: 0; }
+        @media (max-width: 800px) {
+            .patients-page .preview-workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(180px, 1fr) auto; }
+            .patients-page .preview-metadata { max-height: 150px; border-left: 0; border-top: 1px solid var(--color-border); padding: 12px 16px; }
+            .patients-page .preview-metadata h4 { margin-bottom: 8px; }
+            .patients-page .preview-metadata dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; }
+        }
+        @media (max-width: 480px) {
+            .patients-page .preview-backdrop { padding: 6px; }
+            .patients-page .preview-dialog { height: calc(100dvh - 12px); }
+            .patients-page .preview-header { padding: 12px; gap: 8px; }
+            .patients-page .preview-toolbar { padding: 8px; gap: 6px; }
+            .patients-page .preview-tools { gap: 4px; }
+            .patients-page .preview-metadata { max-height: 120px; }
+        }
 
         @media (max-width: 1100px) {
             .patients-page .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1237,7 +1282,7 @@
                 <section class="clinical-panel" data-clinical-panel="archivos" hidden>
                     <form class="upload-panel" id="clinicalUploadForm">
                         <select id="fileCategory" name="category" aria-label="Tipo de archivo">
-                            <option value="radiografia">Radiografia / RX</option>
+                            <option value="radiografia">Radiografía / RX</option>
                             <option value="fotografia">Fotografía clínica</option>
                             <option value="documento">Documento</option>
                             <option value="otro">Otro</option>
@@ -1249,7 +1294,7 @@
                         <button type="submit" class="add-btn">Subir al expediente</button>
                     </form>
                     <section class="clinical-section">
-                        <h3>Imágenes y documentos clínicos</h3>
+                        <h3>Biblioteca de archivos clínicos</h3>
                         <div class="file-list" id="clinicalFileList"></div>
                     </section>
                 </section>
@@ -1260,10 +1305,33 @@
     <div class="preview-backdrop" id="filePreviewModal" hidden>
         <section class="preview-dialog" role="dialog" aria-modal="true" aria-labelledby="filePreviewTitle">
             <div class="preview-header">
-                <h3 id="filePreviewTitle">Vista del archivo</h3>
+                <div><h3 id="filePreviewTitle">Visor clínico</h3><p id="filePreviewCategory"></p></div>
                 <button type="button" class="clinical-close" id="filePreviewClose" aria-label="Cerrar">&times;</button>
             </div>
-            <div class="preview-content" id="filePreviewContent"></div>
+            <div class="preview-toolbar" aria-label="Controles del visor">
+                <div class="preview-tools" aria-label="Navegación">
+                    <button type="button" class="preview-tool" id="filePreviewPrevious" title="Anterior" aria-label="Archivo anterior">&#8592;</button>
+                    <span class="preview-counter" id="filePreviewPosition" aria-live="polite"></span>
+                    <button type="button" class="preview-tool" id="filePreviewNext" title="Siguiente" aria-label="Archivo siguiente">&#8594;</button>
+                </div>
+                <div class="preview-tools" id="filePreviewImageTools" hidden aria-label="Controles de imagen">
+                    <button type="button" class="preview-tool" data-preview-action="out" title="Reducir zoom" aria-label="Reducir zoom">&#8722;</button>
+                    <output class="preview-counter" id="filePreviewZoom">100%</output>
+                    <button type="button" class="preview-tool" data-preview-action="in" title="Aumentar zoom" aria-label="Aumentar zoom">+</button>
+                    <button type="button" class="preview-tool" data-preview-action="fit" title="Ajustar a pantalla" aria-label="Ajustar a pantalla">&#10530;</button>
+                    <button type="button" class="preview-tool" data-preview-action="reset" title="Restablecer" aria-label="Restablecer imagen">&#8634;</button>
+                    <button type="button" class="preview-tool" data-preview-action="left" title="Rotar izquierda" aria-label="Rotar izquierda 90 grados">&#10226;</button>
+                    <button type="button" class="preview-tool" data-preview-action="right" title="Rotar derecha" aria-label="Rotar derecha 90 grados">&#10227;</button>
+                </div>
+                <div class="preview-tools">
+                    <button type="button" class="preview-tool" id="filePreviewFullscreen" title="Pantalla completa" aria-label="Pantalla completa">&#9974;</button>
+                    <button type="button" class="preview-tool" id="filePreviewDownload">Descargar</button>
+                </div>
+            </div>
+            <div class="preview-workspace">
+                <div class="preview-content" id="filePreviewContent" tabindex="0" aria-label="Vista del archivo" aria-busy="false"></div>
+                <aside class="preview-metadata" aria-label="Información del archivo"><h4>Información del archivo</h4><dl id="filePreviewMetadata"></dl></aside>
+            </div>
         </section>
     </div>
 
@@ -1295,6 +1363,18 @@
         let odontogramLoaded = false;
         let selectedOdontogramToothId = "";
         let previewObjectUrl = "";
+        let previewRequest = 0;
+        let previewFileId = "";
+        let previewImage = null;
+        let previewZoom = 1;
+        let previewRotation = 0;
+        let previewReturnFocus = null;
+        let thumbnailObserver = null;
+        let thumbnailGeneration = 0;
+        let thumbnailQueue = [];
+        let thumbnailPending = 0;
+        let thumbnailPump = null;
+        const thumbnailUrls = new Map();
         const clinicalToothSelector = DentalToothSelector.createSelector({
             gridId: "clinicalToothGrid",
             dentitionModeId: "clinicalDentition",
@@ -1939,6 +2019,7 @@
 
         function cerrarExpediente() {
             cerrarVistaArchivo();
+            liberarMiniaturas();
             document.getElementById("clinicalModal").hidden = true;
             pacienteExpediente = null;
             treatmentPlanState = null;
@@ -3730,43 +3811,137 @@
                 DentalRoles.notify(error.message, "error");
             }
         }
+        function categoriaArchivo(file) {
+            return ({ radiografia: "Radiografía / RX", fotografia: "Fotografía", documento: "Documento", otro: "Otro" })[file.category] || file.category || "Archivo";
+        }
+
+        function imagenCompatible(file) {
+            return ["image/jpeg", "image/png", "image/webp"].includes(file.mime_type);
+        }
+
+        function liberarMiniaturas() {
+            thumbnailGeneration++;
+            thumbnailObserver?.disconnect();
+            thumbnailObserver = null;
+            thumbnailQueue = [];
+            thumbnailPump = null;
+            for (const url of thumbnailUrls.values()) URL.revokeObjectURL(url);
+            thumbnailUrls.clear();
+        }
+
+        function prepararMiniaturas(patientId) {
+            if (!window.IntersectionObserver) return;
+            const generation = thumbnailGeneration;
+            const drain = async () => {
+                if (thumbnailPending >= 2 || !thumbnailQueue.length) return;
+                const img = thumbnailQueue.shift();
+                if (!img.isConnected || img.dataset.visible !== "true" || generation !== thumbnailGeneration) { drain(); return; }
+                thumbnailPending++;
+                img.dataset.loading = "true";
+                try {
+                    const preview = await DentalApi.viewPatientFile(patientId, img.dataset.fileId);
+                    if (generation !== thumbnailGeneration || !img.isConnected || img.dataset.visible !== "true") return;
+                    if (!["image/jpeg", "image/png", "image/webp"].includes(preview.type.split(";")[0])) return;
+                    const url = URL.createObjectURL(preview.blob);
+                    thumbnailUrls.set(img, url);
+                    img.onload = () => { img.hidden = false; };
+                    img.onerror = () => {
+                        img.hidden = true;
+                        URL.revokeObjectURL(url);
+                        thumbnailUrls.delete(img);
+                        img.removeAttribute("src");
+                    };
+                    img.src = url;
+                } catch (_) {
+                    // A failed thumbnail retains its document placeholder; the viewer can retry.
+                } finally {
+                    thumbnailPending--;
+                    delete img.dataset.loading;
+                    thumbnailPump?.();
+                }
+            };
+            thumbnailObserver = new IntersectionObserver(entries => {
+                for (const entry of entries) {
+                    const img = entry.target.querySelector("img[data-file-id]");
+                    img.dataset.visible = String(entry.isIntersecting);
+                    if (entry.isIntersecting && !img.hasAttribute("src") && !img.dataset.loading && !thumbnailQueue.includes(img)) {
+                        thumbnailQueue.push(img);
+                    } else if (!entry.isIntersecting) {
+                        thumbnailQueue = thumbnailQueue.filter(item => item !== img);
+                        const url = thumbnailUrls.get(img);
+                        img.hidden = true;
+                        img.removeAttribute("src");
+                        if (url) URL.revokeObjectURL(url);
+                        thumbnailUrls.delete(img);
+                    }
+                }
+                drain(); drain();
+            });
+            thumbnailPump = drain;
+            document.querySelectorAll("#clinicalFileList img[data-file-id]").forEach(img => thumbnailObserver.observe(img.parentElement));
+        }
+
         async function cargarArchivosPaciente() {
             const list = document.getElementById("clinicalFileList");
-            list.innerHTML = "<p>Cargando expediente...</p>";
-
+            const patientId = pacienteExpediente?.id;
+            liberarMiniaturas();
+            const generation = thumbnailGeneration;
+            archivosExpediente = [];
+            list.innerHTML = '<div class="empty-state" role="status">Cargando archivos clínicos…</div>';
             try {
-                archivosExpediente = await DentalApi.getPatientFiles(pacienteExpediente.id);
-                list.innerHTML = archivosExpediente.length
-                    ? archivosExpediente.map(file => `
-                        <article class="file-row">
-                            <div>
-                                <strong>${DentalRoles.escapeHtml(file.name)}</strong>
-                                <span>
-                                    ${DentalRoles.escapeHtml(file.category)} · ${formatFileSize(file.size_bytes)}
-                                    · ${new Date(file.created_at).toLocaleDateString("es-DO")}
-                                </span>
-                                ${file.description ? `<span>${DentalRoles.escapeHtml(file.description)}</span>` : ""}
-                            </div>
-                            <div class="file-actions">
-                                <button type="button" class="file-view"
-                                    onclick="verArchivo('${file.id}')">
-                                    Ver
-                                </button>
-                                <button type="button" class="file-download"
-                                    onclick="descargarArchivo('${file.id}')">
-                                    Descargar
-                                </button>
-                                <button type="button" class="file-delete"
-                                    onclick="eliminarArchivo('${file.id}')">
-                                    Eliminar
-                                </button>
-                            </div>
-                        </article>
-                    `).join("")
-                    : '<div class="empty-state">Este paciente todavía no tiene archivos clínicos.</div>';
-            }
-            catch (error) {
-                list.innerHTML = '<div class="empty-state">No fue posible cargar el expediente.</div>';
+                const files = await DentalApi.getPatientFiles(patientId);
+                if (patientId !== pacienteExpediente?.id || generation !== thumbnailGeneration) return;
+                archivosExpediente = files;
+                list.replaceChildren();
+                if (!files.length) {
+                    list.innerHTML = '<div class="empty-state">Este paciente todavía no tiene archivos clínicos.</div>';
+                    return;
+                }
+                for (const file of files) {
+                    const row = document.createElement("article");
+                    row.className = "file-row";
+                    const thumbnail = document.createElement("div");
+                    thumbnail.className = "file-thumbnail";
+                    thumbnail.setAttribute("aria-hidden", "true");
+                    const placeholder = document.createElement("span");
+                    placeholder.textContent = imagenCompatible(file) ? "IMG" : file.mime_type === "application/pdf" ? "PDF" : "DOC";
+                    thumbnail.append(placeholder);
+                    if (imagenCompatible(file)) {
+                        const img = document.createElement("img");
+                        img.alt = ""; img.hidden = true; img.dataset.fileId = file.id;
+                        thumbnail.append(img);
+                    }
+                    const copy = document.createElement("div");
+                    const title = document.createElement("strong");
+                    title.textContent = file.name;
+                    const category = document.createElement("span");
+                    category.className = "file-category";
+                    category.textContent = categoriaArchivo(file);
+                    const details = document.createElement("span");
+                    details.textContent = [file.size_bytes != null ? formatFileSize(file.size_bytes) : "",
+                        file.created_at ? new Date(file.created_at).toLocaleDateString("es-DO") : ""].filter(Boolean).join(" · ");
+                    copy.append(title, category, details);
+                    if (file.description) {
+                        const description = document.createElement("span");
+                        description.textContent = file.description; copy.append(description);
+                    }
+                    const actions = document.createElement("div");
+                    actions.className = "file-actions";
+                    for (const [label, className, action] of [
+                        ["Ver", "file-view", verArchivo], ["Descargar", "file-download", descargarArchivo],
+                        ["Eliminar", "file-delete", eliminarArchivo]
+                    ]) {
+                        const button = document.createElement("button");
+                        button.type = "button"; button.className = className; button.textContent = label;
+                        button.addEventListener("click", () => action(file.id));
+                        actions.append(button);
+                    }
+                    row.append(thumbnail, copy, actions); list.append(row);
+                }
+                prepararMiniaturas(patientId);
+            } catch (error) {
+                if (patientId !== pacienteExpediente?.id || generation !== thumbnailGeneration) return;
+                list.innerHTML = '<div class="empty-state">No fue posible cargar los archivos clínicos.</div>';
                 DentalRoles.notify(error.message, "error");
             }
         }
@@ -3785,48 +3960,155 @@
             }
         }
 
+        function liberarVistaArchivo() {
+            previewImage = null;
+            document.getElementById("filePreviewContent").replaceChildren();
+            if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+            previewObjectUrl = "";
+        }
+
+        function mensajeVistaArchivo(message) {
+            const content = document.getElementById("filePreviewContent");
+            const notice = document.createElement("div");
+            notice.className = "preview-message";
+            notice.setAttribute("role", "status");
+            notice.textContent = message;
+            content.replaceChildren(notice);
+        }
+
+        function actualizarControlesArchivo() {
+            const files = archivosExpediente.filter(file => imagenCompatible(file) || file.mime_type === "application/pdf");
+            const index = files.findIndex(file => file.id === previewFileId);
+            document.getElementById("filePreviewPrevious").disabled = index <= 0;
+            document.getElementById("filePreviewNext").disabled = index < 0 || index === files.length - 1;
+            document.getElementById("filePreviewPosition").textContent = index < 0 ? "Archivo" : `${index + 1} / ${files.length}`;
+            document.getElementById("filePreviewImageTools").hidden = !previewImage;
+            document.getElementById("filePreviewDownload").disabled = !previewFileId;
+            document.getElementById("filePreviewFullscreen").hidden = !document.getElementById("filePreviewModal").requestFullscreen;
+        }
+
+        function navegarArchivo(direction) {
+            const files = archivosExpediente.filter(file => imagenCompatible(file) || file.mime_type === "application/pdf");
+            const index = files.findIndex(file => file.id === previewFileId);
+            if (index >= 0 && files[index + direction]) verArchivo(files[index + direction].id);
+        }
+
+        function transformarVistaArchivo(action = "resize") {
+            if (!previewImage) return;
+            if (action === "in") previewZoom = Math.min(8, previewZoom * 1.25);
+            if (action === "out") previewZoom = Math.max(.25, previewZoom / 1.25);
+            if (action === "left") previewRotation = (previewRotation + 270) % 360;
+            if (action === "right") previewRotation = (previewRotation + 90) % 360;
+            if (action === "fit" || action === "reset") previewZoom = 1;
+            if (action === "reset") previewRotation = 0;
+            const content = document.getElementById("filePreviewContent");
+            const rotated = previewRotation % 180 !== 0;
+            const naturalWidth = rotated ? previewImage.naturalHeight : previewImage.naturalWidth;
+            const naturalHeight = rotated ? previewImage.naturalWidth : previewImage.naturalHeight;
+            const fit = Math.min(Math.max(1, content.clientWidth - 32) / naturalWidth,
+                Math.max(1, content.clientHeight - 32) / naturalHeight);
+            const scale = fit * previewZoom;
+            const stage = previewImage.parentElement;
+            stage.style.width = Math.max(content.clientWidth, naturalWidth * scale + 32) + "px";
+            stage.style.height = Math.max(content.clientHeight, naturalHeight * scale + 32) + "px";
+            previewImage.style.width = previewImage.naturalWidth * scale + "px";
+            previewImage.style.height = previewImage.naturalHeight * scale + "px";
+            previewImage.style.transform = `translate(-50%, -50%) rotate(${previewRotation}deg)`;
+            content.scrollLeft = (stage.offsetWidth - content.clientWidth) / 2;
+            content.scrollTop = (stage.offsetHeight - content.clientHeight) / 2;
+            document.getElementById("filePreviewZoom").textContent = Math.round(previewZoom * 100) + "%";
+            document.querySelector('[data-preview-action="out"]').disabled = previewZoom <= .25;
+            document.querySelector('[data-preview-action="in"]').disabled = previewZoom >= 8;
+        }
+
         async function verArchivo(fileId) {
             const file = archivosExpediente.find(item => item.id === fileId);
-            if (!file || !pacienteExpediente) {
+            if (!file || !pacienteExpediente) return;
+            const modal = document.getElementById("filePreviewModal");
+            if (modal.hidden) previewReturnFocus = document.activeElement;
+            const request = ++previewRequest;
+            const patientId = pacienteExpediente.id;
+            liberarVistaArchivo();
+            previewFileId = file.id;
+            previewZoom = 1; previewRotation = 0;
+            document.getElementById("filePreviewTitle").textContent = file.name;
+            document.getElementById("filePreviewCategory").textContent = categoriaArchivo(file);
+            const metadata = document.getElementById("filePreviewMetadata");
+            metadata.replaceChildren();
+            for (const [label, value] of [["Nombre", file.name], ["Categoría", categoriaArchivo(file)],
+                ["Fecha", file.created_at ? new Date(file.created_at).toLocaleDateString("es-DO") : ""],
+                ["Tamaño", file.size_bytes != null ? formatFileSize(file.size_bytes) : ""], ["Descripción", file.description]]) {
+                if (!value) continue;
+                const group = document.createElement("div");
+                const term = document.createElement("dt"); term.textContent = label;
+                const description = document.createElement("dd"); description.textContent = value;
+                group.append(term, description); metadata.append(group);
+            }
+            modal.hidden = false;
+            actualizarControlesArchivo();
+            document.getElementById("filePreviewClose").focus();
+            const content = document.getElementById("filePreviewContent");
+            content.setAttribute("aria-busy", "false");
+            if (!imagenCompatible(file) && file.mime_type !== "application/pdf") {
+                mensajeVistaArchivo("Vista previa no disponible para este tipo de archivo.");
                 return;
             }
-
+            content.setAttribute("aria-busy", "true");
+            mensajeVistaArchivo("Cargando archivo…");
+            const current = () => request === previewRequest && pacienteExpediente?.id === patientId && !modal.hidden;
+            const fail = () => {
+                if (!current()) return;
+                liberarVistaArchivo();
+                content.setAttribute("aria-busy", "false");
+                mensajeVistaArchivo("No fue posible visualizar el archivo. Puedes volver a abrirlo o descargarlo.");
+                actualizarControlesArchivo();
+            };
             try {
-                const preview = await DentalApi.viewPatientFile(pacienteExpediente.id, fileId);
-                cerrarVistaArchivo();
-                previewObjectUrl = URL.createObjectURL(preview.blob);
-
-                const content = document.getElementById("filePreviewContent");
-                document.getElementById("filePreviewTitle").textContent = file.name;
-
-                if (preview.type.startsWith("image/")) {
-                    const image = document.createElement("img");
-                    image.src = previewObjectUrl;
-                    image.alt = file.description || file.name;
-                    content.replaceChildren(image);
+                const preview = await DentalApi.viewPatientFile(patientId, fileId);
+                if (!current()) return;
+                const type = preview.type.split(";")[0];
+                if (!["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(type)) {
+                    content.setAttribute("aria-busy", "false");
+                    mensajeVistaArchivo("Vista previa no disponible para este tipo de archivo.");
+                    return;
                 }
-                else {
+                previewObjectUrl = URL.createObjectURL(preview.blob);
+                if (type.startsWith("image/")) {
+                    const stage = document.createElement("div"); stage.className = "preview-image-stage";
+                    const image = document.createElement("img");
+                    image.alt = file.description || file.name; image.draggable = false;
+                    image.onload = () => {
+                        if (!current()) return;
+                        previewImage = image;
+                        content.setAttribute("aria-busy", "false");
+                        transformarVistaArchivo("reset");
+                        actualizarControlesArchivo();
+                    };
+                    image.onerror = fail;
+                    stage.append(image); content.replaceChildren(stage);
+                    image.src = previewObjectUrl;
+                } else {
                     const frame = document.createElement("iframe");
-                    frame.src = previewObjectUrl;
                     frame.title = file.name;
+                    frame.onload = () => { if (current()) content.setAttribute("aria-busy", "false"); };
+                    frame.onerror = fail;
+                    frame.src = previewObjectUrl;
                     content.replaceChildren(frame);
                 }
-
-                document.getElementById("filePreviewModal").hidden = false;
-            }
-            catch (error) {
-                DentalRoles.notify(error.message, "warning");
-            }
+            } catch (_) { fail(); }
         }
 
         function cerrarVistaArchivo() {
-            document.getElementById("filePreviewModal").hidden = true;
-            document.getElementById("filePreviewContent").replaceChildren();
-
-            if (previewObjectUrl) {
-                URL.revokeObjectURL(previewObjectUrl);
-                previewObjectUrl = "";
-            }
+            const modal = document.getElementById("filePreviewModal");
+            const wasOpen = !modal.hidden;
+            previewRequest++;
+            liberarVistaArchivo();
+            previewFileId = "";
+            modal.hidden = true;
+            document.getElementById("filePreviewContent").setAttribute("aria-busy", "false");
+            if (document.fullscreenElement === modal) document.exitFullscreen().catch(() => {});
+            if (wasOpen && previewReturnFocus?.isConnected) previewReturnFocus.focus();
+            previewReturnFocus = null;
         }
 
         function eliminarArchivo(fileId) {
@@ -4044,6 +4326,30 @@
 
         document.getElementById("clinicalClose").addEventListener("click", cerrarExpediente);
         document.getElementById("filePreviewClose").addEventListener("click", cerrarVistaArchivo);
+        document.getElementById("filePreviewPrevious").addEventListener("click", () => navegarArchivo(-1));
+        document.getElementById("filePreviewNext").addEventListener("click", () => navegarArchivo(1));
+        document.getElementById("filePreviewDownload").addEventListener("click", () => {
+            if (previewFileId) descargarArchivo(previewFileId);
+        });
+        document.querySelectorAll("[data-preview-action]").forEach(button => {
+            button.addEventListener("click", () => transformarVistaArchivo(button.dataset.previewAction));
+        });
+        document.getElementById("filePreviewFullscreen").addEventListener("click", async () => {
+            try {
+                if (document.fullscreenElement === document.getElementById("filePreviewModal")) await document.exitFullscreen();
+                else await document.getElementById("filePreviewModal").requestFullscreen();
+            } catch (_) { DentalRoles.notify("Pantalla completa no disponible en este navegador.", "warning"); }
+        });
+        new ResizeObserver(() => transformarVistaArchivo()).observe(document.getElementById("filePreviewContent"));
+        document.getElementById("filePreviewModal").addEventListener("keydown", event => {
+            if (event.key !== "Tab") return;
+            const focusable = [...event.currentTarget.querySelectorAll("button:not(:disabled), [tabindex='0'], iframe")]
+                .filter(element => element.getClientRects().length);
+            const first = focusable[0], last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+        });
+        window.addEventListener("pagehide", () => { cerrarVistaArchivo(); liberarMiniaturas(); });
         document.getElementById("filePreviewModal").addEventListener("click", event => {
             if (event.target.id === "filePreviewModal") {
                 cerrarVistaArchivo();
