@@ -1,5 +1,6 @@
 ﻿const express = require("express");
 const db = require("../db");
+const { createHash } = require("node:crypto");
 const asyncHandler = require("../utils/asyncHandler");
 const { authenticate, allowRoles } = require("../middleware/auth");
 const { writeAuditLog } = require("../utils/audit");
@@ -32,7 +33,7 @@ function estimateAccessWhere(req, alias = "e", params = []) {
   return { where: where.join(" AND "), params };
 }
 
-async function assertPatientAccess(req, patientId) {
+async function assertPatientAccess(req, patientId, client) {
   if (!patientId) return null;
   const params = [patientId, req.user.organizationId];
   let where = "id = $1 AND organization_id = $2 AND deleted_at IS NULL";
@@ -42,8 +43,79 @@ async function assertPatientAccess(req, patientId) {
     where += ` AND doctor_id = $${params.length}`;
   }
 
-  const result = await db.query(`SELECT id, full_name FROM patients WHERE ${where} LIMIT 1`, params);
+  const result = await client.query(`SELECT id, full_name FROM patients WHERE ${where} LIMIT 1`, params);
   return result.rows[0] || null;
+}
+
+function billingError(status, message) {
+  return Object.assign(new Error(message), { billingStatus: status });
+}
+
+function canonical(value) {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])]));
+  }
+  return value;
+}
+
+async function lockEstimate(req, client, id) {
+  const access = estimateAccessWhere(req, "e", [id]);
+  const result = await client.query(`SELECT e.* FROM billing_estimates e
+    WHERE e.id = $1 AND ${access.where} FOR UPDATE`, access.params);
+  if (!result.rows.length) throw billingError(404, "Presupuesto no encontrado");
+  return result.rows[0];
+}
+
+async function billingTransaction(req, res, operation, responseStatus, work) {
+  const key = req.body.idempotencyKey;
+  if (operation && (typeof key !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(key))) {
+    return res.status(400).json({ message: "Se requiere una clave de idempotencia UUID para este intento" });
+  }
+  const { idempotencyKey, ...body } = req.body;
+  const hash = createHash("sha256").update(JSON.stringify(canonical({
+    operation, target: req.params.id || null, actor: req.user.id, body
+  }))).digest("hex");
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+    if (operation) {
+      // Unique insertion waits for a concurrent owner of this key before any estimate lock.
+      const claim = await client.query(`INSERT INTO billing_payment_operations
+        (organization_id, idempotency_key, request_hash) VALUES ($1, $2, $3)
+        ON CONFLICT (organization_id, idempotency_key) DO NOTHING
+        RETURNING idempotency_key`, [req.user.organizationId, key, hash]);
+      if (!claim.rows.length) {
+        const prior = await client.query(`SELECT request_hash, estimate_id, response_status, response_body
+          FROM billing_payment_operations WHERE organization_id = $1 AND idempotency_key = $2`,
+        [req.user.organizationId, key]);
+        const receipt = prior.rows[0];
+        if (!receipt || receipt.request_hash !== hash) {
+          throw billingError(409, "La clave de idempotencia ya corresponde a otro intento o datos diferentes");
+        }
+        if (!receipt.response_body) throw billingError(409, "El intento no tiene un resultado confirmado");
+        // Recheck current tenant/doctor access even when returning a stored response.
+        await lockEstimate(req, client, receipt.estimate_id);
+        await client.query("COMMIT");
+        return res.status(receipt.response_status).json(receipt.response_body);
+      }
+    }
+    const result = await work(client);
+    if (operation) {
+      await client.query(`UPDATE billing_payment_operations
+        SET estimate_id = $3, response_status = $4, response_body = $5::jsonb
+        WHERE organization_id = $1 AND idempotency_key = $2`,
+      [req.user.organizationId, key, result.id, responseStatus, JSON.stringify(result)]);
+    }
+    await client.query("COMMIT");
+    return res.status(responseStatus).json(result);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    if (error.billingStatus) return res.status(error.billingStatus).json({ message: error.message });
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 router.get("/estimates", asyncHandler(async (req, res) => {
@@ -108,11 +180,6 @@ router.post("/estimates", asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Selecciona paciente y agrega procedimientos" });
   }
 
-  const patient = await assertPatientAccess(req, patientId);
-  if (patientId && !patient) {
-    return res.status(403).json({ message: "No tienes acceso a ese paciente" });
-  }
-
   const cleanItems = items.map(item => {
     const quantity = Math.max(1, Number.parseInt(item.quantity || 1, 10));
     const unitPrice = money(item.unitPrice);
@@ -144,36 +211,32 @@ router.post("/estimates", asyncHandler(async (req, res) => {
   const balance = Math.max(0, Math.round((total - paid) * 100) / 100);
   const initialStatus = balance <= 0 ? "pagado" : "en_deuda";
 
-  await db.query("BEGIN");
-  try {
-    const estimate = await db.query(`
+  return billingTransaction(req, res, "create_estimate", 201, async client => {
+    const patient = await assertPatientAccess(req, patientId, client);
+    if (patientId && !patient) throw billingError(403, "No tienes acceso a ese paciente");
+    const estimate = await client.query(`
       INSERT INTO billing_estimates (organization_id, patient_id, patient_name, status, subtotal, discount, total, paid, balance, notes, created_by)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `, [req.user.organizationId, patientId, patientName, initialStatus, grossSubtotal, totalDiscount, total, paid, balance, notes, req.user.id]);
 
     for (const item of cleanItems) {
-      await db.query(`
+      await client.query(`
         INSERT INTO billing_estimate_items (estimate_id, procedure_id, description, tooth_number, quantity, unit_price, gross_total, discount, total)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       `, [estimate.rows[0].id, item.procedureId, item.description, item.toothNumber, item.quantity, item.unitPrice, item.grossTotal, item.discount, item.total]);
     }
 
     if (paid > 0) {
-      await db.query(`
+      await client.query(`
         INSERT INTO billing_payments (organization_id, estimate_id, amount, method, note, received_by)
         VALUES ($1, $2, $3, $4, $5, $6)
       `, [req.user.organizationId, estimate.rows[0].id, paid, paymentMethod, "Abono inicial", req.user.id]);
     }
 
-    await writeAuditLog(req, "create", "billing_estimates", estimate.rows[0].id, { patientName, total, paid, balance, totalDiscount });
-    await db.query("COMMIT");
-    return res.status(201).json(estimate.rows[0]);
-  }
-  catch (error) {
-    await db.query("ROLLBACK");
-    throw error;
-  }
+    await writeAuditLog(req, "create", "billing_estimates", estimate.rows[0].id, { patientName, total, paid, balance, totalDiscount }, client);
+    return estimate.rows[0];
+  });
 }));
 
 router.post("/estimates/:id/payments", asyncHandler(async (req, res) => {
@@ -185,61 +248,40 @@ router.post("/estimates/:id/payments", asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Ingresa un monto de pago valido" });
   }
 
-  await db.query("BEGIN");
-  try {
-    const access = estimateAccessWhere(req, "e", [req.params.id]);
-    const current = await db.query(`
-      SELECT e.* FROM billing_estimates e
-      WHERE e.id = $1 AND ${access.where}
-      FOR UPDATE
-    `, access.params);
-
-    if (!current.rows.length) {
-      await db.query("ROLLBACK");
-      return res.status(404).json({ message: "Presupuesto no encontrado" });
-    }
-
-    const estimate = current.rows[0];
+  return billingTransaction(req, res, "payment", 200, async client => {
+    const estimate = await lockEstimate(req, client, req.params.id);
     if (estimate.status === "cancelado") {
-      await db.query("ROLLBACK");
-      return res.status(400).json({ message: "No se puede pagar un presupuesto cancelado" });
+      throw billingError(400, "No se puede pagar un presupuesto cancelado");
     }
 
     const balance = money(estimate.balance);
     if (balance <= 0) {
-      await db.query("ROLLBACK");
-      return res.status(400).json({ message: "Este presupuesto ya esta saldado" });
+      throw billingError(400, "Este presupuesto ya esta saldado");
     }
 
     if (amount > balance) {
-      await db.query("ROLLBACK");
-      return res.status(400).json({ message: "El monto no puede superar el pendiente" });
+      throw billingError(400, "El monto no puede superar el pendiente");
     }
 
     const newPaid = Math.round((money(estimate.paid) + amount) * 100) / 100;
     const newBalance = Math.max(0, Math.round((money(estimate.total) - newPaid) * 100) / 100);
     const newStatus = newBalance <= 0 ? "pagado" : "en_deuda";
 
-    await db.query(`
+    await client.query(`
       INSERT INTO billing_payments (organization_id, estimate_id, amount, method, note, received_by)
       VALUES ($1, $2, $3, $4, $5, $6)
     `, [req.user.organizationId, req.params.id, amount, method, note || null, req.user.id]);
 
-    const result = await db.query(`
+    const result = await client.query(`
       UPDATE billing_estimates
       SET paid = $2, balance = $3, status = $4, updated_at = NOW()
       WHERE id = $1 AND organization_id = $5 AND deleted_at IS NULL
       RETURNING *
     `, [req.params.id, newPaid, newBalance, newStatus, req.user.organizationId]);
 
-    await writeAuditLog(req, "payment", "billing_estimates", req.params.id, { amount, method, paid: newPaid, balance: newBalance, status: newStatus });
-    await db.query("COMMIT");
-    return res.json(result.rows[0]);
-  }
-  catch (error) {
-    await db.query("ROLLBACK");
-    throw error;
-  }
+    await writeAuditLog(req, "payment", "billing_estimates", req.params.id, { amount, method, paid: newPaid, balance: newBalance, status: newStatus }, client);
+    return result.rows[0];
+  });
 }));
 
 router.patch("/estimates/:id/status", asyncHandler(async (req, res) => {
@@ -248,24 +290,19 @@ router.patch("/estimates/:id/status", asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Estado invalido" });
   }
 
-  const access = estimateAccessWhere(req, "e", [req.params.id]);
-  const current = await db.query(`SELECT e.* FROM billing_estimates e WHERE e.id = $1 AND ${access.where}`, access.params);
-  if (!current.rows.length) {
-    return res.status(404).json({ message: "Presupuesto no encontrado" });
-  }
-
-  await db.query("BEGIN");
-  try {
+  return billingTransaction(req, res, status === "pagado" ? "settle" : null, 200, async client => {
+    const current = await lockEstimate(req, client, req.params.id);
     let result;
     if (status === "pagado") {
-      const remaining = money(current.rows[0].balance);
+      if (current.status === "cancelado") throw billingError(400, "No se puede pagar un presupuesto cancelado");
+      const remaining = money(current.balance);
       if (remaining > 0) {
-        await db.query(`
+        await client.query(`
           INSERT INTO billing_payments (organization_id, estimate_id, amount, method, note, received_by)
           VALUES ($1, $2, $3, 'saldo_total', 'Saldado desde boton Pagado', $4)
         `, [req.user.organizationId, req.params.id, remaining, req.user.id]);
       }
-      result = await db.query(`
+      result = await client.query(`
         UPDATE billing_estimates
         SET status = $2, paid = total, balance = 0, updated_at = NOW()
         WHERE id = $1 AND organization_id = $3 AND deleted_at IS NULL
@@ -273,7 +310,7 @@ router.patch("/estimates/:id/status", asyncHandler(async (req, res) => {
       `, [req.params.id, status, req.user.organizationId]);
     }
     else if (status === "pendiente") {
-      result = await db.query(`
+      result = await client.query(`
         UPDATE billing_estimates
         SET status = $2, balance = GREATEST(total - paid, 0), updated_at = NOW()
         WHERE id = $1 AND organization_id = $3 AND deleted_at IS NULL
@@ -281,21 +318,16 @@ router.patch("/estimates/:id/status", asyncHandler(async (req, res) => {
       `, [req.params.id, status, req.user.organizationId]);
     }
     else {
-      result = await db.query(`
+      result = await client.query(`
         UPDATE billing_estimates SET status = $2, updated_at = NOW()
         WHERE id = $1 AND organization_id = $3 AND deleted_at IS NULL
         RETURNING *
       `, [req.params.id, status, req.user.organizationId]);
     }
 
-    await writeAuditLog(req, "update", "billing_estimates", req.params.id, { status });
-    await db.query("COMMIT");
-    return res.json(result.rows[0]);
-  }
-  catch (error) {
-    await db.query("ROLLBACK");
-    throw error;
-  }
+    await writeAuditLog(req, "update", "billing_estimates", req.params.id, { status }, client);
+    return result.rows[0];
+  });
 }));
 
 module.exports = router;

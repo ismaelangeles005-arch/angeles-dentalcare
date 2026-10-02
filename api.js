@@ -537,24 +537,33 @@
         return request("/billing/estimates/" + id);
     }
 
-    function createBillingEstimate(estimate) {
+    function createBillingIdempotencyKey() {
+        const bytes = new Uint8Array(16);
+        window.crypto.getRandomValues(bytes);
+        bytes[6] = (bytes[6] & 15) | 64;
+        bytes[8] = (bytes[8] & 63) | 128;
+        const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+        return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+    }
+
+    function createBillingEstimate(estimate, idempotencyKey) {
         return request("/billing/estimates", {
             method: "POST",
-            body: JSON.stringify(estimate)
+            body: JSON.stringify({ ...estimate, idempotencyKey })
         });
     }
 
-    function updateBillingEstimateStatus(id, status) {
+    function updateBillingEstimateStatus(id, status, idempotencyKey) {
         return request("/billing/estimates/" + id + "/status", {
             method: "PATCH",
-            body: JSON.stringify({ status })
+            body: JSON.stringify({ status, idempotencyKey })
         });
     }
 
-    function addBillingPayment(id, payment) {
+    function addBillingPayment(id, payment, idempotencyKey) {
         return request("/billing/estimates/" + id + "/payments", {
             method: "POST",
-            body: JSON.stringify(payment)
+            body: JSON.stringify({ ...payment, idempotencyKey })
         });
     }
 
@@ -673,6 +682,7 @@
         createProcedure,
         updateProcedure,
         getBillingEstimates,
+        createBillingIdempotencyKey,
         getBillingEstimate,
         createBillingEstimate,
         updateBillingEstimateStatus,

@@ -25,5 +25,6 @@
   "migration_odontogram_entries.sql",
   "migration_treatment_plans.sql",
   "migration_treatment_plan_acceptances.sql",
-  "migration_odontogram_primary_teeth.sql"
+  "migration_odontogram_primary_teeth.sql",
+  "migration_billing_payment_idempotency.sql"
 ]
