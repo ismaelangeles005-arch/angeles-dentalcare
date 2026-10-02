@@ -1,229 +1,111 @@
-﻿const crypto = require("crypto");
-const fs = require("fs");
-const path = require("path");
-const express = require("express");
+﻿const express = require("express");
 const multer = require("multer");
+const { pipeline } = require("stream/promises");
 const db = require("../db");
 const asyncHandler = require("../utils/asyncHandler");
 const { authenticate, allowRoles } = require("../middleware/auth");
+const { patientFilesDirectory } = require("../config/deployment");
+const LocalStorageAdapter = require("../storage/LocalStorageAdapter");
+const createClinicalFilesService = require("../services/clinicalFiles");
 
 const router = express.Router({ mergeParams: true });
-const { patientFilesDirectory } = require("../config/deployment");
-const uploadDirectory = patientFilesDirectory();
-const allowedTypes = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/tiff",
-  "application/dicom"
-]);
-
+const files = createClinicalFilesService({ db, storage: new LocalStorageAdapter(patientFilesDirectory()) });
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: uploadDirectory,
-    filename(req, file, callback) {
-      const extension = path.extname(file.originalname).toLowerCase().slice(0, 10);
-      callback(null, `${crypto.randomUUID()}${extension}`);
+  storage: {
+    _handleFile(req, file, callback) {
+      const abort = () => file.stream.destroy();
+      req.once("aborted", abort);
+      files.storeUpload(file).then(
+        result => { req.removeListener("aborted", abort); callback(null, result); },
+        error => { req.removeListener("aborted", abort); callback(error); }
+      );
+    },
+    _removeFile(req, file, callback) {
+      files.discardUpload(file).then(() => callback(null), callback);
     }
-  }),
-  limits: {
-    fileSize: 10 * 1024 * 1024,
-    files: 1
   },
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
   fileFilter(req, file, callback) {
-    if (!allowedTypes.has(file.mimetype)) {
-      const error = new Error("Formato no permitido. Usa PDF, JPG, PNG, WEBP, TIFF o DICOM.");
-      error.status = 400;
-      return callback(error);
-    }
-
-    return callback(null, true);
+    try { files.validateFile(file); callback(null, true); }
+    catch (error) { callback(error); }
   }
 });
 
 router.use(authenticate);
 
-async function canAccessClinicalFile(req, patientId) {
-  if (req.user.isReception) {
-    return false;
-  }
-
-  const params = [patientId, req.user.organizationId];
-  let doctorCondition = "";
-
-  if (req.user.isDoctor) {
-    params.push(req.user.doctorId);
-    doctorCondition = `AND (
-      p.doctor_id = $${params.length}
-      OR EXISTS (
-        SELECT 1 FROM patient_visits pv
-        WHERE pv.patient_id = p.id
-          AND pv.organization_id = p.organization_id
-          AND pv.doctor_id = $${params.length}
-      )
-    )`;
-  }
-
-  const result = await db.query(`
-    SELECT p.id
-    FROM patients p
-    WHERE p.id = $1
-      AND p.organization_id = $2
-      AND p.deleted_at IS NULL
-      ${doctorCondition}
-  `, params);
-
-  return Boolean(result.rows.length);
-}
-
 router.get("/", allowRoles("head_admin", "admin", "doctor"), asyncHandler(async (req, res) => {
-  if (!await canAccessClinicalFile(req, req.params.patientId)) {
-    return res.status(403).json({ message: "No tienes acceso al expediente clinico" });
-  }
-
-  const result = await db.query(`
-    SELECT
-      pf.id,
-      pf.original_name AS name,
-      pf.mime_type,
-      pf.size_bytes,
-      pf.category,
-      pf.description,
-      pf.created_at,
-      u.full_name AS uploaded_by
-    FROM patient_files pf
-    JOIN users u ON u.id = pf.uploaded_by AND u.organization_id = pf.organization_id
-    WHERE pf.patient_id = $1 AND pf.organization_id = $2 AND pf.deleted_at IS NULL
-    ORDER BY pf.created_at DESC
-  `, [req.params.patientId, req.user.organizationId]);
-
-  return res.json(result.rows);
+  return res.json(await files.list(req));
 }));
 
 router.post("/", allowRoles("head_admin", "admin", "doctor"), upload.single("file"), asyncHandler(async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: "Selecciona un archivo" });
-  }
-
-  if (!await canAccessClinicalFile(req, req.params.patientId)) {
-    fs.unlink(req.file.path, () => {});
-    return res.status(403).json({ message: "No tienes acceso al expediente clinico" });
-  }
-
-  const validCategories = ["radiografia", "fotografia", "documento", "otro"];
-  const category = validCategories.includes(req.body.category) ? req.body.category : "otro";
-  const description = typeof req.body.description === "string"
-    ? req.body.description.trim().slice(0, 500)
-    : "";
-
-  const result = await db.query(`
-    INSERT INTO patient_files (
-      organization_id, patient_id, uploaded_by, original_name, stored_name, mime_type,
-      size_bytes, category, description
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    RETURNING id, original_name AS name, mime_type, size_bytes, category, description, created_at
-  `, [
-    req.user.organizationId,
-    req.params.patientId,
-    req.user.id,
-    path.basename(req.file.originalname).slice(0, 255),
-    req.file.filename,
-    req.file.mimetype,
-    req.file.size,
-    category,
-    description || null
-  ]);
-
-  return res.status(201).json(result.rows[0]);
+  return res.status(201).json(await files.create(req));
 }));
 
-router.get("/:fileId/download", allowRoles("head_admin", "admin", "doctor"), asyncHandler(async (req, res) => {
-  if (!await canAccessClinicalFile(req, req.params.patientId)) {
-    return res.status(403).json({ message: "No tienes acceso al expediente clinico" });
+async function sendClinicalFile(req, res, next, preview) {
+  const { file, object } = await files.retrieve(req, preview);
+  if (preview) {
+    res.setHeader("Content-Disposition", `inline; filename*=UTF-8''${encodeURIComponent(file.original_name)}`);
+    res.setHeader("Cache-Control", "private, no-store");
+  } else {
+    res.attachment(file.original_name);
+    res.setHeader("Cache-Control", "public, max-age=0");
   }
-
-  const result = await db.query(`
-    SELECT original_name, stored_name, mime_type
-    FROM patient_files
-    WHERE id = $1 AND patient_id = $2 AND organization_id = $3 AND deleted_at IS NULL
-  `, [req.params.fileId, req.params.patientId, req.user.organizationId]);
-
-  const file = result.rows[0];
-  if (!file) {
-    return res.status(404).json({ message: "Archivo no encontrado" });
-  }
-
-  const absolutePath = path.join(uploadDirectory, file.stored_name);
-  if (!fs.existsSync(absolutePath)) {
-    return res.status(404).json({ message: "El archivo fisico no esta disponible" });
-  }
-
   res.type(file.mime_type);
-  return res.download(absolutePath, file.original_name);
-}));
+  const etag = `W/"${object.size.toString(16)}-${object.modifiedAt.getTime().toString(16)}"`;
+  const modified = Math.floor(object.modifiedAt.getTime() / 1000) * 1000;
+  res.setHeader("ETag", etag);
+  res.setHeader("Last-Modified", object.modifiedAt.toUTCString());
+  res.setHeader("Accept-Ranges", "bytes");
 
-router.get("/:fileId/view", allowRoles("head_admin", "admin", "doctor"), asyncHandler(async (req, res) => {
-  if (!await canAccessClinicalFile(req, req.params.patientId)) {
-    return res.status(403).json({ message: "No tienes acceso al expediente clinico" });
+  // Preserve conditional and byte-range responses while reading through the adapter.
+  const match = req.get("If-Match");
+  const unmodified = Date.parse(req.get("If-Unmodified-Since"));
+  if ((match && match !== "*" && !match.split(/ *, */).some(tag => tag.replace(/^W\//, "") === etag.slice(2)))
+    || (!match && !Number.isNaN(unmodified) && modified > unmodified)) {
+    return next(Object.assign(new Error("Precondition Failed"), { status: 412 }));
   }
-
-  const result = await db.query(`
-    SELECT original_name, stored_name, mime_type
-    FROM patient_files
-    WHERE id = $1 AND patient_id = $2 AND organization_id = $3 AND deleted_at IS NULL
-  `, [req.params.fileId, req.params.patientId, req.user.organizationId]);
-
-  const file = result.rows[0];
-  if (!file) {
-    return res.status(404).json({ message: "Archivo no encontrado" });
+  if (req.fresh) {
+    res.removeHeader("Content-Type");
+    return res.status(304).end();
   }
-
-  const previewableTypes = new Set([
-    "application/pdf",
-    "image/jpeg",
-    "image/png",
-    "image/webp"
-  ]);
-
-  if (!previewableTypes.has(file.mime_type)) {
-    return res.status(415).json({
-      message: "Este formato necesita un visor especializado y solo puede descargarse"
-    });
+  let range = {};
+  const ifRange = req.get("If-Range");
+  const rangeFresh = !ifRange || (ifRange.includes('"') ? ifRange.includes(etag) : Date.parse(ifRange) >= modified);
+  if (/^ *bytes=/.test(req.get("Range")) && rangeFresh) {
+    const ranges = req.range(object.size, { combine: true });
+    if (ranges === -1) {
+      res.setHeader("Content-Range", `bytes */${object.size}`);
+      return next(Object.assign(new Error("Range Not Satisfiable"), { status: 416 }));
+    }
+    if (ranges && ranges.type === "bytes" && ranges.length === 1) range = ranges[0];
   }
-
-  const absolutePath = path.join(uploadDirectory, file.stored_name);
-  if (!fs.existsSync(absolutePath)) {
-    return res.status(404).json({ message: "El archivo fisico no esta disponible" });
+  const stream = await files.openRead(file, range);
+  if (range.start != null) {
+    res.status(206);
+    res.setHeader("Content-Range", `bytes ${range.start}-${range.end}/${object.size}`);
   }
+  res.setHeader("Content-Length", range.start != null ? range.end - range.start + 1 : object.size);
+  if (req.method === "HEAD") {
+    stream.on("error", () => {});
+    stream.destroy();
+    return res.end();
+  }
+  try { await pipeline(stream, res); }
+  catch (error) {
+    // A disconnected response closes the readable; never append JSON to document bytes.
+    if (!res.headersSent && !res.destroyed) return next(error);
+    if (!res.destroyed) res.destroy(error);
+  }
+}
 
-  res.setHeader("Content-Type", file.mime_type);
-  res.setHeader(
-    "Content-Disposition",
-    `inline; filename*=UTF-8''${encodeURIComponent(file.original_name)}`
-  );
-  res.setHeader("Cache-Control", "private, no-store");
-  return res.sendFile(absolutePath);
-}));
+router.get("/:fileId/download", allowRoles("head_admin", "admin", "doctor"),
+  asyncHandler((req, res, next) => sendClinicalFile(req, res, next, false)));
+
+router.get("/:fileId/view", allowRoles("head_admin", "admin", "doctor"),
+  asyncHandler((req, res, next) => sendClinicalFile(req, res, next, true)));
 
 router.delete("/:fileId", allowRoles("head_admin", "admin", "doctor"), asyncHandler(async (req, res) => {
-  if (!await canAccessClinicalFile(req, req.params.patientId)) {
-    return res.status(403).json({ message: "No tienes acceso al expediente clinico" });
-  }
-
-  const result = await db.query(`
-    UPDATE patient_files
-    SET deleted_at = NOW()
-    WHERE id = $1 AND patient_id = $2 AND organization_id = $3 AND deleted_at IS NULL
-    RETURNING stored_name
-  `, [req.params.fileId, req.params.patientId, req.user.organizationId]);
-
-  if (!result.rows.length) {
-    return res.status(404).json({ message: "Archivo no encontrado" });
-  }
-
-  fs.unlink(path.join(uploadDirectory, result.rows[0].stored_name), () => {});
+  await files.remove(req);
   return res.status(204).send();
 }));
 
