@@ -138,6 +138,7 @@ function routeHarness(file, initial = []) {
     if (q.startsWith("SELECT tooth_id, surface")) return { rows: rows.filter(r => r.id === values[0] && r.organization_id === values[1] && r.patient_id === values[2] && r.entry_type === "PROPOSED_TREATMENT" && r.status === "ACTIVE") };
     if (q.startsWith("SELECT id FROM treatment_plan_items")) return { rows: [] };
     if (q.startsWith("INSERT INTO treatment_plan_items")) return { rows: [{ id: uuid("8"), tooth_id: values[3], surface: values[4], procedure_name_snapshot: values[5], unit_price_snapshot: values[7], odontogram_entry_id: values[2] }] };
+    if (q.includes("FROM treatment_plan_acceptances")) return { rows: [] };
     if (q.startsWith("UPDATE treatment_plans")) return { rows: [] };
     throw new Error("Unhandled SQL: " + q);
   };
@@ -246,7 +247,7 @@ test("forward migration/schema exact supported IDs, nullable, transactional, ord
   assert(migration.includes("RAISE EXCEPTION"));
   assert(!/UPDATE |DELETE FROM|odontogram_entries|PALMER/.test(migration));
   const names = JSON.parse(read("server/database/migrations.json"));
-  assert.equal(names.length, 26); assert.equal(names.at(-1), "migration_odontogram_primary_teeth.sql");
+  assert.equal(names.length, 27); assert.equal(names.at(-1), "migration_odontogram_primary_teeth.sql");
 });
 
 test("historical UI option is local to correction; default retained; changing dentition only clears hidden UI selection", () => {

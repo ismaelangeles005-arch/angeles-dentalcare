@@ -45,6 +45,15 @@ function browser() {
   context.window.DentalToothCatalog = context.DentalToothCatalog;
   vm.runInContext(read("dental-tooth-selector.js"), context);
   context.DentalToothSelector = context.window.DentalToothSelector;
+  context.clinicalToothSelector = context.DentalToothSelector.createSelector({
+    gridId: "clinicalToothGrid",
+    dentitionModeId: "clinicalDentition",
+    countModeId: "clinicalToothCountMode",
+    numberingSystemId: "clinicalToothNumberingSystem",
+    hiddenInputId: "clinicalToothNumber",
+    toggleFunctionName: "toggleClinicalTooth",
+    visual: true
+  });
   vm.runInContext(html.slice(html.indexOf("        const ODONTOGRAM_EXISTING_CONDITIONS"), html.indexOf("        async function cargarDoctores")), context);
   vm.runInContext(functions.map(extract).join("\n"), context);
   el("odontogramDentition").value = "PERMANENT";
@@ -99,7 +108,7 @@ test("panel has clinical names, four empty states and no visible raw toothId", (
   assert(!panel.includes("toothId")); assert(!panel.includes(central));
   for (const label of ["Sin condiciones registradas", "Sin diagnósticos registrados", "Sin tratamientos propuestos", "Sin tratamientos realizados"]) assert(panel.includes(label));
   assert(panel.includes("Incisivo central superior derecho permanente"));
-  context.seleccionarPiezaOdontograma(central);
+  context.renderOdontogramDetail();
   assert.equal(el("odontogramDetail").innerHTML, panel);
 });
 
