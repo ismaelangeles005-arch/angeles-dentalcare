@@ -5,11 +5,15 @@ const db = require("../db");
 const asyncHandler = require("../utils/asyncHandler");
 const { authenticate, allowRoles } = require("../middleware/auth");
 const { patientFilesDirectory } = require("../config/deployment");
-const LocalStorageAdapter = require("../storage/LocalStorageAdapter");
+const { env } = require("node:process");
+const createStorageAdapter = require("../storage/createStorageAdapter");
 const createClinicalFilesService = require("../services/clinicalFiles");
 
 const router = express.Router({ mergeParams: true });
-const files = createClinicalFilesService({ db, storage: new LocalStorageAdapter(patientFilesDirectory()) });
+const files = createClinicalFilesService({ db, storage: createStorageAdapter({
+  provider: env.PATIENT_FILES_STORAGE_PROVIDER,
+  localRoot: patientFilesDirectory()
+}) });
 const upload = multer({
   storage: {
     _handleFile(req, file, callback) {
