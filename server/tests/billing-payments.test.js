@@ -17,7 +17,7 @@ const initialBody = () => ({ patientId: patient, patientName: 'Billing fixture',
 // Real route and audit code, simulated READ COMMITTED transactions and key/row locks.
 // No network, PostgreSQL, data files, Docker or real financial records are used.
 function harness() {
-  const state = { estimates: new Map(), receipts: new Map(), payments: [], items: [], audits: [] };
+  const state = { estimates: new Map(), receipts: new Map(), payments: [], items: [], audits: [], planItems: [] };
   const calls = [], clients = [], routes = new Map(), locks = new Map(), options = {};
   let sequence = 100;
   function seed(id = estimateId, organization = org) {
@@ -89,7 +89,17 @@ function harness() {
       const row = Object.fromEntries(['organization_id','patient_id','patient_name','status','subtotal','discount','total','paid','balance','notes','created_by'].map((name, i) => [name, values[i]]));
       row.id = uuid(sequence++); client.estimates.set(row.id, row); return rows([row]);
     }
-    if (q.startsWith('INSERT INTO billing_estimate_items')) { client.items.push({ estimate_id: values[0] }); return rows([]); }
+    if (q.startsWith('SELECT tpi.id, tpi.procedure_id')) {
+      assert(client && q.includes('JOIN treatment_plans tp ON tp.id = tpi.treatment_plan_id'));
+      assert(q.includes('tp.organization_id = $2 AND tp.patient_id = $3'));
+      assert(q.includes('ORDER BY tpi.id FOR SHARE OF tpi, tp'));
+      return rows(state.planItems.filter(item => values[0].includes(item.id) && item.organization_id === values[1] && item.patient_id === values[2]));
+    }
+    if (q.startsWith('INSERT INTO billing_estimate_items')) {
+      assert(q.includes('treatment_plan_item_id'));
+      client.items.push({ estimate_id: values[0], procedure_id: values[1], total: values[8], treatment_plan_item_id: values[9] });
+      return rows([]);
+    }
     if (q.startsWith('INSERT INTO billing_payments')) {
       const estimate = client.estimates.get(values[1]) || state.estimates.get(values[1]);
       assert.equal(estimate.organization_id, values[0]); assert(values[2] > 0);
@@ -288,5 +298,102 @@ test('migration adds only organization-scoped receipt uniqueness; no historical 
   assert.match(sql,/estimate_id UUID REFERENCES billing_estimates\(id\)/);
   assert(!/\b(?:UPDATE|DELETE|ALTER|INSERT)\b/i.test(sql));
   const manifest=JSON.parse(read('server/database/migrations.json'));
-  assert.equal(manifest.length,28); assert.equal(manifest.at(-1),'migration_billing_payment_idempotency.sql');
+  assert.equal(manifest.length,29); assert.equal(manifest.at(-1),'migration_treatment_plan_billing_link.sql');
+});
+
+const planItemId = uuid(30), procedureId = uuid(31);
+function linkedFixture() {
+  const h = harness();
+  h.state.planItems.push({ id: planItemId, organization_id: org, patient_id: patient, procedure_id: procedureId });
+  const body = initialBody();
+  Object.assign(body.items[0], { treatmentPlanItemId: planItemId, procedureId });
+  return { h, body };
+}
+function assertNoNewFinancialData(h) {
+  assert.equal(h.state.estimates.size,1); assert.equal(h.state.items.length,0);
+  assert.equal(h.state.payments.length,0); assert.equal(h.state.audits.length,0);
+  assert.equal(h.state.receipts.size,0); assert(h.clients.every(c=>c.released));
+}
+test('manual estimate stores null link and never queries treatment plans', async () => {
+  const h=harness(); await h.create();
+  assert.equal(h.state.items[0].treatment_plan_item_id,null);
+  assert(!h.calls.some(c=>c.q.includes('FROM treatment_plan_items')));
+});
+test('valid linked estimate persists link, payment and audit on the same connection', async () => {
+  const {h,body}=linkedFixture(); const result=await h.create(body);
+  assert.equal(result.code,201);assert.equal(h.state.items[0].treatment_plan_item_id,planItemId);
+  assert.equal(h.state.items[0].procedure_id,procedureId);
+  assert.equal(h.state.payments.length,1);assert.equal(h.state.audits.length,1);
+  assert(h.calls.every(c=>c.client===1));
+  assert(h.calls.findIndex(c=>c.q.includes('FROM treatment_plan_items'))<h.calls.findIndex(c=>c.q.startsWith('INSERT INTO billing_estimates')));
+});
+for (const [name, change, code] of [
+  ['nonexistent',{id:uuid(32)},404],['other organization',{organization_id:uuid(33)},404],
+  ['other patient',{patient_id:uuid(34)},404],['incompatible procedure',{procedure_id:uuid(35)},409],
+  ['deleted procedure versus supplied procedure',{procedure_id:null},409]
+]) test('linked estimate rejects '+name+' atomically', async () => {
+  const {h,body}=linkedFixture();Object.assign(h.state.planItems[0],change);
+  assert.equal((await h.create(body)).code,code);assertNoNewFinancialData(h);
+});
+test('nullable procedure compatibility uses exact null equality', async () => {
+  const {h,body}=linkedFixture();h.state.planItems[0].procedure_id=null;body.items[0].procedureId=null;
+  assert.equal((await h.create(body)).code,201);assert.equal(h.state.items[0].treatment_plan_item_id,planItemId);
+});
+for (const invalid of ['',false,'bad-uuid',{},123]) test('malformed link rejected before SQL UUID cast: '+JSON.stringify(invalid), async () => {
+  const {h,body}=linkedFixture();body.items[0].treatmentPlanItemId=invalid;
+  assert.equal((await h.create(body)).code,400);assertNoNewFinancialData(h);
+  assert(!h.calls.some(c=>c.q.includes('FROM treatment_plan_items')));
+});
+test('linked estimate requires registered patient; omitted procedure conflicts', async () => {
+  const {h,body}=linkedFixture();body.patientId=null;
+  assert.equal((await h.create(body)).code,400);assertNoNewFinancialData(h);
+  body.patientId=patient;delete body.items[0].procedureId;
+  assert.equal((await h.create(body)).code,409);assertNoNewFinancialData(h);
+});
+test('invalid filtered item cannot silently discard an explicit link', async () => {
+  const {h,body}=linkedFixture();body.items[0].description='';body.items.push({description:'Manual',unitPrice:100});
+  assert.equal((await h.create(body)).code,400);assertNoNewFinancialData(h);
+});
+test('two legitimate partial operations for the same plan item are permitted', async () => {
+  const {h,body}=linkedFixture();body.items[0].unitPrice=500;
+  assert.equal((await h.create(body)).code,201);
+  assert.equal((await h.create({...body,idempotencyKey:uuid(36)})).code,201);
+  assert.equal(h.state.items.length,2);assert(h.state.items.every(i=>i.treatment_plan_item_id===planItemId && i.total===500));
+});
+test('two lines in a single estimate may share an explicit plan link', async () => {
+  const {h,body}=linkedFixture();body.items.push({...body.items[0]});
+  assert.equal((await h.create(body)).code,201);assert.equal(h.state.items.length,2);
+});
+test('linked retry and concurrent retry preserve original idempotency contract', async () => {
+  const {h,body}=linkedFixture();const [a,b]=await Promise.all([h.create(body),h.create(body)]);
+  assert.deepEqual(a.body,b.body);assert.equal(h.state.estimates.size,2);
+  assert.equal(h.state.items.length,1);assert.equal(h.state.payments.length,1);
+  assert.equal(h.state.audits.length,1);
+});
+test('same key with a different explicit plan link returns 409', async () => {
+  const {h,body}=linkedFixture();await h.create(body);
+  const changed=clone(body);changed.items[0].treatmentPlanItemId=uuid(37);
+  assert.equal((await h.create(changed)).code,409);assert.equal(h.state.items.length,1);
+});
+test('historical financial item without link remains readable and untouched', async () => {
+  const h=harness(),historical={estimate_id:estimateId,procedure_id:null,total:900,treatment_plan_item_id:null};
+  h.state.items.push(clone(historical));const result=await h.request('get','/estimates/:id',{});
+  assert.deepEqual(result.body.items,[historical]);assert.deepEqual(h.state.items,[historical]);
+});
+for(const failure of ['INSERT INTO billing_estimate_items','INSERT INTO billing_payments','INSERT INTO audit_logs']) {
+  test('linked creation rolls back after validated link on '+failure,async()=>{
+    const {h,body}=linkedFixture();h.options.fail=failure;
+    await assert.rejects(h.create(body),/injected failure/);assertNoNewFinancialData(h);
+    assert(h.calls.some(c=>c.q.includes('FROM treatment_plan_items')));
+    delete h.options.fail;assert.equal((await h.create(body)).code,201);
+  });
+}
+test('link migration is nullable, indexed, repeatable DDL without uniqueness or backfill',()=>{
+  const sql=read('server/database/migration_treatment_plan_billing_link.sql');
+  assert.match(sql,/ADD COLUMN IF NOT EXISTS treatment_plan_item_id UUID NULL/);
+  assert.match(sql,/REFERENCES treatment_plan_items\(id\) ON DELETE RESTRICT/);
+  assert.match(sql,/CREATE INDEX IF NOT EXISTS idx_billing_estimate_items_treatment_plan_item/);
+  assert.match(sql,/ON billing_estimate_items \(treatment_plan_item_id\)/);
+  assert(!/\b(?:UNIQUE|UPDATE|DELETE FROM|INSERT INTO|DROP)\b/i.test(sql));
+  assert.match(sql,/BEGIN;/);assert.match(sql,/COMMIT;/);
 });

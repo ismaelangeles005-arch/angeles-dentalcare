@@ -51,6 +51,36 @@ function billingError(status, message) {
   return Object.assign(new Error(message), { billingStatus: status });
 }
 
+async function validateTreatmentPlanLinks(req, client, patientId, items) {
+  const linked = items.filter(item => item.treatmentPlanItemId !== null);
+  if (!linked.length) return;
+  if (!patientId) throw billingError(400, "El vinculo al plan requiere un paciente registrado");
+  for (const item of linked) {
+    if (typeof item.treatmentPlanItemId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.treatmentPlanItemId)) {
+      throw billingError(400, "Identificador de item del plan invalido");
+    }
+  }
+  const ids = [...new Set(linked.map(item => item.treatmentPlanItemId.toLowerCase()))].sort();
+  // Keep the validated ownership and procedure stable through the financial commit.
+  const result = await client.query(`
+    SELECT tpi.id, tpi.procedure_id
+    FROM treatment_plan_items tpi
+    JOIN treatment_plans tp ON tp.id = tpi.treatment_plan_id
+    WHERE tpi.id = ANY($1::uuid[])
+      AND tp.organization_id = $2 AND tp.patient_id = $3
+    ORDER BY tpi.id FOR SHARE OF tpi, tp
+  `, [ids, req.user.organizationId, patientId]);
+  const references = new Map(result.rows.map(row => [row.id, row]));
+  for (const item of linked) {
+    const reference = references.get(item.treatmentPlanItemId.toLowerCase());
+    if (!reference) throw billingError(404, "Item del plan no disponible para este paciente y organizacion");
+    const procedure = typeof item.procedureId === "string" ? item.procedureId.toLowerCase() : item.procedureId;
+    if ((reference.procedure_id || null) !== procedure) {
+      throw billingError(409, "El procedimiento no coincide con el item del plan");
+    }
+  }
+}
+
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === "object") {
@@ -188,6 +218,7 @@ router.post("/estimates", asyncHandler(async (req, res) => {
     const total = Math.max(0, Math.round((grossTotal - discount) * 100) / 100);
     return {
       procedureId: item.procedureId || null,
+      treatmentPlanItemId: item.treatmentPlanItemId ?? null,
       description: String(item.description || "").trim(),
       toothNumber: String(item.toothNumber || "").trim() || null,
       quantity,
@@ -214,6 +245,10 @@ router.post("/estimates", asyncHandler(async (req, res) => {
   return billingTransaction(req, res, "create_estimate", 201, async client => {
     const patient = await assertPatientAccess(req, patientId, client);
     if (patientId && !patient) throw billingError(403, "No tienes acceso a ese paciente");
+    if (items.some(item => item.treatmentPlanItemId != null) && cleanItems.length !== items.length) {
+      throw billingError(400, "Los items vinculados requieren datos financieros validos");
+    }
+    await validateTreatmentPlanLinks(req, client, patientId, cleanItems);
     const estimate = await client.query(`
       INSERT INTO billing_estimates (organization_id, patient_id, patient_name, status, subtotal, discount, total, paid, balance, notes, created_by)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -222,9 +257,9 @@ router.post("/estimates", asyncHandler(async (req, res) => {
 
     for (const item of cleanItems) {
       await client.query(`
-        INSERT INTO billing_estimate_items (estimate_id, procedure_id, description, tooth_number, quantity, unit_price, gross_total, discount, total)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      `, [estimate.rows[0].id, item.procedureId, item.description, item.toothNumber, item.quantity, item.unitPrice, item.grossTotal, item.discount, item.total]);
+        INSERT INTO billing_estimate_items (estimate_id, procedure_id, description, tooth_number, quantity, unit_price, gross_total, discount, total, treatment_plan_item_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `, [estimate.rows[0].id, item.procedureId, item.description, item.toothNumber, item.quantity, item.unitPrice, item.grossTotal, item.discount, item.total, item.treatmentPlanItemId]);
     }
 
     if (paid > 0) {

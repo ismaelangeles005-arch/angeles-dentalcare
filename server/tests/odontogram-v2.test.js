@@ -247,7 +247,7 @@ test("forward migration/schema exact supported IDs, nullable, transactional, ord
   assert(migration.includes("RAISE EXCEPTION"));
   assert(!/UPDATE |DELETE FROM|odontogram_entries|PALMER/.test(migration));
   const names = JSON.parse(read("server/database/migrations.json"));
-  assert.equal(names.length, 28); assert.equal(names.at(-1), "migration_billing_payment_idempotency.sql");
+  assert.equal(names.length, 29); assert.equal(names.at(-1), "migration_treatment_plan_billing_link.sql");
 });
 
 test("historical UI option is local to correction; default retained; changing dentition only clears hidden UI selection", () => {

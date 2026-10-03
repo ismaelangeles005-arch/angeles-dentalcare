@@ -87,3 +87,25 @@ test('success clears attempt before list refresh errors, and a new payment gets 
   await h.context.submitPayment();await h.context.openPayment('estimate');await h.context.submitPayment();
   assert.equal(h.calls.length,2);assert.notEqual(h.calls[0].key,h.calls[1].key);
 });
+
+for (const linked of [false,true]) test('addItem transports '+(linked?'explicit plan link':'manual null')+' through submit and retry',async()=>{
+  const h=page();vm.runInContext('items = [];',h.context);
+  h.el('procedureSelect').selectedOptions=[{value:'procedure',dataset:{name:'Procedure'}}];
+  h.el('quantity').value='1';h.el('unitPrice').value='500';h.el('itemDiscount').value='0';
+  const id=linked?'00000000-0000-4000-8000-000000000030':null;
+  if(linked)h.context.addItem(id);else h.context.addItem();
+  h.options.failure=new Error('lost response');await h.submitEstimate();
+  assert.equal(h.calls[0].payload.items[0].treatmentPlanItemId,id);
+  assert.equal(h.calls[0].payload.items[0].procedureId,'procedure');
+  delete h.options.failure;await h.submitEstimate();
+  assert.equal(h.calls[1].payload.items[0].treatmentPlanItemId,id);
+  assert.equal(h.calls[0].key,h.calls[1].key);
+});
+test('Billing API passes nested treatmentPlanItemId unchanged without extra auth or requests',async()=>{
+  const source=read('api.js'),calls=[];
+  const context=vm.createContext({request:async(url,options)=>calls.push({url,...options})});
+  vm.runInContext(source.slice(source.indexOf('    function getBillingEstimates()'),source.indexOf('    function getAppointments()')),context);
+  const item={procedureId:'procedure',treatmentPlanItemId:'explicit-id',quantity:1,unitPrice:500};
+  await context.createBillingEstimate({patientId:'patient',items:[item]},'attempt-key');
+  assert.equal(calls.length,1);assert.deepEqual(JSON.parse(calls[0].body).items,[item]);
+});
