@@ -38,6 +38,12 @@ test("unsupported providers fail explicitly before accessing a local root", () =
   }
 });
 
+test("cloud selection fails without configuration and never falls back to local", () => {
+  assert.throws(() => createStorageAdapter({ provider: "cloud" }), {
+    message: "Cloud storage provider is not configured"
+  });
+});
+
 test("local provider preserves put/read/range/stat/delete behavior within the supplied root", async t => {
   const { localRoot } = fixture(t);
   const adapter = createStorageAdapter({ localRoot });
