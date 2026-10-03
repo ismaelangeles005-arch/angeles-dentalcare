@@ -27,5 +27,6 @@
   "migration_treatment_plan_acceptances.sql",
   "migration_odontogram_primary_teeth.sql",
   "migration_billing_payment_idempotency.sql",
-  "migration_treatment_plan_billing_link.sql"
+  "migration_treatment_plan_billing_link.sql",
+  "migration_billing_payment_allocations.sql"
 ]

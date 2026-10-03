@@ -298,7 +298,7 @@ test('migration adds only organization-scoped receipt uniqueness; no historical 
   assert.match(sql,/estimate_id UUID REFERENCES billing_estimates\(id\)/);
   assert(!/\b(?:UPDATE|DELETE|ALTER|INSERT)\b/i.test(sql));
   const manifest=JSON.parse(read('server/database/migrations.json'));
-  assert.equal(manifest.length,29); assert.equal(manifest.at(-1),'migration_treatment_plan_billing_link.sql');
+  assert.equal(manifest.length,30); assert.equal(manifest.at(-1),'migration_billing_payment_allocations.sql');
 });
 
 const planItemId = uuid(30), procedureId = uuid(31);

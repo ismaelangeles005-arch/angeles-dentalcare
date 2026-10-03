@@ -365,4 +365,158 @@ router.patch("/estimates/:id/status", asyncHandler(async (req, res) => {
   });
 }));
 
+function allocationUuid(value) {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+// Integer cents avoid floating-point capacity errors; pg NUMERIC values are strings.
+function allocationCents(value) {
+  const [whole, fraction = ""] = String(value).split(".");
+  return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
+}
+
+function allocationAmount(cents) {
+  return `${cents / 100n}.${String(cents % 100n).padStart(2, "0")}`;
+}
+
+async function allocationTransaction(req, res, operation, target, work) {
+  const body = req.body || {};
+  if (!allocationUuid(target) || !allocationUuid(body.idempotencyKey)) {
+    return res.status(400).json({ message: "Identificador o clave de idempotencia UUID invalido" });
+  }
+  const { idempotencyKey, ...material } = body;
+  const hash = createHash("sha256").update(JSON.stringify(canonical({
+    operation, target: target.toLowerCase(), actor: req.user.id, body: material
+  }))).digest("hex");
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+    const claim = await client.query(`INSERT INTO billing_allocation_operations
+      (organization_id, idempotency_key, request_hash) VALUES ($1, $2, $3)
+      ON CONFLICT (organization_id, idempotency_key) DO NOTHING RETURNING idempotency_key`,
+    [req.user.organizationId, idempotencyKey, hash]);
+    if (!claim.rows.length) {
+      const prior = await client.query(`SELECT request_hash, estimate_id, response_status, response_body
+        FROM billing_allocation_operations WHERE organization_id = $1 AND idempotency_key = $2`,
+      [req.user.organizationId, idempotencyKey]);
+      const receipt = prior.rows[0];
+      if (!receipt || receipt.request_hash !== hash || !receipt.response_body) {
+        throw billingError(409, "La clave de idempotencia corresponde a otro intento o datos diferentes");
+      }
+      await lockEstimate(req, client, receipt.estimate_id);
+      await client.query("COMMIT");
+      return res.status(receipt.response_status).json(receipt.response_body);
+    }
+    const result = await work(client);
+    await client.query(`UPDATE billing_allocation_operations
+      SET estimate_id = $3, response_status = $4, response_body = $5::jsonb
+      WHERE organization_id = $1 AND idempotency_key = $2`,
+    [req.user.organizationId, idempotencyKey, result.estimate.id, 201, JSON.stringify(result)]);
+    await client.query("COMMIT");
+    return res.status(201).json(result);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    if (error.billingStatus) return res.status(error.billingStatus).json({ message: error.message });
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function lockAllocationTargets(req, client, paymentId, itemId) {
+  const lookup = await client.query(`SELECT estimate_id FROM billing_payments
+    WHERE id = $1 AND organization_id = $2 AND deleted_at IS NULL`, [paymentId, req.user.organizationId]);
+  if (!lookup.rows.length) throw billingError(404, "Pago no encontrado");
+  // Same order for create/reverse/replay: receipt -> estimate -> payment -> item.
+  // Estimate lock also serializes with existing payment/status operations.
+  const estimate = await lockEstimate(req, client, lookup.rows[0].estimate_id);
+  const payments = await client.query(`SELECT bp.* FROM billing_payments bp
+    WHERE bp.id = $1 AND bp.organization_id = $2 AND bp.estimate_id = $3
+      AND bp.deleted_at IS NULL FOR UPDATE`, [paymentId, req.user.organizationId, estimate.id]);
+  if (!payments.rows.length) throw billingError(404, "Pago no encontrado");
+  const items = await client.query(`SELECT i.* FROM billing_estimate_items i
+    JOIN billing_estimates e ON e.id = i.estimate_id
+    WHERE i.id = $1 AND e.organization_id = $2 AND e.deleted_at IS NULL FOR UPDATE OF i`,
+  [itemId, req.user.organizationId]);
+  if (!items.rows.length) throw billingError(404, "Item no encontrado");
+  if (items.rows[0].estimate_id !== estimate.id) {
+    throw billingError(409, "El pago y el item deben pertenecer al mismo presupuesto");
+  }
+  return { estimate, payment: payments.rows[0], item: items.rows[0] };
+}
+
+async function allocationBalances(req, client, targets) {
+  const { payment, item, estimate } = targets;
+  const sums = await client.query(`SELECT
+    COALESCE(SUM(a.amount) FILTER (WHERE a.payment_id = $2), 0) AS payment_allocated,
+    COALESCE(SUM(a.amount) FILTER (WHERE a.billing_estimate_item_id = $3), 0) AS item_allocated
+    FROM billing_payment_allocations a
+    WHERE a.organization_id = $1 AND (a.payment_id = $2 OR a.billing_estimate_item_id = $3)
+      AND NOT EXISTS (SELECT 1 FROM billing_payment_allocation_reversals r
+        WHERE r.allocation_id = a.id AND r.organization_id = a.organization_id)`,
+  [req.user.organizationId, payment.id, item.id]);
+  const applied = sums.rows[0];
+  return {
+    payment: { id: payment.id, amount: payment.amount, allocated: applied.payment_allocated,
+      remaining: allocationAmount(allocationCents(payment.amount) - allocationCents(applied.payment_allocated)) },
+    item: { id: item.id, total: item.total, allocated: applied.item_allocated,
+      remaining: allocationAmount(allocationCents(item.total) - allocationCents(applied.item_allocated)) },
+    estimate: { id: estimate.id, paid: estimate.paid, balance: estimate.balance, status: estimate.status }
+  };
+}
+
+router.post("/payments/:paymentId/allocations", asyncHandler(async (req, res) => {
+  const body = req.body || {};
+  const amount = (typeof body.amount === "string" || typeof body.amount === "number") ? String(body.amount) : "";
+  if (!allocationUuid(body.billingEstimateItemId) || !/^\d{1,10}(?:\.\d{1,2})?$/.test(amount) || allocationCents(amount) <= 0n
+      || Object.keys(body).some(key => !["billingEstimateItemId", "amount", "idempotencyKey"].includes(key))) {
+    return res.status(400).json({ message: "Item o monto invalido; usa un monto positivo con hasta dos decimales" });
+  }
+  return allocationTransaction(req, res, "allocate", req.params.paymentId, async client => {
+    const targets = await lockAllocationTargets(req, client, req.params.paymentId, body.billingEstimateItemId);
+    if (targets.estimate.status === "cancelado") throw billingError(409, "No se puede distribuir un pago de un presupuesto cancelado");
+    const before = await allocationBalances(req, client, targets);
+    const cents = allocationCents(amount);
+    if (cents > allocationCents(before.payment.remaining)) throw billingError(409, "El monto supera el disponible del pago");
+    if (cents > allocationCents(before.item.remaining)) throw billingError(409, "El monto supera el pendiente del item");
+    const inserted = await client.query(`INSERT INTO billing_payment_allocations
+      (organization_id, payment_id, billing_estimate_item_id, amount) VALUES ($1, $2, $3, $4) RETURNING *`,
+    [req.user.organizationId, targets.payment.id, targets.item.id, allocationAmount(cents)]);
+    const allocation = inserted.rows[0];
+    await writeAuditLog(req, "allocate_payment", "billing_payment_allocations", allocation.id, {
+      allocationId: allocation.id, paymentId: targets.payment.id, estimateId: targets.estimate.id,
+      billingEstimateItemId: targets.item.id, amount: allocation.amount
+    }, client);
+    return { allocation, ...await allocationBalances(req, client, targets) };
+  });
+}));
+
+router.post("/allocations/:allocationId/reverse", asyncHandler(async (req, res) => {
+  const body = req.body || {};
+  if (typeof body.reason !== "string" || !body.reason.trim() || body.reason.trim().length > 1000
+      || Object.keys(body).some(key => !["reason", "idempotencyKey"].includes(key))) {
+    return res.status(400).json({ message: "Indica un motivo de hasta 1000 caracteres; la reversion es total y no acepta monto" });
+  }
+  return allocationTransaction(req, res, "reverse", req.params.allocationId, async client => {
+    const found = await client.query(`SELECT a.* FROM billing_payment_allocations a
+      WHERE a.id = $1 AND a.organization_id = $2`, [req.params.allocationId, req.user.organizationId]);
+    if (!found.rows.length) throw billingError(404, "Allocation no encontrada");
+    const allocation = found.rows[0];
+    const targets = await lockAllocationTargets(req, client, allocation.payment_id, allocation.billing_estimate_item_id);
+    const prior = await client.query(`SELECT id FROM billing_payment_allocation_reversals
+      WHERE allocation_id = $1 AND organization_id = $2`, [allocation.id, req.user.organizationId]);
+    if (prior.rows.length) throw billingError(409, "Esta allocation ya fue revertida totalmente");
+    const inserted = await client.query(`INSERT INTO billing_payment_allocation_reversals
+      (organization_id, allocation_id, reason) VALUES ($1, $2, $3) RETURNING *`,
+    [req.user.organizationId, allocation.id, body.reason.trim()]);
+    const reversal = inserted.rows[0];
+    await writeAuditLog(req, "reverse_payment_allocation", "billing_payment_allocation_reversals", reversal.id, {
+      reversalId: reversal.id, allocationId: allocation.id, paymentId: targets.payment.id,
+      estimateId: targets.estimate.id, billingEstimateItemId: targets.item.id,
+      amount: allocation.amount, reason: reversal.reason
+    }, client);
+    return { allocation, reversal, ...await allocationBalances(req, client, targets) };
+  });
+}));
+
 module.exports = router;
