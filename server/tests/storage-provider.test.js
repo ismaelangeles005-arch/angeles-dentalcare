@@ -39,8 +39,47 @@ test("unsupported providers fail explicitly before accessing a local root", () =
 });
 
 test("cloud selection fails without configuration and never falls back to local", () => {
-  assert.throws(() => createStorageAdapter({ provider: "cloud" }), {
-    message: "Cloud storage provider is not configured"
+  assert.throws(() => createStorageAdapter({ provider: "cloud", env: {} }), {
+    message: "SUPABASE_URL is required"
+  });
+});
+
+test("cloud factory composes Supabase from explicit environment without a network call", () => {
+  const vm = require("node:vm");
+  const { createRequire } = require("node:module");
+  const CloudStorageAdapter = require("../src/storage/CloudStorageAdapter");
+  const providerFile = require.resolve("../src/storage/providers/SupabaseStorageProvider");
+  const providerModule = { exports: {} };
+  const env = { SUPABASE_URL: "https://storage.example.invalid", SUPABASE_SECRET_KEY: "test-only-placeholder", SUPABASE_STORAGE_BUCKET: "test-private" };
+  const calls = [];
+  const actualRequire = createRequire(providerFile);
+  vm.runInNewContext(fs.readFileSync(providerFile, "utf8"), { module: providerModule, URL,
+    require(name) {
+      if (name === "@supabase/supabase-js") return { createClient(url, key, options) {
+        calls.push({ url, key, options });
+        return { storage: { from(bucket) { assert.equal(bucket, env.SUPABASE_STORAGE_BUCKET);
+          return { upload() {}, download() {}, info() {}, remove() {} }; } } };
+      } };
+      return actualRequire(name);
+    }
+  });
+  const factoryModule = { exports: {} };
+  vm.runInNewContext(fs.readFileSync(require.resolve("../src/storage/createStorageAdapter"), "utf8"), {
+    module: factoryModule, require(name) {
+      if (name === "./LocalStorageAdapter") return LocalStorageAdapter;
+      if (name === "./CloudStorageAdapter") return CloudStorageAdapter;
+      if (name === "./providers/SupabaseStorageProvider") return providerModule.exports;
+      throw new Error("Unexpected dependency");
+    }
+  });
+  const storage = factoryModule.exports({ provider: "cloud", env });
+  assert(storage instanceof CloudStorageAdapter);
+  assert(storage.provider instanceof providerModule.exports);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, env.SUPABASE_URL);
+  assert.equal(calls[0].key, env.SUPABASE_SECRET_KEY);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[0].options)), {
+    auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false }
   });
 });
 
