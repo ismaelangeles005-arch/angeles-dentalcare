@@ -8,6 +8,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"><link rel="stylesheet" href="styles.css">
     <style>
         .main{flex:1;padding:30px;min-width:0}.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}.panel{background:#fff;border-radius:16px;padding:22px;box-shadow:0 8px 24px rgba(15,23,42,.08);margin-bottom:20px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px}input,select,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px}label{font-weight:bold;color:#334155;display:grid;gap:6px}.primary-btn{background:#2563eb;color:#fff;border:0;border-radius:10px;padding:12px 14px;font-weight:bold}.secondary-btn{background:#e2e8f0;color:#0f172a;border:0;border-radius:10px;padding:12px 14px;font-weight:bold}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}.summary div{background:#f8fafc;border-radius:12px;padding:14px}.items,.estimate-list,.history-list{display:grid;gap:10px}.item-row{display:grid;grid-template-columns:minmax(0,1.6fr) 70px 110px 110px 110px 44px;gap:8px;align-items:center;padding:12px;background:#f8fafc;border-radius:12px}.estimate-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto minmax(410px,auto);gap:8px;align-items:center;padding:12px;background:#f8fafc;border-radius:12px}.history-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#fff}.icon-btn{height:42px;border:0;border-radius:10px;background:#dc2626;color:#fff}.badge{display:inline-flex;padding:6px 10px;border-radius:999px;background:#dbeafe;color:#1e40af;font-size:12px;font-weight:800}.badge.pagado{background:#dcfce7;color:#166534}.badge.en_deuda{background:#fee2e2;color:#991b1b}.badge.pendiente{background:#fef3c7;color:#92400e}.badge.cancelado{background:#e5e7eb;color:#374151}.billing-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}.billing-actions button{border:0;border-radius:8px;padding:8px 9px;background:#2563eb;color:#fff;font-weight:700}.billing-actions .debt{background:#b45309}.billing-actions .paid{background:#16a34a}.billing-actions .cancel{background:#dc2626}.billing-actions .print{background:#475569}.billing-actions .payment{background:#0f766e}.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.52);display:none;align-items:center;justify-content:center;padding:18px;z-index:1000}.modal-overlay.active{display:flex}.payment-modal{width:min(100%,480px);background:#fff;border-radius:16px;padding:22px;box-shadow:0 24px 70px rgba(15,23,42,.28)}.payment-info{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin:14px 0;display:grid;gap:6px}.quick-pay{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}.muted{color:#64748b;font-size:13px}@media(max-width:980px){body{display:block}.sidebar{width:100%;min-width:0}.main{padding:20px}.topbar,.item-row,.estimate-row,.history-row{display:grid;grid-template-columns:1fr}.billing-actions,.modal-actions{justify-content:flex-start}.quick-pay{grid-template-columns:1fr}}
+        .applications-modal{width:min(100%,1000px);max-height:90dvh;overflow-y:auto;background:#fff;border-radius:12px;padding:24px;min-width:0}
+        .applications-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.applications-heading h2{margin:0}
+        .applications-modal section{margin-top:20px;border-top:1px solid #e2e8f0;padding-top:14px}
+        .applications-modal h3{font-size:16px;margin:0 0 12px}.application-line{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,2fr) minmax(100px,1fr);gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid #e2e8f0}
+        .application-line>*{min-width:0;overflow-wrap:anywhere}.application-line label{font-size:13px}
+        .application-facts{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px}.application-facts span{white-space:nowrap}
+        .application-plan{display:inline-block;font-size:12px;color:#166534;margin-top:4px}.application-reversed{color:#64748b}
+        .application-status{min-height:24px;margin:12px 0;white-space:pre-line}.application-status.error{color:#991b1b}
+        .application-summary{display:flex;flex-wrap:wrap;gap:12px 24px;margin:12px 0;font-variant-numeric:tabular-nums}
+        .application-footer{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px}
+        .applications-modal button:disabled{opacity:.6;cursor:not-allowed}.applications-modal :focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+        .application-confirm{display:flex;align-items:center;gap:10px;margin:14px 0}.application-confirm input{width:20px;height:20px;flex-shrink:0}
+        #applicationReversal{border:1px solid #cbd5e1;border-radius:8px;padding:16px;margin-top:16px}
+        @media(max-width:700px){.applications-modal{padding:16px}.application-line{grid-template-columns:1fr}.application-footer button{width:100%}.application-summary{display:grid;gap:8px}.applications-heading h2{font-size:20px}}
     </style>
 </head>
 <body>
@@ -18,6 +32,27 @@
         <section class="panel"><h2>Presupuestos recientes</h2><div class="estimate-list" id="estimatesList"><div class="empty-state">Cargando...</div></div></section>
     </main>
     <div class="modal-overlay" id="paymentModal" onclick="if(event.target===this) closePaymentModal()"><div class="payment-modal"><h2>Registrar pago</h2><div class="payment-info"><strong id="paymentPatient">Paciente</strong><span>Total: <b id="paymentTotal">RD$0.00</b></span><span>Pagado: <b id="paymentPaid">RD$0.00</b></span><span>Pendiente: <b id="paymentBalance">RD$0.00</b></span></div><div class="quick-pay"><button class="secondary-btn" type="button" onclick="setPaymentAmount('total')">Pagar monto total</button><button class="secondary-btn" type="button" onclick="setPaymentAmount('other')">Otro monto</button></div><label>Monto a pagar RD$<input id="paymentAmount" class="clean-number" type="number" min="0" step="0.01" value="0"></label><label style="margin-top:12px">Metodo de pago<select id="paymentMethod"><option value="efectivo">Efectivo</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option><option value="seguro">Seguro</option><option value="otro">Otro</option></select></label><label style="margin-top:12px">Nota del pago<input id="paymentNote" placeholder="Opcional"></label><div class="modal-actions"><button class="secondary-btn" type="button" onclick="closePaymentModal()">Cancelar</button><button class="primary-btn" type="button" onclick="submitPayment()">Registrar pago</button></div></div></div>
+    <div class="modal-overlay" id="applicationsModal" onclick="if(event.target===this) closePaymentApplications()">
+      <div class="applications-modal" role="dialog" aria-modal="true" aria-labelledby="applicationsTitle" tabindex="-1">
+        <header class="applications-heading"><h2 id="applicationsTitle">Pagos y aplicaciones</h2><button type="button" class="secondary-btn" aria-label="Cerrar pagos y aplicaciones" onclick="closePaymentApplications()"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></header>
+        <p id="applicationsPatient"></p>
+        <p id="applicationsStatus" class="application-status" role="status" aria-live="polite"></p>
+        <button id="applicationsReload" type="button" class="secondary-btn" onclick="reloadPaymentApplications()">Actualizar</button>
+        <section><h3>Tratamientos</h3><div id="applicationItems"></div></section>
+        <section><h3>Aplicar pago</h3><label>Pago<select id="applicationPayment" onchange="selectApplicationPayment()"></select></label>
+          <div class="application-summary" aria-live="polite"><span>Monto del pago: <strong id="applicationPaymentTotal"></strong></span><span>Monto disponible: <strong id="applicationAvailable"></strong></span><span>Restante: <strong id="applicationRemaining"></strong></span></div>
+          <div id="applicationInputs"></div>
+          <div class="application-footer"><button type="button" class="primary-btn" id="applicationSubmit" onclick="submitPaymentApplications()">Aplicar pago</button></div>
+        </section>
+        <section><h3>Aplicaciones registradas</h3><div id="applicationHistory"></div></section>
+        <section id="applicationReversal" hidden>
+          <h3>Revertir aplicación</h3><p id="applicationReversalSummary"></p>
+          <label>Motivo<textarea id="applicationReversalReason" rows="2" maxlength="1000" required></textarea></label>
+          <label class="application-confirm"><input type="checkbox" id="applicationReversalConfirm">Confirmo la reversión completa de esta aplicación.</label>
+          <div class="application-footer"><button type="button" class="secondary-btn" onclick="cancelApplicationReversal()">Cancelar</button><button type="button" class="primary-btn" id="applicationReverseSubmit" onclick="submitApplicationReversal()">Confirmar reversión total</button></div>
+        </section>
+      </div>
+    </div>
     <script src="api.js?v=20260630a"></script><script src="roles.js?v=20260630a"></script>
     <script type="text/plain" data-dental-page='{"active":"facturacion","allowedRoles":["head_admin","admin","recepcion","doctor"]}'>
         let patients=[], procedures=[], items=[], estimates=[], currentPaymentEstimate=null; const money=v=>new Intl.NumberFormat("es-DO",{style:"currency",currency:"DOP"}).format(Number(v||0));
@@ -31,7 +66,7 @@
         function totals(){const gross=items.reduce((s,i)=>s+Number(i.grossTotal||0),0);const lineDiscount=items.reduce((s,i)=>s+Number(i.discount||0),0);const general=Number(document.getElementById("discount").value||0);const paid=Number(document.getElementById("paid").value||0);const total=Math.max(0,gross-lineDiscount-general);return{gross,lineDiscount,general,discount:lineDiscount+general,paid,total,balance:Math.max(0,total-paid)};}
         function renderItems(){const list=document.getElementById("itemsList");list.innerHTML=items.length?items.map((i,idx)=>`<div class="item-row"><strong>${DentalRoles.escapeHtml(i.description)}${i.toothNumber?`<br><small>Pieza ${DentalRoles.escapeHtml(i.toothNumber)}</small>`:""}</strong><span>Cant. ${i.quantity}</span><span>${money(i.unitPrice)}</span><span>Rebaja ${money(i.discount)}</span><span>${money(i.total)}</span><button class="icon-btn" type="button" onclick="removeItem(${idx})"><i class="fa-solid fa-trash"></i></button></div>`).join(""):'<div class="empty-state">Agrega procedimientos al presupuesto.</div>';const t=totals();document.getElementById("grossText").textContent=money(t.gross);document.getElementById("discountText").textContent=money(t.discount);document.getElementById("totalText").textContent=money(t.total);document.getElementById("balanceText").textContent=money(t.balance);}
         function statusLabel(status){return{pendiente:"Pendiente",en_deuda:"En deuda",pagado:"Pagado",cancelado:"Cancelado",borrador:"Pendiente",aprobado:"Pendiente"}[status]||status;}
-        async function loadEstimates(){estimates=await DentalApi.getBillingEstimates();document.getElementById("estimatesList").innerHTML=estimates.length?estimates.map(e=>{const balance=Number(e.balance||0);const canPay=balance>0&&e.status!=="cancelado";return`<article class="estimate-row"><div><strong>${DentalRoles.escapeHtml(e.patient_name)}</strong><br><small>${DentalRoles.escapeHtml(e.procedures_summary||"")}</small><br><small>${new Date(e.created_at).toLocaleString("es-DO")}</small></div><span class="badge ${DentalRoles.escapeHtml(e.status)}">${DentalRoles.escapeHtml(statusLabel(e.status))}</span><strong>${money(e.total)}</strong><span>Pendiente: ${money(e.balance)}</span><div class="billing-actions">${canPay?`<button type="button" class="payment" onclick="openPayment('${e.id}')">Pagar</button>`:""}<button type="button" class="paid" onclick="changeEstimateStatus('${e.id}','pagado')">Pagado</button><button type="button" class="print" onclick="printInvoice('${e.id}')"><i class="fa-solid fa-print"></i> Factura</button><button type="button" class="cancel" onclick="changeEstimateStatus('${e.id}','cancelado')">Cancelar</button></div></article>`;}).join(""):'<div class="empty-state">No hay presupuestos.</div>';renderPatientHistory();}
+        async function loadEstimates(){estimates=await DentalApi.getBillingEstimates();document.getElementById("estimatesList").innerHTML=estimates.length?estimates.map(e=>{const balance=Number(e.balance||0);const canPay=balance>0&&e.status!=="cancelado";return`<article class="estimate-row"><div><strong>${DentalRoles.escapeHtml(e.patient_name)}</strong><br><small>${DentalRoles.escapeHtml(e.procedures_summary||"")}</small><br><small>${new Date(e.created_at).toLocaleString("es-DO")}</small></div><span class="badge ${DentalRoles.escapeHtml(e.status)}">${DentalRoles.escapeHtml(statusLabel(e.status))}</span><strong>${money(e.total)}</strong><span>Pendiente: ${money(e.balance)}</span><div class="billing-actions"><button type="button" class="payment" onclick="openPaymentApplications('${e.id}')">Aplicar pago</button>${canPay?`<button type="button" class="payment" onclick="openPayment('${e.id}')">Pagar</button>`:""}<button type="button" class="paid" onclick="changeEstimateStatus('${e.id}','pagado')">Pagado</button><button type="button" class="print" onclick="printInvoice('${e.id}')"><i class="fa-solid fa-print"></i> Factura</button><button type="button" class="cancel" onclick="changeEstimateStatus('${e.id}','cancelado')">Cancelar</button></div></article>`;}).join(""):'<div class="empty-state">No hay presupuestos.</div>';renderPatientHistory();}
         function renderPatientHistory(){const patientId=document.getElementById("patientSelect").value;const list=document.getElementById("patientHistory");if(!patientId){list.innerHTML='<div class="empty-state">Sin paciente seleccionado.</div>';return;}const rows=estimates.filter(e=>String(e.patient_id||"")===String(patientId));list.innerHTML=rows.length?rows.map(e=>`<div class="history-row"><div><strong>${DentalRoles.escapeHtml(e.procedures_summary||"Procedimientos")}</strong><br><small>${new Date(e.created_at).toLocaleString("es-DO")} · ${statusLabel(e.status)}</small></div><span>Pagado: ${money(e.paid)}</span><button class="secondary-btn" type="button" onclick="printInvoice('${e.id}')">Ver factura</button></div>`).join(""):'<div class="empty-state">Este paciente aun no tiene facturas.</div>';}
         // Keep unresolved attempts across modal close/reopen and network retries in this page.
         const billingAttempts = new Map();
@@ -64,6 +99,206 @@
         function invoiceText(value){return DentalRoles.escapeHtml(String(value??""));}
         async function printInvoice(id){try{const invoice=await DentalApi.getBillingEstimate(id);const created=new Date(invoice.created_at).toLocaleString("es-DO");const number=String(invoice.id).slice(0,8).toUpperCase();const title=invoice.status==="pagado"?"FACTURA / RECIBO":"PRESUPUESTO";const rows=(invoice.items||[]).map((item,index)=>`<tr><td>${index+1}</td><td>${invoiceText(item.description)}${item.tooth_number?`<br><small>Pieza dental: ${invoiceText(item.tooth_number)}</small>`:""}</td><td>${Number(item.quantity||1)}</td><td>${money(item.unit_price)}</td><td>${money(item.gross_total||item.total)}</td><td>${money(item.discount)}</td><td>${money(item.total)}</td></tr>`).join("");const payments=(invoice.payments||[]).map(p=>`<tr><td>${new Date(p.paid_at).toLocaleString("es-DO")}</td><td>${invoiceText(p.method)}</td><td>${invoiceText(p.note||"")}</td><td>${money(p.amount)}</td></tr>`).join("")||'<tr><td colspan="4">Sin pagos registrados.</td></tr>';const notes=invoice.notes?`<section class="notes"><strong>Notas:</strong><p>${invoiceText(invoice.notes)}</p></section>`:"";const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${title} ${number}</title><style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111827;margin:0;background:#eef2f7}.sheet{width:210mm;min-height:297mm;margin:0 auto;background:white;padding:18mm}.header{display:flex;justify-content:space-between;gap:24px;border-bottom:3px solid #2563eb;padding-bottom:18px}.brand h1{margin:0;color:#2563eb;font-size:30px}.brand p{margin:4px 0;color:#475569}.doc-title{text-align:right}.doc-title h2{margin:0;font-size:26px}.status{display:inline-block;margin-top:8px;padding:8px 12px;border-radius:999px;background:#dbeafe;color:#1e40af;font-weight:700}.status.pagado{background:#dcfce7;color:#166534}.status.en_deuda{background:#fee2e2;color:#991b1b}.section{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:16px}.box{border:1px solid #dbe3ef;border-radius:12px;padding:14px}.box h3{margin:0 0 8px;font-size:13px;color:#475569;text-transform:uppercase}table{width:100%;border-collapse:collapse;margin-top:20px;font-size:12px}th{background:#2563eb;color:white;text-align:left;padding:9px}td{border-bottom:1px solid #e5e7eb;padding:9px;vertical-align:top}td:nth-child(1),td:nth-child(3){text-align:center}td:nth-child(4),td:nth-child(5),td:nth-child(6),td:nth-child(7),.totals td,.payments td:last-child{text-align:right}.totals{margin-left:auto;width:340px}.totals td{border:0;padding:7px 10px}.totals .grand td{font-size:18px;font-weight:800;border-top:2px solid #2563eb}.notes{margin-top:18px;border:1px solid #dbe3ef;border-radius:12px;padding:14px}.footer{margin-top:34px;display:flex;justify-content:space-between;color:#64748b;font-size:12px}.signature{margin-top:42px;border-top:1px solid #94a3b8;width:230px;text-align:center;padding-top:8px}@media print{body{background:white}.sheet{margin:0;width:auto;min-height:auto}@page{size:A4;margin:12mm}}</style></head><body><main class="sheet"><header class="header"><div class="brand"><h1>Angeles DentalCare</h1><p>Clínica odontológica</p><p>República Dominicana</p></div><div class="doc-title"><h2>${title}</h2><p>No. ${number}</p><span class="status ${invoiceText(invoice.status)}">${invoiceText(statusLabel(invoice.status))}</span></div></header><section class="section"><div class="box"><h3>Paciente</h3><strong>${invoiceText(invoice.patient_name)}</strong></div><div class="box"><h3>Documento</h3><p>Fecha: ${created}</p><p>No. ${number}</p></div></section><table><thead><tr><th>#</th><th>Procedimiento</th><th>Cant.</th><th>Precio</th><th>Bruto</th><th>Rebaja</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><table class="totals"><tr><td>Subtotal bruto</td><td>${money(invoice.subtotal)}</td></tr><tr><td>Rebajas/descuentos</td><td>${money(invoice.discount)}</td></tr><tr class="grand"><td>Total</td><td>${money(invoice.total)}</td></tr><tr><td>Pagado</td><td>${money(invoice.paid)}</td></tr><tr><td>Pendiente</td><td>${money(invoice.balance)}</td></tr></table><h3>Historial de pagos</h3><table class="payments"><thead><tr><th>Fecha</th><th>Método</th><th>Nota</th><th>Monto</th></tr></thead><tbody>${payments}</tbody></table>${notes}<div class="signature">Autorizado por la clinica</div><footer class="footer"><span>Gracias por confiar en Angeles DentalCare.</span><span>Impreso desde MAELVEN Dental</span></footer></main><script>window.addEventListener("load",()=>setTimeout(()=>window.print(),250));<\/script></body></html>`;const win=window.open("","_blank","width=980,height=800");if(!win){DentalRoles.notify("Permite ventanas emergentes para imprimir la factura.","warning");return;}win.document.open();win.document.write(html);win.document.close();win.focus();}catch(error){DentalRoles.notify(error.message,"error");}}
         document.getElementById("estimateForm").addEventListener("submit",async e=>{e.preventDefault();const opt=document.getElementById("patientSelect").selectedOptions[0];if(!items.length){DentalRoles.notify("Agrega procedimientos.","warning");return;}const t=totals();try{await runBillingAttempt("create_estimate",{patientId:opt.value,patientName:opt.dataset.name,items,discount:t.general,paid:t.paid,paymentMethod:document.getElementById("initialPaymentMethod").value,notes:document.getElementById("notes").value},(payload,key)=>DentalApi.createBillingEstimate(payload,key));items=[];e.target.reset();document.getElementById("quantity").value=1;document.getElementById("unitPrice").value=0;document.getElementById("itemDiscount").value=0;document.getElementById("discount").value=0;document.getElementById("paid").value=0;renderItems();await loadEstimates();DentalRoles.notify("Registro guardado.","success");}catch(error){DentalRoles.notify(error.message,"error");}});
+        let applicationEstimateId=null, applicationData=null, applicationPaymentId=null, applicationReversalId=null;
+        let applicationBusy=false, applicationFresh=false, applicationVersion=0, applicationReturnFocus=null;
+        const applicationBatches=new Map();
+        const applicationEl=id=>document.getElementById(id);
+        function applicationCents(value){
+            const text=String(value??"");
+            if(!/^\d{1,10}(?:\.\d{1,2})?$/.test(text))return null;
+            const [whole,fraction=""]=text.split(".");
+            return Number(whole)*100+Number(fraction.padEnd(2,"0"));
+        }
+        function applicationMessage(message,error=false){
+            applicationEl("applicationsStatus").textContent=message;
+            applicationEl("applicationsStatus").classList.toggle("error",error);
+        }
+        function applicationControls(){
+            const modal=applicationEl("applicationsModal");
+            modal.querySelectorAll("button,input,textarea,select").forEach(control=>control.disabled=applicationBusy);
+            const batch=applicationBatches.get(applicationPaymentId);
+            applicationEl("applicationPayment").disabled=applicationBusy||!applicationFresh||!applicationData?.payments.length;
+            applicationEl("applicationSubmit").textContent=batch?"Reintentar pendientes":"Aplicar pago";
+            applicationEl("applicationSubmit").disabled=applicationBusy||(!batch&&(!applicationFresh||!applicationPaymentId||applicationData?.estimate.status==="cancelado"));
+            modal.querySelectorAll("[data-application-amount]").forEach(input=>input.disabled=applicationBusy||!!batch||!applicationFresh);
+        }
+        async function openPaymentApplications(id){
+            if(applicationBusy)return;
+            applicationReturnFocus=document.activeElement;
+            applicationEstimateId=id;applicationData=null;applicationPaymentId=null;applicationFresh=false;
+            cancelApplicationReversal();
+            applicationEl("applicationsModal").classList.add("active");
+            applicationEl("applicationItems").textContent="";
+            applicationEl("applicationInputs").textContent="";
+            applicationEl("applicationHistory").textContent="";
+            applicationEl("applicationPayment").innerHTML="";
+            applicationEl("applicationsPatient").textContent="";
+            await reloadPaymentApplications();
+            applicationEl("applicationsReload").focus();
+        }
+        function closePaymentApplications(){
+            if(applicationBusy)return;
+            applicationVersion++;
+            applicationEstimateId=null;applicationFresh=false;
+            applicationEl("applicationsModal").classList.remove("active");
+            applicationReturnFocus?.focus();
+        }
+        async function reloadPaymentApplications(quiet=false){
+            if(!applicationEstimateId)return false;
+            const version=++applicationVersion,id=applicationEstimateId;
+            applicationFresh=false;applicationControls();
+            if(!quiet)applicationMessage("Cargando pagos y aplicaciones...");
+            try{
+                const data=await DentalApi.getBillingAllocations(id);
+                if(version!==applicationVersion||id!==applicationEstimateId)return false;
+                applicationData=data;applicationFresh=true;
+                renderPaymentApplications();
+                if(!quiet)applicationMessage("");
+                return true;
+            }catch(error){
+                if(version===applicationVersion)applicationMessage("No se pudieron actualizar los saldos. "+error.message,true);
+                return false;
+            }finally{if(version===applicationVersion)applicationControls();}
+        }
+        function applicationFacts(item){
+            return '<div class="application-facts"><span>Total: '+money(item.total)+'</span><span>Aplicado: '+money(item.allocated)+'</span><span>Pendiente: '+money(item.remaining)+'</span></div>';
+        }
+        function renderPaymentApplications(){
+            const data=applicationData,esc=invoiceText;
+            applicationEl("applicationsPatient").textContent=data.estimate.patient_name;
+            applicationEl("applicationItems").innerHTML=data.items.map(item=>'<div class="application-line"><div><strong>'+esc(item.description)+'</strong>'+(item.treatment_plan_item_id?'<br><span class="application-plan">Plan de tratamiento</span>':'')+'</div><div class="application-facts"><span>Cantidad: '+esc(item.quantity)+'</span><span>Precio: '+money(item.unit_price)+'</span></div>'+applicationFacts(item)+'</div>').join("")||'<p class="muted">Sin tratamientos.</p>';
+            applicationEl("applicationPayment").innerHTML=data.payments.length?data.payments.map((p,index)=>'<option value="'+esc(p.id)+'">Pago '+(index+1)+' · '+money(p.amount)+' · '+esc(p.method)+' · '+esc(new Date(p.paid_at).toLocaleDateString("es-DO"))+'</option>').join(""):'<option value="">Sin pagos registrados</option>';
+            if(!data.payments.some(p=>p.id===applicationPaymentId))applicationPaymentId=data.payments.find(p=>applicationBatches.has(p.id)||Number(p.remaining)>0)?.id||data.payments[0]?.id||null;
+            applicationEl("applicationPayment").value=applicationPaymentId||"";
+            renderApplicationInputs();
+            applicationEl("applicationHistory").innerHTML=data.allocations.map((a,index)=>{
+                const item=data.items.find(i=>i.id===a.billing_estimate_item_id);
+                const paymentIndex=data.payments.findIndex(p=>p.id===a.payment_id);
+                const payment=paymentIndex<0?"Pago histórico":"Pago "+(paymentIndex+1);
+                return '<div class="application-line'+(a.reversal?' application-reversed':'')+'"><div><strong>'+esc(item?.description||"Tratamiento")+'</strong><br><small>'+esc(payment)+' · '+esc(new Date(a.created_at).toLocaleString("es-DO"))+'</small></div><div><strong>'+money(a.amount)+'</strong><br><span>'+(a.reversal?'Aplicación revertida':'Aplicado')+'</span>'+(a.reversal?'<p>'+esc(a.reversal.reason)+'</p><small>'+esc(new Date(a.reversal.created_at).toLocaleString("es-DO"))+'</small>':'')+'</div><div>'+(a.reversal?'':'<button class="secondary-btn" type="button" onclick="openApplicationReversal('+index+')">Revertir aplicación</button>')+'</div></div>';
+            }).join("")||'<p class="muted">Sin aplicaciones registradas.</p>';
+        }
+        function selectApplicationPayment(){
+            if(applicationBusy)return;
+            applicationPaymentId=applicationEl("applicationPayment").value||null;
+            cancelApplicationReversal();renderApplicationInputs();applicationControls();
+        }
+        function renderApplicationInputs(){
+            const payment=applicationData.payments.find(p=>p.id===applicationPaymentId);
+            const batch=applicationBatches.get(applicationPaymentId);
+            applicationEl("applicationPaymentTotal").textContent=money(payment?.amount);
+            applicationEl("applicationAvailable").textContent=money(payment?.remaining);
+            const eligible=applicationData.items.filter(i=>Number(i.remaining)>0||batch?.some(row=>row.payload.billingEstimateItemId===i.id&&!row.done));
+            applicationEl("applicationInputs").innerHTML=payment&&applicationData.estimate.status!=="cancelado"?eligible.map(item=>{
+                const index=applicationData.items.indexOf(item),pending=batch?.find(row=>row.payload.billingEstimateItemId===item.id&&!row.done);
+                return '<div class="application-line"><strong>'+invoiceText(item.description)+'</strong>'+applicationFacts(item)+'<label for="applicationAmount'+index+'">Monto a aplicar<input id="applicationAmount'+index+'" data-application-amount="'+index+'" type="number" inputmode="decimal" min="0" step="0.01" max="'+invoiceText(item.remaining)+'" value="'+invoiceText(pending?.payload.amount||"")+'" oninput="updateApplicationRemaining()"></label></div>';
+            }).join("")||'<p class="muted">Sin tratamientos pendientes.</p>':'<p class="muted">'+(applicationData.estimate.status==="cancelado"?"Presupuesto cancelado.":"Registra un pago para aplicarlo a los tratamientos.")+'</p>';
+            updateApplicationRemaining();
+        }
+        function applicationDraft(){
+            const payment=applicationData?.payments.find(p=>p.id===applicationPaymentId);
+            if(!payment)throw new Error("Selecciona un pago.");
+            let total=0;const rows=[];
+            applicationEl("applicationInputs").querySelectorAll("[data-application-amount]").forEach(input=>{
+                if(input.value==="")return;
+                const value=applicationCents(input.value),item=applicationData.items[Number(input.dataset.applicationAmount)];
+                if(value===null)throw new Error("Usa montos positivos con hasta dos decimales.");
+                if(value===0)return;
+                if(value>applicationCents(item.remaining))throw new Error("El monto supera el pendiente de "+item.description+".");
+                total+=value;rows.push({payload:{billingEstimateItemId:item.id,amount:(value/100).toFixed(2)},name:item.description,done:false});
+            });
+            if(total>applicationCents(payment.remaining))throw new Error("El monto supera el disponible del pago.");
+            return {rows,remaining:applicationCents(payment.remaining)-total};
+        }
+        function updateApplicationRemaining(){
+            if(applicationBatches.has(applicationPaymentId)){applicationEl("applicationRemaining").textContent="Pendiente de confirmar";return;}
+            try{applicationEl("applicationRemaining").textContent=money(applicationDraft().remaining/100);}
+            catch(error){applicationEl("applicationRemaining").textContent=error.message;}
+        }
+        async function submitPaymentApplications(){
+            if(applicationBusy||!applicationPaymentId)return;
+            const paymentId=applicationPaymentId;
+            let batch=applicationBatches.get(paymentId);
+            try{
+                if(!batch){
+                    if(!applicationFresh)throw new Error("Actualiza los saldos antes de aplicar el pago.");
+                    batch=applicationDraft().rows;
+                    if(!batch.length)throw new Error("Introduce al menos un monto a aplicar.");
+                    batch.forEach(row=>row.key=DentalApi.createBillingIdempotencyKey());
+                    applicationBatches.set(paymentId,batch);
+                }
+            }catch(error){applicationMessage(error.message,true);return;}
+            applicationBusy=true;applicationControls();
+            let failure=null,failedRow=null;
+            try{
+                for(const row of batch){
+                    if(row.done)continue;
+                    try{
+                        await DentalApi.allocateBillingPayment(paymentId,row.payload,row.key);
+                        row.done=true;
+                    }catch(error){failure=error;failedRow=row;break;}
+                }
+                if(!failure||[400,403,404,409].includes(failure.status))applicationBatches.delete(paymentId);
+                const confirmed=batch.filter(row=>row.done).map(row=>row.name);
+                const refreshed=await reloadPaymentApplications(true);
+                let message=confirmed.length?"Aplicado: "+confirmed.join(" · ")+".":"";
+                if(failure)message+="\n"+([400,403,404,409].includes(failure.status)?"No se aplicó a ":"No se pudo confirmar: ")+failedRow.name+". "+failure.message;
+                else message=message||"Pago aplicado.";
+                if(failure){
+                    const unsent=batch.slice(batch.indexOf(failedRow)+1).filter(row=>!row.done).map(row=>row.name);
+                    if(unsent.length)message+="\nSin enviar: "+unsent.join(" · ")+".";
+                }
+                if(!refreshed)message+="\nNo se pudieron actualizar los saldos. Pulsa Actualizar.";
+                applicationMessage(message,!!failure||!refreshed);
+            }finally{applicationBusy=false;applicationControls();}
+        }
+        function openApplicationReversal(index){
+            if(applicationBusy||!applicationFresh)return;
+            const entry=applicationData.allocations[index];
+            if(!entry||entry.reversal)return;
+            applicationReversalId=entry.id;
+            const item=applicationData.items.find(i=>i.id===entry.billing_estimate_item_id);
+            applicationEl("applicationReversalSummary").textContent="Se revertirá la aplicación completa de "+money(entry.amount)+" a "+(item?.description||"este tratamiento")+". El pago recibido se conserva.";
+            const attempt=billingAttempts.get("allocation-reverse:"+entry.id);
+            applicationEl("applicationReversalReason").value=attempt?.payload.reason||"";
+            applicationEl("applicationReversalConfirm").checked=false;
+            applicationEl("applicationReversal").hidden=false;
+            applicationEl("applicationReversalReason").focus();
+        }
+        function cancelApplicationReversal(){
+            if(applicationBusy)return;
+            const wasOpen=!applicationEl("applicationReversal").hidden;
+            applicationReversalId=null;applicationEl("applicationReversal").hidden=true;
+            applicationEl("applicationReversalReason").value="";applicationEl("applicationReversalConfirm").checked=false;
+            if(wasOpen)applicationEl("applicationsReload").focus();
+        }
+        async function submitApplicationReversal(){
+            if(applicationBusy||!applicationReversalId)return;
+            const id=applicationReversalId,reason=applicationEl("applicationReversalReason").value.trim();
+            if(!reason||reason.length>1000||!applicationEl("applicationReversalConfirm").checked){applicationMessage("Indica el motivo y confirma la reversión total.",true);return;}
+            applicationBusy=true;applicationControls();
+            try{
+                await runBillingAttempt("allocation-reverse:"+id,{reason},(payload,key)=>DentalApi.reverseBillingAllocation(id,payload.reason,key));
+                applicationEl("applicationReversal").hidden=true;applicationReversalId=null;
+                const refreshed=await reloadPaymentApplications(true);
+                applicationMessage(refreshed?"Aplicación revertida. El pago recibido se conserva.":"Aplicación revertida. Actualiza para consultar los saldos.",!refreshed);
+            }catch(error){
+                if([400,403,404,409].includes(error.status))billingAttempts.delete("allocation-reverse:"+id);
+                await reloadPaymentApplications(true);applicationMessage(error.message,true);
+            }finally{
+                applicationBusy=false;applicationControls();
+                if(applicationEl("applicationReversal").hidden)applicationEl("applicationsReload").focus();
+            }
+        }
+        applicationEl("applicationsModal").addEventListener("keydown",event=>{
+            if(event.key==="Escape"){event.preventDefault();closePaymentApplications();}
+            if(event.key!=="Tab")return;
+            const controls=[...applicationEl("applicationsModal").querySelectorAll("button,input,select,textarea")].filter(el=>!el.disabled&&el.getClientRects().length);
+            if(!controls.length){event.preventDefault();return;}
+            const first=controls[0],last=controls[controls.length-1];
+            if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+            else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+        });
         init();renderItems();
     </script>
 </body>

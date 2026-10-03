@@ -567,6 +567,24 @@
         });
     }
 
+    function getBillingAllocations(id) {
+        return request("/billing/estimates/" + encodeURIComponent(id) + "/allocations");
+    }
+
+    function allocateBillingPayment(paymentId, allocation, idempotencyKey) {
+        return request("/billing/payments/" + encodeURIComponent(paymentId) + "/allocations", {
+            method: "POST",
+            body: JSON.stringify({ billingEstimateItemId: allocation.billingEstimateItemId, amount: allocation.amount, idempotencyKey })
+        });
+    }
+
+    function reverseBillingAllocation(allocationId, reason, idempotencyKey) {
+        return request("/billing/allocations/" + encodeURIComponent(allocationId) + "/reverse", {
+            method: "POST",
+            body: JSON.stringify({ reason, idempotencyKey })
+        });
+    }
+
     function getAppointments() {
         return request("/appointments");
     }
@@ -687,6 +705,9 @@
         createBillingEstimate,
         updateBillingEstimateStatus,
         addBillingPayment,
+        getBillingAllocations,
+        allocateBillingPayment,
+        reverseBillingAllocation,
         getAppointments,
         createAppointment,
         updateAppointmentStatus,

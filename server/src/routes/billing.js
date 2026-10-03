@@ -365,6 +365,46 @@ router.patch("/estimates/:id/status", asyncHandler(async (req, res) => {
   });
 }));
 
+// A single read snapshot supplies the UI without changing financial write contracts.
+router.get("/estimates/:id/allocations", asyncHandler(async (req, res) => {
+  if (!allocationUuid(req.params.id)) return res.status(400).json({ message: "Identificador de presupuesto invalido" });
+  const access = estimateAccessWhere(req, "e", [req.params.id]);
+  const result = await db.query(`SELECT e.id, e.patient_name, e.status, e.total, e.paid, e.balance,
+    COALESCE((SELECT jsonb_agg(jsonb_build_object(
+      'id', i.id, 'description', i.description, 'quantity', i.quantity,
+      'unit_price', i.unit_price::text, 'total', i.total::text,
+      'treatment_plan_item_id', i.treatment_plan_item_id) ORDER BY i.id)
+      FROM billing_estimate_items i WHERE i.estimate_id = e.id), '[]'::jsonb) AS items,
+    COALESCE((SELECT jsonb_agg(jsonb_build_object(
+      'id', p.id, 'amount', p.amount::text, 'method', p.method, 'paid_at', p.paid_at) ORDER BY p.paid_at, p.id)
+      FROM billing_payments p WHERE p.estimate_id = e.id AND p.organization_id = e.organization_id
+        AND p.deleted_at IS NULL), '[]'::jsonb) AS payments,
+    COALESCE((SELECT jsonb_agg(jsonb_build_object(
+      'id', a.id, 'payment_id', a.payment_id, 'billing_estimate_item_id', a.billing_estimate_item_id,
+      'amount', a.amount::text, 'created_at', a.created_at,
+      'reversal', CASE WHEN r.id IS NULL THEN NULL ELSE jsonb_build_object(
+        'id', r.id, 'reason', r.reason, 'created_at', r.created_at) END) ORDER BY a.created_at, a.id)
+      FROM billing_payment_allocations a
+      JOIN billing_payments p ON p.id = a.payment_id AND p.organization_id = a.organization_id
+      JOIN billing_estimate_items i ON i.id = a.billing_estimate_item_id AND i.estimate_id = p.estimate_id
+      LEFT JOIN billing_payment_allocation_reversals r ON r.allocation_id = a.id AND r.organization_id = a.organization_id
+      WHERE p.estimate_id = e.id AND a.organization_id = e.organization_id), '[]'::jsonb) AS allocations
+    FROM billing_estimates e WHERE e.id = $1 AND ${access.where}`, access.params);
+  if (!result.rows.length) return res.status(404).json({ message: "Presupuesto no encontrado" });
+  const { items, payments, allocations, ...estimate } = result.rows[0];
+  const byPayment = new Map(), byItem = new Map();
+  for (const entry of allocations) {
+    if (entry.reversal) continue;
+    const cents = allocationCents(entry.amount);
+    byPayment.set(entry.payment_id, (byPayment.get(entry.payment_id) || 0n) + cents);
+    byItem.set(entry.billing_estimate_item_id, (byItem.get(entry.billing_estimate_item_id) || 0n) + cents);
+  }
+  const balances = (row, total, applied) => ({ ...row, allocated: allocationAmount(applied), remaining: allocationAmount(allocationCents(total) - applied) });
+  return res.json({ estimate, allocations,
+    items: items.map(i => balances(i, i.total, byItem.get(i.id) || 0n)),
+    payments: payments.map(p => balances(p, p.amount, byPayment.get(p.id) || 0n)) });
+}));
+
 function allocationUuid(value) {
   return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
