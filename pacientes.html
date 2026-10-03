@@ -3063,6 +3063,7 @@
                     <p>Pieza: ${esc(piezaPlanPaciente(item.tooth_id))}${item.surface ? ` · ${esc(surface(item.surface))}` : " · Pieza completa"}</p>
                     ${item.status === "COMPLETED" ? `<p>Fecha: ${esc(displayDate(completedEntry?.created_at))}</p>` : ""}
                     <div class="plan-item-facts"><span>Cantidad: ${esc(String(item.quantity ?? 1))}</span><strong>Total: RD$${esc(item.final_amount ?? "No disponible")}</strong></div>
+                    ${puedeFacturarItemPlan(state, item) ? `<button type="button" class="confirm-secondary" data-billing-plan-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="facturarItemPlanPaciente(this.dataset.billingPlanItem)">Facturar</button>` : ""}
                     ${plan.status === "IN_PROGRESS" && item.status === "ACCEPTED" ? `<button type="button" class="confirm-secondary plan-clinical" data-execution-item="${esc(item.id)}" ${state.busy ? "disabled" : ""} onclick="ejecutarPlanPaciente(this.dataset.executionItem, 'IN_PROGRESS')">Comenzar tratamiento</button>` : ""}
                     ${plan.status === "IN_PROGRESS" && item.status === "IN_PROGRESS" ? `<button type="button" class="confirm-secondary plan-clinical" data-treatment-item="${esc(item.id)}" data-execution-status="COMPLETED" ${state.busy ? "disabled" : ""} onclick="abrirRegistroRealizadoDesdePlan(this.dataset.treatmentItem)">Registrar como realizado</button>` : ""}
                     ${["PRESENTED", "ACCEPTED", "PARTIALLY_ACCEPTED", "REJECTED", "POSTPONED"].includes(plan.status) && !(plan.acceptances || []).length && ["PROPOSED", "ACCEPTED", "REJECTED", "POSTPONED"].includes(item.status) ? `
@@ -3097,6 +3098,28 @@
                     <button type="submit" class="add-btn" ${state.busy ? "disabled" : ""}>Agregar seleccionadas</button>
                 </form>` : ""}`;
             if (numberingLabel) (document.getElementById("planToothTools") || document.getElementById("treatmentPlanNumberingHome")).appendChild(numberingLabel);
+        }
+
+        function puedeFacturarItemPlan(state, item) {
+            const validId = value => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+            const eligible = ["ACCEPTED", "PARTIALLY_ACCEPTED", "IN_PROGRESS"];
+            const plan = state?.plan;
+            return !!(plan && item && eligible.includes(plan.status) && eligible.includes(item.status)
+                && validId(state.patient?.id) && validId(plan.patient_id) && state.patient.id.toLowerCase() === plan.patient_id.toLowerCase()
+                && validId(plan.id) && validId(item.id) && validId(item.treatment_plan_id) && item.treatment_plan_id.toLowerCase() === plan.id.toLowerCase()
+                && validId(item.procedure_id));
+        }
+
+        function facturarItemPlanPaciente(itemId) {
+            const state = treatmentPlanState;
+            if (state?.busy) return;
+            const item = state?.plan?.items?.find(candidate => candidate.id === itemId);
+            if (!puedeFacturarItemPlan(state, item)) {
+                DentalRoles.notify("Este tratamiento no está disponible para facturar desde el plan.", "warning");
+                return;
+            }
+            const params = new URLSearchParams({ paciente: state.patient.id, treatmentPlanItemId: item.id });
+            window.location.href = "facturacion.html?" + params.toString();
         }
 
         async function abrirRegistroRealizadoDesdePlan(itemId) {
